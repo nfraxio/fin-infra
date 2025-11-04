@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fin-infra"
-version = "0.1.1"
+version = "0.1.2"
 description = "Financial infrastructure toolkit: banking connections, market data, credit, cashflows, and brokerage integrations"
 authors = ["Ali Khatami <aliikhatami94@gmail.com>"]
 license = "MIT"
@@ -50,15 +50,11 @@ numpy = "^2.1.3"
 numpy-financial = "^1.0.0"
 # svc-infra = { path = "../svc-infra", develop = true }  # Local dev only - apps using fin-infra should install svc-infra separately
 
-# Providers (can be heavy; keep in main deps for simplicity initially)
+# Provider dependencies (installed by default for easy_* functions)
 yahooquery = "^2.3.7"
 ccxt = "^4.4.26"
 plaid-python = "^25.0.0"
 svc-infra = "^0.1.636"
-
-[tool.poetry.extras]
-plaid = ["plaid-python"]
-markets = ["yahooquery", "ccxt"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
