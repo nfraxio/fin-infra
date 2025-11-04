@@ -6,7 +6,13 @@ authors = ["Ali Khatami <aliikhatami94@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "fin_infra", from = "src" }]
-keywords = ["finance", "banking", "plaid", "brokerage", "markets", "credit", "cashflow", "infra", "sdk"]
+keywords = ["finance", "banking", "plaid", "brokerage", "markets", "credit", "tax", "cashflow", "fintech", "infra"]
+include = [
+    "src/fin_infra/py.typed",
+    "src/fin_infra/docs/**/*",
+    "src/fin_infra/bundled_docs/**/*"
+]
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -16,6 +22,9 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Framework :: FastAPI",
     "Typing :: Typed"
 ]
 
@@ -39,11 +48,13 @@ cashews = { version = "^7.4.1", extras = ["redis"] }
 loguru = "^0.7.2"
 numpy = "^2.1.3"
 numpy-financial = "^1.0.0"
+# svc-infra = { path = "../svc-infra", develop = true }  # Local dev only - apps using fin-infra should install svc-infra separately
 
 # Providers (can be heavy; keep in main deps for simplicity initially)
 yahooquery = "^2.3.7"
 ccxt = "^4.4.26"
 plaid-python = "^25.0.0"
+svc-infra = "^0.1.636"
 
 [tool.poetry.extras]
 plaid = ["plaid-python"]
@@ -54,16 +65,21 @@ pytest = "^8.3.2"
 pytest-asyncio = "^0.23.8"
 mypy = "^1.11.2"
 ruff = "^0.6.9"
+black = "^24.8.0"
+isort = "^5.13.2"
+flake8 = "^7.1.1"
+pre-commit = "^4.0.0"
 types-requests = "^2.32.0.20241016"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_functions = ["test_*"]
-addopts = "-q"
+addopts = "-q -m 'not acceptance'"
 markers = [
     "providers: External provider client tests",
     "models: Financial domain models tests",
+    "acceptance: Acceptance tests (opt-in)",
 ]
 
 [tool.ruff]

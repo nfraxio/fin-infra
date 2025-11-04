@@ -1,81 +1,148 @@
 # fin-infra
 
-Financial infrastructure toolkit for production-grade apps. Connect to banks, brokerages, and market data; compute cashflows; fetch credit scores; and build rich finance features quickly.
+[![PyPI](https://img.shields.io/pypi/v/fin-infra.svg)](https://pypi.org/project/fin-infra/)
+[![Docs](https://img.shields.io/badge/docs-reference-blue)](.)
 
-## Goals
-- Unified, typed SDK for common financial tasks (banking, markets, credit, cashflows)
-- Pluggable providers (Plaid, broker APIs, market data vendors, crypto exchanges)
-- Ergonomic defaults with escape hatches; minimal configuration via env
-- Production-ready foundations: retries, rate limiting hooks, tracing, metrics (future)
+Financial infrastructure toolkit for fintech applications. fin-infra provides production-ready building blocks for banking connections, market data, credit scores, tax data, brokerage integrations, and cashflow analysis—everything needed to build comprehensive personal finance management applications.
+
+## What is fin-infra?
+
+fin-infra is the **financial data layer** for fintech apps. While `svc-infra` handles generic backend operations (auth, API scaffolding, database, billing), `fin-infra` is purpose-built for financial applications where users need to:
+
+- Connect bank accounts and pull transaction history
+- Link brokerage accounts and view portfolio holdings
+- Check credit scores and monitor credit reports
+- Access tax documents and data
+- View real-time market data (stocks, crypto, forex)
+- Perform financial calculations (NPV, IRR, loan amortization)
 
 ## Status
-Alpha. Surface is intentionally small while we stabilize core models and client contracts.
 
-## Install (developer)
-- Requires Python 3.11+
+Alpha. Core functionality is stable, but the surface is intentionally small while we stabilize models and provider contracts.
+
+## Helper Index
+
+| Area | What it covers | Guide |
+| --- | --- | --- |
+| Getting Started | Overview and installation | [Getting Started](src/fin_infra/docs/getting-started.md) |
+| Banking | Account aggregation, transactions, statements | [Banking](src/fin_infra/docs/banking.md) |
+| Market Data | Stocks, crypto, forex quotes and historical data | [Market Data](src/fin_infra/docs/market-data.md) |
+| Credit Scores | Credit reports and monitoring | [Credit](src/fin_infra/docs/credit.md) |
+| Brokerage | Trading accounts and portfolio data | [Brokerage](src/fin_infra/docs/brokerage.md) |
+| Tax Data | Tax documents and data management | [Tax](src/fin_infra/docs/tax.md) |
+| Cashflows | NPV, IRR, loan calculations | [Cashflows](src/fin_infra/docs/cashflows.md) |
+| Contributing | Dev setup and quality gates | [Contributing](src/fin_infra/docs/contributing.md) |
+| Acceptance | Acceptance testing guide | [Acceptance](src/fin_infra/docs/acceptance.md) |
+
+## Quick Start
+
+### Installation
 
 ```bash
-# From repo root (this folder)
+# From PyPI (when published)
+pip install fin-infra
+
+# For backend infrastructure (auth, API, DB, cache, jobs), also install:
+pip install svc-infra
+
+# For development
+git clone https://github.com/your-org/fin-infra
+cd fin-infra
 poetry install
-poetry run pytest -q
 ```
 
-## Package layout
-```
-src/
-  fin_infra/
-    __init__.py
-    py.typed
-    utils.py            # helpers, retry/backoff building blocks
-    models/             # Pydantic models: accounts, holdings, transactions, quotes
-    clients/            # Base and provider clients (plaid, brokers)
-      base.py
-      plaid.py          # thin wrapper + typed responses (optional extra)
-    markets/            # Market data interfaces (equity/crypto/forex)
-      base.py
-    credit/             # Credit score providers and models
-      base.py
-```
+**Note**: fin-infra provides ONLY financial data integrations. For backend infrastructure (API framework, auth, database, caching, jobs), you need [svc-infra](https://github.com/Aliikhatami94/svc-infra). Applications typically use both packages together.
 
-## Quickstart
-One-call setup for each capability:
+### One-Call Setup
+
 ```python
-from fin_infra.easy import easy_market, easy_crypto, easy_banking
+from fin_infra.banking import easy_banking
+from fin_infra.markets import easy_market, easy_crypto
+from fin_infra.credit import easy_credit
+from fin_infra.cashflows import npv, irr
 
-md = easy_market()      # market data provider with sane defaults
-q = md.quote("AAPL")    # Quote model
+# Banking
+banking = easy_banking()
+accounts = await banking.get_accounts("access_token")
+transactions = await banking.get_transactions("account_id")
 
-cg = easy_crypto()      # crypto data provider
-t = cg.ticker("BTC/USDT")
+# Market Data
+market = easy_market()
+quote = market.quote("AAPL")
 
-bank = easy_banking()   # banking adapter skeleton for local/dev
-accts = bank.accounts("test-access-token")
+crypto = easy_crypto()
+ticker = crypto.ticker("BTC/USDT")
+
+# Credit Scores
+credit = easy_credit()
+score = await credit.get_credit_score("user_123")
+
+# Cashflows
+cashflows = [-1000, 300, 300, 300, 300]
+net_value = npv(0.08, cashflows)
+rate_of_return = irr(cashflows)
 ```
 
-Advanced: implement a custom client
-```python
-from fin_infra.clients.base import BankingClient
+## Architecture Overview
 
-class MyBanking(BankingClient):
-    async def get_accounts(self, user_id: str):
-        return []
-
-# or use provider-specific client when available
+```
+fin-infra/
+├── src/fin_infra/
+│   ├── banking/            # Bank account aggregation
+│   │   ├── plaid/          # Plaid provider
+│   │   └── teller/         # Teller provider
+│   ├── brokerage/          # Trading account connections
+│   ├── credit/             # Credit score providers
+│   ├── markets/            # Market data (stocks/crypto)
+│   ├── tax/                # Tax data and documents
+│   ├── cashflows/          # Financial calculations
+│   ├── models/             # Pydantic data models
+│   ├── providers/          # Provider implementations
+│   └── docs/               # Packaged documentation
+├── tests/
+│   ├── unit/               # Fast unit tests
+│   └── acceptance/         # Provider integration tests
+└── examples/               # Example applications
 ```
 
-## Roadmap
-- Banking
-  - Plaid client with link token, item access, accounts, balances, transactions
-  - Normalized account/transaction schema across providers
-- Markets
-  - Equities/crypto quotes, OHLCV, fundamentals via adapters (yfinance, CCXT, Finnhub)
-- Brokerages
-  - Basic portfolio/positions/orders via adapter(s) (e.g., Alpaca)
-- Credit
-  - Provider-agnostic scores + history
-- Core
-  - Retries/backoff, rate-limit handling, tracing/metrics hooks
-  - Cursors/pagination helpers and resilient HTTP utilities
+## Configuration
+
+fin-infra uses environment variables for provider credentials:
+
+```bash
+# Banking providers
+PLAID_CLIENT_ID=your_client_id
+PLAID_SECRET=your_secret
+PLAID_ENV=sandbox
+
+# Market data providers
+ALPHAVANTAGE_API_KEY=your_api_key
+
+# Credit providers
+EXPERIAN_USERNAME=your_username
+EXPERIAN_PASSWORD=your_password
+```
+
+## Development
+
+```bash
+# Install dependencies
+poetry install
+
+# Format code
+make format
+
+# Run linting
+make lint
+
+# Type check
+make type
+
+# Run tests
+make unit      # Unit tests only
+make accept    # Acceptance tests
+make test      # All tests
+```
 
 ## Acceptance tests and CI
 - Acceptance tests are marked with `@pytest.mark.acceptance` and are excluded by default.

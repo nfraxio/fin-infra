@@ -15,9 +15,15 @@ jobs:
   acceptance:
     name: Acceptance
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [in-memory, redis]
     permissions:
       contents: read
       id-token: write
+    env:
+      ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,31 +58,36 @@ jobs:
           echo "lock_status=recreated" >> $GITHUB_OUTPUT
 
       - name: Install deps (main + dev)
-        run: poetry install --no-root --only main,dev --sync --no-interaction
+        run: poetry install --only main,dev --sync --no-interaction
 
       - name: Run unit tests
         run: poetry run pytest -q tests/unit
 
-      - name: Run acceptance tests (opt-in markers)
-        env:
-          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+      - name: Select profile env
+        if: matrix.profile == 'redis'
+        run: echo "COMPOSE_PROFILES=redis" >> "$GITHUB_ENV"
+
+      - name: Echo acceptance context
         run: |
+          echo "Matrix profile: ${{ matrix.profile }}"
           echo "AlphaVantage key configured: $([ -n "$ALPHAVANTAGE_API_KEY" ] && echo yes || echo no)"
-          poetry run pytest -q -m acceptance
+
+      - name: Run acceptance (Makefile)
+        run: make accept
 
       - name: Generate SBOM (CycloneDX JSON)
         uses: anchore/sbom-action@v0
         with:
           path: .
-          artifact-name: fin-infra-sbom-${{ github.run_id }}-${{ github.run_attempt }}
-          output-file: sbom.cdx.json
+          artifact-name: fin-infra-sbom-${{ matrix.profile }}
+          output-file: sbom-${{ matrix.profile }}.cdx.json
           format: cyclonedx-json
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-cdx-${{ github.run_id }}-${{ github.run_attempt }}
-          path: sbom.cdx.json
+          name: sbom-cdx-${{ matrix.profile }}
+          path: sbom-${{ matrix.profile }}.cdx.json
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
@@ -87,14 +98,14 @@ jobs:
         run: |
           cosign version
           cosign sign-blob \
-            --output-signature sbom.cdx.json.sig \
-            --output-certificate sbom.cdx.json.crt \
-            sbom.cdx.json
+            --output-signature sbom-${{ matrix.profile }}.cdx.json.sig \
+            --output-certificate sbom-${{ matrix.profile }}.cdx.json.crt \
+            sbom-${{ matrix.profile }}.cdx.json
 
       - name: Upload SBOM signature artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-signature-${{ github.run_id }}-${{ github.run_attempt }}
+          name: sbom-signature-${{ matrix.profile }}
           path: |
-            sbom.cdx.json.sig
-            sbom.cdx.json.crt
+            sbom-${{ matrix.profile }}.cdx.json.sig
+            sbom-${{ matrix.profile }}.cdx.json.crt

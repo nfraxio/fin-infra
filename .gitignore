@@ -50,3 +50,24 @@ dmypy.json
 # IDEs and editors
 .idea/
 .vscode/
+
+# Environment variables (NEVER commit these!)
+.env
+.env.local
+.env.*.local
+
+# API Keys and Certificates (NEVER commit these!)
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+teller_*.pem
+*_certificate.pem
+*_private_key.pem
+
+# Secrets
+secrets/
+.secrets/
+credentials/
+.credentials/
