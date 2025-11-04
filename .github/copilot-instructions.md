@@ -12,7 +12,6 @@
 ## What this repo is
 - `fin-infra` is a provider-agnostic **financial data integration toolkit** for fintech applications: banking connections, brokerage accounts, market data, credit scores, tax data, and cashflow calculations.
 - **NOT a backend framework**: fin-infra provides ONLY financial-specific integrations. All backend infrastructure (API, auth, DB, cache, jobs, webhooks) comes from `svc-infra`.
-- **No direct dependency**: fin-infra does NOT depend on svc-infra at the package level. Applications using fin-infra should install svc-infra separately for backend needs.
 - Supported Python: 3.11–3.13. Publish-ready package via Poetry; CLI entrypoint `fin-infra`.
 
 ## Critical Boundary: fin-infra vs svc-infra
