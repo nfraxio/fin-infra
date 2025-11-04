@@ -238,13 +238,19 @@ def add_banking(
         >>> banking_provider = easy_banking(provider="teller")
         >>> banking = add_banking(app, provider=banking_provider)
         
-        # Custom prefix and cache TTL
+        # Custom cache TTL
         >>> banking = add_banking(
         ...     app,
         ...     provider="teller",
-        ...     prefix="/api/v1/banking",
         ...     cache_ttl=120  # 2 minutes
         ... )
+        
+        # Routes mounted at /banking/* (matches svc-infra pattern like /payments, /auth)
+        # GET  /banking/accounts
+        # GET  /banking/transactions
+        # GET  /banking/balances
+        # POST /banking/link
+        # POST /banking/exchange
     
     Integration with svc-infra:
         - Cache: Uses svc_infra.cache for account/transaction caching

@@ -158,13 +158,17 @@ def add_market_data(
         >>> market_provider = easy_market(provider="yahoo")
         >>> market = add_market_data(app, provider=market_provider)
         
-        # Custom prefix and cache TTL
+        # Custom cache TTL
         >>> market = add_market_data(
         ...     app,
         ...     provider="yahoo",
-        ...     prefix="/api/v1/market",
         ...     cache_ttl=120  # 2 minutes
         ... )
+        
+        # Routes mounted at /market/* (matches svc-infra pattern like /payments, /auth)
+        # GET /market/quote/{symbol}
+        # GET /market/history/{symbol}
+        # GET /market/search
     
     Integration with svc-infra:
         - Cache: Uses svc_infra.cache for quote caching

@@ -79,10 +79,11 @@ class TestAddBanking:
         mock_resolve.return_value = mock_provider
         
         from fin_infra.banking import add_banking
-        add_banking(app, provider="teller", prefix="/api/v1/banking")
+        # Test custom prefix (user can still use versioned paths if they want)
+        add_banking(app, provider="teller", prefix="/api/banking")
         
         client = TestClient(app)
-        response = client.post("/api/v1/banking/link", json={"user_id": "user123"})
+        response = client.post("/api/banking/link", json={"user_id": "user123"})
         assert response.status_code == 200
     
     @patch("fin_infra.banking.resolve")
@@ -216,10 +217,11 @@ class TestAddMarketData:
             mock_easy.return_value = mock_provider
             
             from fin_infra.markets import add_market_data
-            add_market_data(app, provider="yahoo", prefix="/api/v1/market")
+            # Test custom prefix (user can still use versioned paths if they want)
+            add_market_data(app, provider="yahoo", prefix="/api/market")
             
             client = TestClient(app)
-            response = client.get("/api/v1/market/quote/AAPL")
+            response = client.get("/api/market/quote/AAPL")
             assert response.status_code == 200
     
     def test_add_market_data_search_not_supported(self):
