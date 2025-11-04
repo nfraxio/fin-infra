@@ -1,4 +1,4 @@
-# copilot-instructions.md (fin-infra)
+# agents.md (fin-infra)
 
 ## What this repo is
 - `fin-infra` is a provider-agnostic financial infrastructure toolkit: market data (equities/crypto), banking aggregation adapters, cashflows, and utilities (settings, caching, retries).
