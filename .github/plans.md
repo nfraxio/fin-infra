@@ -103,6 +103,101 @@ fin-infra enables building apps like:
 
 For ALL backend infrastructure needs (API, auth, DB, cache, jobs), these apps use svc-infra.
 
+## Easy Setup Functions (One-Call Integration)
+
+Like svc-infra's `easy_service_app()`, fin-infra provides simple one-liners for every financial capability:
+
+### Provider Setup (Must-Haves 1-5, 13-14)
+```python
+# Provider registry - dynamic provider loading
+from fin_infra.providers import easy_provider
+provider = easy_provider("banking", "plaid")  # or ("market", "alphavantage")
+
+# Banking aggregation (Plaid, Teller, MX)
+from fin_infra.banking import easy_banking
+banking = easy_banking(provider="teller")  # uses env vars by default
+
+# Market data (Alpha Vantage, Yahoo, Polygon)
+from fin_infra.markets import easy_market
+market = easy_market(provider="alphavantage")  # zero config for yahoo
+
+# Crypto data (CoinGecko, CCXT)
+from fin_infra.crypto import easy_crypto
+crypto = easy_crypto(provider="coingecko")  # no API key needed
+
+# Brokerage (Alpaca, Interactive Brokers)
+from fin_infra.brokerage import easy_brokerage
+brokerage = easy_brokerage(provider="alpaca", mode="paper")  # safe default
+
+# Credit scores (Experian, Equifax, TransUnion)
+from fin_infra.credit import easy_credit
+credit = easy_credit(provider="experian")  # sandbox by default
+
+# Tax data (TaxBit for crypto, IRS for forms)
+from fin_infra.tax import easy_tax
+tax = easy_tax(provider="taxbit")  # sandbox by default
+```
+
+### Data Processing (Must-Haves 7, 15-17)
+```python
+# Symbol resolution & currency conversion
+from fin_infra.normalization import easy_normalization
+resolver, converter = easy_normalization()
+
+# Transaction categorization (ML-based)
+from fin_infra.categorization import easy_categorization
+categorizer = easy_categorization(model="local")  # pre-trained model
+
+# Recurring transaction detection
+from fin_infra.recurring import easy_recurring_detection
+detector = easy_recurring_detection()  # sensible defaults
+
+# Net worth tracking
+from fin_infra.net_worth import easy_net_worth
+tracker = easy_net_worth()  # daily snapshots by default
+```
+
+### Security & Observability (Must-Haves 8-9)
+```python
+# Financial security extensions (PII masking, token encryption)
+from fin_infra.security import add_financial_security
+add_financial_security(app)  # extends svc-infra security
+
+# Financial observability (provider metrics)
+from fin_infra.obs import add_financial_observability
+add_financial_observability(app)  # extends svc-infra metrics
+```
+
+### FastAPI Integration (Must-Have 10)
+```python
+# Full fintech API setup
+from svc_infra.api.fastapi.ease import easy_service_app  # backend from svc-infra
+from fin_infra.banking import add_banking
+from fin_infra.markets import add_market_data
+from fin_infra.credit import add_credit_monitoring
+
+app = easy_service_app(name="FinanceAPI")
+add_banking(app, provider="plaid")
+add_market_data(app, provider="alphavantage")
+add_credit_monitoring(app, provider="experian")
+```
+
+### Calculations (Cashflows module)
+```python
+# Financial calculations (no setup needed)
+from fin_infra.cashflows import npv, irr, xnpv, xirr, pmt, fv, pv
+
+net_value = npv(0.08, [-10000, 3000, 4000, 5000])
+rate = irr([-10000, 3000, 4000, 5000])
+```
+
+**Design principle**: Every capability has an `easy_*()` or `add_*(app)` function that:
+- Provides sensible defaults (sandbox mode, free tiers, env vars)
+- Requires minimal configuration (zero config where possible)
+- Returns fully configured objects ready to use
+- Allows full customization via keyword arguments
+- Integrates seamlessly with svc-infra (uses its cache, DB, jobs, logging)
+
 ## Legend
 - [ ] Pending
 - [x] Completed
@@ -130,10 +225,19 @@ For ALL backend infrastructure needs (API, auth, DB, cache, jobs), these apps us
 ### 0. Backfill Coverage for Base Modules (current repo)
 
 Owner: TBD — Evidence: PRs, tests, CI runs
+- [ ] **Research (svc-infra check)**:
+  - [~] Check svc-infra for settings patterns (pydantic-settings) → REUSE
+  - [~] Check svc-infra.http for retry/timeout logic → REUSE
+  - [~] Check svc-infra.cache for caching patterns → REUSE
+  - [ ] Classification: Type C (mostly generic settings + financial models)
+  - [ ] Justification: Base settings from svc-infra; financial data models (Quote, Candle, Account, Transaction) are domain-specific
+  - [ ] Reuse plan: Use svc-infra for settings/http/cache; keep financial Pydantic models in fin-infra
 - Core: settings.py (timeouts/retries provided by svc‑infra; no local http wrapper)
 - [~] Research: ensure pydantic‑settings (networking concerns covered in svc‑infra).
 - [~] Skipped: unit tests for HTTP timeouts/retries (covered by svc‑infra).
-- [ ] Docs: quickstart for settings (link to svc‑infra for timeouts/retries & caching).
+- [ ] Implement: Easy model exports - `from fin_infra.models import Account, Transaction, Quote, Candle`
+- [ ] Tests: Unit tests for financial data models (validation, serialization)
+- [ ] Docs: quickstart for settings (link to svc‑infra for timeouts/retries & caching) + model reference.
 - Providers skeletons:
 	- Market: providers/market/yahoo.py (proto) → swap to chosen vendor(s) below.
 	- Crypto: providers/market/ccxt_crypto.py (proto)
@@ -141,43 +245,97 @@ Owner: TBD — Evidence: PRs, tests, CI runs
 	- Brokerage: providers/brokerage/alpaca.py (paper trading)
 
 ### 1. Provider Registry & Interfaces (plug‑and‑play)
-- [ ] Research: ABCs for BankingProvider, MarketDataProvider, CryptoDataProvider, BrokerageProvider.
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check if svc-infra has provider registry pattern
+  - [ ] Review svc-infra plugin/extension mechanisms
+  - [ ] Classification: Type A (financial-specific provider discovery)
+  - [ ] Justification: Provider registry is financial domain-specific; svc-infra doesn't have financial provider concepts
+- [ ] Research: ABCs for BankingProvider, MarketDataProvider, CryptoDataProvider, BrokerageProvider, CreditProvider, TaxProvider.
 - [ ] Design: provider registry with entry‑points + YAML mapping. (ADR‑0002)
 - [ ] Implement: fin_infra/providers/base.py ABCs + registry.py loader (resolve("banking:teller")).
+- [ ] Implement: Easy builder pattern - `easy_provider(domain, name)` returns configured provider
 - [ ] Tests: dynamic import, fallback on missing providers, feature flags.
-- [ ] Docs: docs/providers.md with examples + configuration table.
+- [ ] Verify: All easy_* functions use registry internally
+- [ ] Docs: docs/providers.md with examples + configuration table + easy builder usage.
 
 ### 2. Banking / Account Aggregation (default: Teller)
-- [ ] Research: free dev tier limits, token exchange, accounts/transactions endpoints.
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for banking/account aggregation modules
+  - [ ] Review svc-infra.billing for payment vs banking distinction
+  - [ ] Classification: Type A (financial-specific banking APIs)
+  - [ ] Justification: Banking aggregation (Plaid/Teller) is financial domain; svc-infra.billing is for subscriptions/invoices
+  - [ ] Reuse plan: Use svc-infra for caching account data, logging provider calls, storing access tokens in DB
+- [ ] Research: free dev tier limits, token exchange, accounts/transactions/balances endpoints, identity, statements.
+- [ ] Research: Plaid vs Teller vs MX feature comparison (choose default + alternates).
 - [ ] Design: auth flow contracts; token storage interface; PII boundary. (ADR‑0003)
+- [ ] Design: Easy builder signature: `easy_banking(provider="teller", **config)` with env auto-detection
 - [ ] Implement: providers/banking/teller_client.py with typed DTOs; sandbox seed.
-- [ ] Tests: integration (mocked HTTP) + acceptance: link‑token stub → accounts list → transactions list.
+- [ ] Implement: providers/banking/plaid_client.py as alternate provider.
+- [ ] Implement: `easy_banking()` one-liner that returns configured BankingProvider
+- [ ] Implement: `add_banking(app, provider=None)` for FastAPI integration (uses svc-infra app)
+- [ ] Tests: integration (mocked HTTP) + acceptance: link‑token stub → accounts list → transactions list → balances → identity.
 - [ ] Verify: acceptance profile banking=teller green.
-- [ ] Docs: docs/banking.md (env vars, limits, migration path to Plaid/MX later).
+- [ ] Verify: `easy_banking()` works with zero config (uses env vars)
+- [ ] Docs: docs/banking.md (env vars, limits, easy_banking usage, migration path to Plaid/MX, svc-infra integration examples).
 
-### 3. Equities/FX Market Data (default: Alpha Vantage)
-- [ ] Research: free tier + throttling; endpoint coverage (quote, OHLC, FX).
-- [ ] Design: rate‑aware adapter with backoff. (ADR‑0004) Caching is via svc‑infra if/when endpoints are made async.
-- [ ] Implement: providers/market/alpha_vantage.py (quotes, time series daily/intraday, FX). (Optionally adopt svc‑infra caching if migrating to async.)
-- [ ] Tests: unit for symbol normalization; acceptance: price fetch burst obeys limits.
+### 3. Market Data – Equities (free tier: Alpha Vantage, alternates: Yahoo, Polygon)
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for market data/quote APIs
+  - [ ] Review svc-infra.cache for rate-limit/TTL patterns
+  - [ ] Classification: Type A (financial-specific market data)
+  - [ ] Justification: Stock/equity quotes are financial domain; svc-infra doesn't provide market data
+  - [ ] Reuse plan: Use svc-infra.cache for quote caching, svc-infra.http for retry logic, svc-infra rate limiting middleware
+- [ ] Research: Alpha Vantage free tier (5 req/min, 500/day); endpoints for TIME_SERIES_INTRADAY, GLOBAL_QUOTE, SYMBOL_SEARCH, EARNINGS, OVERVIEW.
+- [ ] Research: Yahoo Finance (free, no API key), Polygon (generous free tier) as alternates.
+- [ ] Design: Quote, Candle, SymbolInfo, CompanyOverview DTOs; caching TTLs. (ADR‑0004)
+- [ ] Design: Easy builder signature: `easy_market(provider="alphavantage", **config)` with env auto-detection
+- [ ] Implement: providers/market/alpha_vantage.py; batch symbol lookup; naive throttle. Use svc‑infra cache for 60s quote cache.
+- [ ] Implement: providers/market/yahoo_finance.py as alternate (free, no key).
+- [ ] Implement: `easy_market()` one-liner that returns configured MarketDataProvider
+- [ ] Implement: `add_market_data(app, provider=None)` for FastAPI integration (uses svc-infra app)
+- [ ] Tests: mock API responses → unit tests + acceptance test for real symbol → quote → candles → search.
 - [ ] Verify: acceptance profile market=alpha_vantage green.
-- [ ] Docs: docs/market-data.md (quotas, caching guidance, fallbacks).
+- [ ] Verify: `easy_market()` works with zero config for yahoo (no API key)
+- [ ] Docs: docs/market-data.md with examples + rate‑limit mitigation notes + easy_market usage + svc-infra caching integration.
 
-### 4. Crypto Market Data (default: CoinGecko)
-- [ ] Research: free plan quotas; mapping symbol → CoinGecko id; vs CCXT.
-- [ ] Design: id mapping store; normalize by asset{type, symbol, exchange?}. (ADR‑0005)
-- [ ] Implement: providers/crypto/coingecko.py (spot prices, metadata) + optional ccxt candles.
-- [ ] Tests: id resolution edge cases (e.g., BTC, WBTC, BTC.B), OHLC sanity.
+### 4. Market Data – Crypto (free tier: CoinGecko, alternates: CCXT, CryptoCompare)
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for crypto market data APIs
+  - [ ] Review svc-infra.cache for crypto-specific patterns
+  - [ ] Classification: Type A (financial-specific crypto data)
+  - [ ] Justification: Crypto quotes/prices are financial domain; svc-infra doesn't provide crypto data
+  - [ ] Reuse plan: Use svc-infra.cache for quote caching, svc-infra.http for retry logic, svc-infra rate limiting
+- [ ] Research: CoinGecko free tier (10-30 req/min); endpoints for simple/price, coins/markets, coins/{id}/market_chart, trending, global.
+- [ ] Research: CCXT (multi-exchange library), CryptoCompare as alternates.
+- [ ] Design: CryptoQuote, CryptoCandle, CryptoInfo DTOs; base conversion, exchange aggregation. (ADR‑0005)
+- [ ] Design: Easy builder signature: `easy_crypto(provider="coingecko", **config)` with env auto-detection
+- [ ] Implement: providers/crypto/coingecko.py; batch quotes (up to 100 symbols). Use svc‑infra cache for 60s crypto quote cache.
+- [ ] Implement: providers/crypto/ccxt_client.py as alternate (multi-exchange support).
+- [ ] Implement: `easy_crypto()` one-liner that returns configured CryptoDataProvider
+- [ ] Implement: `add_crypto_data(app, provider=None)` for FastAPI integration (uses svc-infra app)
+- [ ] Tests: mocked data + acceptance: BTC → USD quote → historical candles → trending coins.
 - [ ] Verify: acceptance profile crypto=coingecko green.
-- [ ] Docs: docs/crypto-data.md.
+- [ ] Verify: `easy_crypto()` works with zero config (CoinGecko no API key required)
+- [ ] Docs: docs/crypto-data.md with real‑time vs 15‑min delay notes + easy_crypto usage + multi-exchange patterns + svc-infra integration.
 
-### 5. Brokerage (default: Alpaca Paper Trading)
-- [ ] Research: orders, positions, clock; paper trading free.
-- [ ] Design: order idempotency + replay safety; clock‑guard + risk checks. (ADR‑0006)
-- [ ] Implement: providers/brokerage/alpaca.py (submit_order, positions) with idempotency key + server replay detection.
-- [ ] Tests: unit for order param validation; acceptance: buy/sell happy path + duplicate submission → one order.
-- [ ] Verify: acceptance profile brokerage=alpaca_paper green.
-- [ ] Docs: docs/brokerage.md (keys, paper vs live, risk notes).
+### 5. Brokerage Provider (default: Alpaca, alternates: Interactive Brokers, TD Ameritrade)
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for trading/brokerage APIs
+  - [ ] Review svc-infra.jobs for trade execution scheduling
+  - [ ] Classification: Type A (financial-specific brokerage operations)
+  - [ ] Justification: Trading APIs (orders, positions, portfolios) are financial domain; svc-infra doesn't provide brokerage integration
+  - [ ] Reuse plan: Use svc-infra.jobs for scheduled trades, svc-infra.webhooks for execution notifications, svc-infra DB for trade history
+- [ ] Research: Alpaca paper trading, order management (market/limit/stop), positions, portfolio history, account info, watchlists.
+- [ ] Research: Interactive Brokers API (institutional grade), TD Ameritrade (retail) as alternates.
+- [ ] Design: Order, Position, PortfolioSnapshot, Account, Watchlist DTOs; trade execution flow. (ADR‑0006)
+- [ ] Design: Easy builder signature: `easy_brokerage(provider="alpaca", mode="paper", **config)` with env auto-detection
+- [ ] Implement: providers/brokerage/alpaca.py; paper trading environment + live toggle.
+- [ ] Implement: `easy_brokerage()` one-liner that returns configured BrokerageProvider
+- [ ] Implement: `add_brokerage(app, provider=None)` for FastAPI integration (uses svc-infra app)
+- [ ] Tests: mock order placement → fill → position update → portfolio history → watchlist management.
+- [ ] Verify: acceptance profile brokerage=alpaca green (paper trading only).
+- [ ] Verify: `easy_brokerage()` defaults to paper mode, requires explicit `mode="live"` for production
+- [ ] Docs: docs/brokerage.md with disclaimers + sandbox setup + easy_brokerage usage + paper vs live mode + svc-infra job integration examples.
 
 ### 6. Caching, Rate Limits & Retries (cross‑cutting)
 - [~] **REUSE svc-infra**: All caching via `svc_infra.cache` (init_cache, cache_read, cache_write)
@@ -186,31 +344,63 @@ Owner: TBD — Evidence: PRs, tests, CI runs
 - [ ] Research: Document which svc-infra modules to import for provider rate limiting
 - [ ] Docs: Add examples showing svc-infra cache integration with fin-infra providers
 
-### 7. Data Normalization: Symbols, Currencies, Time
-- [ ] Research: symbol clashes (e.g., BTI across regions), ISO‑4217, crypto tickers.
-- [ ] Design: canonical InstrumentKey (namespace:symbol) + FX normalization + tz handling. (ADR‑0008)
-- [ ] Implement: fin_infra/normalize.py (instrument key, currency → decimal places, timezone utils, trading calendar shim).
-- [ ] Tests: round‑trips across providers; FX conversions sanity.
-- [ ] Docs: docs/normalization.md.
+### 7. Data Normalization & Symbol Resolution (centralized)
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for data normalization/symbol resolution
+  - [ ] Review svc-infra.cache for symbol mapping caching
+  - [ ] Classification: Type A (financial-specific symbol/currency normalization)
+  - [ ] Justification: Financial symbol resolution (ticker → CUSIP → ISIN) and currency conversion are financial domain
+  - [ ] Reuse plan: Use svc-infra.cache for symbol mappings (long TTL), svc-infra.http for exchange rate API calls
+- [ ] Research: symbol mapping (AAPL → Apple Inc. → NASDAQ:AAPL → CUSIP → ISIN); currency converter (USD ↔ EUR); multi-exchange symbol resolution.
+- [ ] Research: Free exchange rate APIs (exchangerate-api.io, fixer.io, openexchangerates.org).
+- [ ] Design: SymbolResolver, CurrencyConverter singletons; fallback to external API (e.g., exchangerate‑api.io free tier). (ADR‑0007)
+- [ ] Design: Easy builder pattern: `easy_normalization()` returns (resolver, converter) tuple
+- [ ] Implement: providers/normalization/symbol_resolver.py + currency_converter.py.
+- [ ] Implement: `easy_normalization()` one-liner that returns configured normalization tools
+- [ ] Tests: convert TSLA → quote → USD → EUR; mock exchange rates; multi-symbol batch resolution.
+- [ ] Verify: Symbol resolver works across providers (banking, market, brokerage)
+- [ ] Docs: docs/normalization.md with usage examples + easy_normalization() + cross-provider symbol mapping + svc-infra caching integration.
 
 ### 8. Security, Secrets & PII boundaries
 - [~] **REUSE svc-infra**: Auth/sessions via `svc_infra.api.fastapi.auth`
 - [~] **REUSE svc-infra**: Security middleware via `svc_infra.security`
 - [~] **REUSE svc-infra**: Logging via `svc_infra.logging.setup_logging`
 - [~] **REUSE svc-infra**: Secrets management via `svc_infra` settings patterns
-- [ ] Research: Document PII handling specific to financial providers (SSN, account numbers)
-- [ ] Design: PII encryption boundaries for provider tokens (store in svc-infra DB with encryption)
-- [ ] Docs: Security guide showing svc-infra integration for auth + fin-infra provider security
+- [ ] **Research (svc-infra check)**:
+  - [ ] Review svc-infra.security for PII masking and encryption
+  - [ ] Check svc-infra.auth for OAuth token storage patterns
+  - [ ] Classification: Type B (financial-specific PII + generic secret management)
+  - [ ] Justification: Base security from svc-infra; financial PII (SSN, account numbers, routing numbers) patterns are domain-specific
+  - [ ] Reuse plan: Use svc-infra for base security; extend with financial PII detection and provider token encryption
+- [ ] Research: Document PII handling specific to financial providers (SSN, account numbers, routing numbers, card numbers)
+- [ ] Research: Provider token encryption requirements (at rest, in transit)
+- [ ] Design: PII encryption boundaries for provider tokens (store in svc-infra DB with encryption); financial PII log filters (ADR-0008)
+- [ ] Design: Easy builder pattern: `add_financial_security(app)` configures financial PII filters and token encryption (wraps svc-infra)
+- [ ] Implement: Financial PII masking patterns for logs (extends svc-infra logging)
+- [ ] Implement: Provider token encryption layer (uses svc-infra DB and security modules)
+- [ ] Implement: `add_financial_security(app)` one-liner that configures financial security extensions
+- [ ] Tests: Verify no financial PII in logs (SSN, account numbers); provider token encryption/decryption
+- [ ] Verify: Works with svc-infra auth, security, and logging modules
+- [ ] Docs: Security guide showing svc-infra integration for auth + fin-infra provider security + easy setup
 
 ### 9. Observability & SLOs
 - [~] **REUSE svc-infra**: Prometheus metrics via `svc_infra.obs.add_observability`
 - [~] **REUSE svc-infra**: OpenTelemetry tracing via `svc_infra.obs` instrumentation
 - [~] **REUSE svc-infra**: Grafana dashboards via `svc_infra.obs` templates
-- [ ] Research: Provider-specific SLIs (API availability, response times, error rates)
-- [ ] Design: Financial provider SLO definitions (ADR‑0010)
-- [ ] Implement: Provider call wrapper that emits metrics to svc-infra's Prometheus
-- [ ] Tests: Verify provider metrics appear in svc-infra's observability stack
-- [ ] Docs: Guide on wiring fin-infra providers with svc-infra observability
+- [ ] **Research (svc-infra check)**:
+  - [ ] Review svc-infra.obs for metrics, traces, SLO patterns
+  - [ ] Check if svc-infra has provider-specific metric patterns
+  - [ ] Classification: Type B (financial-specific metrics + generic observability)
+  - [ ] Justification: Base observability from svc-infra; provider metrics (quota usage, data freshness, error rates by provider) are financial-specific
+  - [ ] Reuse plan: Use svc-infra.obs for base metrics; extend with financial provider metrics
+- [ ] Research: Provider-specific SLIs (API availability, response times, error rates, quota usage, data freshness)
+- [ ] Design: Financial provider SLO definitions; metrics layer on top of svc-infra (ADR‑0010)
+- [ ] Design: Easy builder pattern: `add_financial_observability(app)` extends svc-infra metrics with provider dashboards
+- [ ] Implement: Provider call wrapper that emits metrics to svc-infra's Prometheus (provider_calls_total, provider_quota_remaining, provider_latency_seconds)
+- [ ] Implement: `add_financial_observability(app)` one-liner that adds financial metrics (wraps svc-infra)
+- [ ] Tests: Verify provider metrics appear in svc-infra's observability stack at /metrics
+- [ ] Verify: Works with svc-infra Grafana dashboards
+- [ ] Docs: Guide on wiring fin-infra providers with svc-infra observability + Grafana dashboard JSON + easy setup
 
 ### 10. Demo API & SDK Surface (optional but helpful)
 - [~] **REUSE svc-infra**: FastAPI app scaffolding via `svc_infra.api.fastapi.ease.easy_service_app`
@@ -226,51 +416,163 @@ Owner: TBD — Evidence: PRs, tests, CI runs
 - [ ] Docs: docs/api.md showing how to build fintech API with both packages
 
 ### 11. DX & Quality Gates
-- [ ] Research: CI pipeline steps & gaps.
-- [ ] Design: gating order (ruff, mypy, pytest, SBOM, SAST stub), version bump + changelog.
-- [ ] Implement: CI workflow templates under dx/ + .github/workflows/ci.yml.
+- [ ] **Research (svc-infra check)**:
+  - [ ] Review svc-infra CI/CD pipeline (GitHub Actions, pre-commit, quality gates)
+  - [ ] Check svc-infra.dx for developer experience tooling
+  - [ ] Classification: Type C (mostly generic, adapt from svc-infra)
+  - [ ] Justification: CI/CD patterns are generic; adapt svc-infra workflows with financial acceptance tests
+  - [ ] Reuse plan: Copy svc-infra CI workflow structure; add fin-infra acceptance test profiles
+- [ ] Research: CI pipeline steps & gaps; svc-infra quality gate patterns.
+- [ ] Design: gating order (ruff, mypy, pytest, acceptance tests, SBOM, SAST stub), version bump + changelog.
+- [ ] Implement: CI workflow templates under dx/ + .github/workflows/ci.yml (adapted from svc-infra).
 - [ ] Tests: dx helpers unit tests.
-- [ ] Docs: docs/contributing.md and release process.
+- [ ] Docs: docs/contributing.md and release process (mirror svc-infra structure).
 
 ### 12. Legal/Compliance Posture (v1 lightweight)
-- [ ] Research: vendor ToS (no data resale; attribution); storage policy for PII and tokens.
-- [ ] Design: data map + retention notes; toggle to disable sensitive modules.
-- [ ] Implement: compliance notes page + code comments marking PII boundaries.
-- [ ] Docs: docs/compliance.md (not a substitute for legal review).
+- [ ] **Research (svc-infra check)**:
+  - [ ] Review svc-infra compliance documentation patterns
+  - [ ] Check svc-infra.data for data lifecycle and retention patterns
+  - [ ] Classification: Type A (financial-specific compliance + generic data governance)
+  - [ ] Justification: Financial compliance (vendor ToS, financial PII retention) is domain-specific; base data governance from svc-infra
+  - [ ] Reuse plan: Use svc-infra.data for data lifecycle management; add financial-specific compliance notes
+- [ ] Research: vendor ToS (no data resale; attribution); storage policy for financial PII and provider tokens; GLBA, FCRA, PCI-DSS requirements.
+- [ ] Design: data map + retention notes; toggle to disable sensitive modules; compliance boundary markers (ADR-0011).
+- [ ] Implement: compliance notes page + code comments marking PII boundaries (integrate with svc-infra.data).
+- [ ] Implement: `add_compliance_tracking(app)` helper for compliance event logging (uses svc-infra)
+- [ ] Tests: Verify PII boundaries and retention policies
+- [ ] Docs: docs/compliance.md (not a substitute for legal review) + svc-infra data lifecycle integration.
+
+### 13. Credit Score Monitoring (default: Experian, alternates: Equifax, TransUnion)
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for credit score/reporting APIs
+  - [ ] Review svc-infra.cache for credit data caching patterns
+  - [ ] Classification: Type A (financial-specific credit reporting)
+  - [ ] Justification: Credit scores and credit reports are financial domain; svc-infra doesn't provide credit reporting
+  - [ ] Reuse plan: Use svc-infra.cache for credit score caching (daily refresh), svc-infra.webhooks for score change notifications
+- [ ] Research: Experian Connect API (free tier/sandbox), credit score models (FICO, VantageScore), credit report structure.
+- [ ] Research: Equifax, TransUnion as alternates for multi-bureau coverage.
+- [ ] Design: CreditScore, CreditReport, CreditInquiry, CreditAccount DTOs; bureau provider interface. (ADR-0012)
+- [ ] Design: Easy builder signature: `easy_credit(provider="experian", **config)` with env auto-detection
+- [ ] Implement: providers/credit/experian.py; score retrieval, report parsing, inquiry tracking.
+- [ ] Implement: `easy_credit()` one-liner that returns configured CreditProvider
+- [ ] Implement: `add_credit_monitoring(app, provider=None)` for FastAPI integration (uses svc-infra app)
+- [ ] Tests: mock credit report → score extraction → account parsing → inquiry detection.
+- [ ] Verify: acceptance profile credit=experian green (sandbox only).
+- [ ] Verify: `easy_credit()` works with sandbox credentials from env
+- [ ] Docs: docs/credit.md with bureau comparison + easy_credit usage + compliance notes (FCRA) + svc-infra caching/webhook integration.
+
+### 14. Tax Data Integration (default: TaxBit for crypto, IRS for forms)
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for tax document management/storage
+  - [ ] Review svc-infra.data for document lifecycle management
+  - [ ] Classification: Type A (financial-specific tax data APIs)
+  - [ ] Justification: Tax form retrieval (1099s, W-2s) and crypto tax reporting are financial domain
+  - [ ] Reuse plan: Use svc-infra.data for document storage/lifecycle, svc-infra.jobs for annual tax form pulls
+- [ ] Research: TaxBit API (crypto tax reporting), IRS e-Services (transcript retrieval), 1099/W-2 formats.
+- [ ] Research: Document parsing libraries for PDF tax forms (pdfplumber, PyPDF2).
+- [ ] Design: TaxDocument, TaxForm1099, TaxFormW2, CryptoTaxReport DTOs; tax provider interface. (ADR-0013)
+- [ ] Design: Easy builder signature: `easy_tax(provider="taxbit", **config)` with env auto-detection
+- [ ] Implement: providers/tax/taxbit.py (crypto gains/losses); providers/tax/irs.py (transcript retrieval).
+- [ ] Implement: tax/parsers/ for PDF form extraction (1099-INT, 1099-DIV, 1099-B, W-2).
+- [ ] Implement: `easy_tax()` one-liner that returns configured TaxProvider
+- [ ] Implement: `add_tax_data(app, provider=None)` for FastAPI integration (uses svc-infra app)
+- [ ] Tests: mock tax form → parsing → data extraction; crypto transaction → capital gains calculation.
+- [ ] Verify: Tax form parsing accuracy on sample PDFs
+- [ ] Verify: `easy_tax()` works with sandbox credentials from env
+- [ ] Docs: docs/tax.md with provider comparison + easy_tax usage + document parsing + crypto tax reporting + svc-infra integration.
+
+### 15. Transaction Categorization (ML-based, default: local model)
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for ML model serving infrastructure
+  - [ ] Review svc-infra.cache for prediction caching
+  - [ ] Classification: Type A (financial-specific transaction categorization)
+  - [ ] Justification: Transaction category prediction (groceries, utilities, entertainment) is financial domain
+  - [ ] Reuse plan: Use svc-infra.cache for category predictions, svc-infra.jobs for batch categorization, svc-infra.db for user category overrides
+- [ ] Research: Transaction categorization approaches (rule-based, ML); category taxonomies (Plaid, MX, custom).
+- [ ] Research: Pre-trained models (sklearn, simple-transformers); merchant name normalization.
+- [ ] Design: TransactionCategory, CategoryRule, CategoryPrediction DTOs; categorizer interface. (ADR-0014)
+- [ ] Design: Easy builder signature: `easy_categorization(model="local", **config)` with model auto-loading
+- [ ] Implement: categorization/engine.py (rule engine + ML fallback); category taxonomy.
+- [ ] Implement: categorization/models/ with pre-trained category predictor (merchant → category).
+- [ ] Implement: `easy_categorization()` one-liner that returns configured Categorizer
+- [ ] Implement: `add_categorization(app, model=None)` for FastAPI integration (uses svc-infra app)
+- [ ] Tests: known merchant → expected category; ambiguous merchant → top-3 predictions; user override persistence.
+- [ ] Verify: Categorization accuracy on sample transaction dataset (>80% accuracy)
+- [ ] Verify: `easy_categorization()` loads model without external dependencies
+- [ ] Docs: docs/categorization.md with taxonomy reference + easy_categorization usage + custom rules + svc-infra caching integration.
+
+### 16. Recurring Transaction Detection (pattern-based)
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for time-series pattern detection
+  - [ ] Review svc-infra.jobs for scheduled detection jobs
+  - [ ] Classification: Type A (financial-specific recurring payment detection)
+  - [ ] Justification: Subscription/bill detection (Netflix, rent, utilities) is financial domain
+  - [ ] Reuse plan: Use svc-infra.jobs for daily detection runs, svc-infra.cache for detected subscriptions, svc-infra.webhooks for subscription change alerts
+- [ ] Research: Recurring transaction patterns (monthly, bi-weekly, quarterly); amount variance tolerance.
+- [ ] Research: Subscription detection heuristics (fixed amount ±5%, merchant name consistency, date clustering).
+- [ ] Design: RecurringTransaction, SubscriptionDetection, BillPrediction DTOs; detection algorithm. (ADR-0015)
+- [ ] Design: Easy builder signature: `easy_recurring_detection(**config)` with sensitivity tuning
+- [ ] Implement: recurring/detector.py (time-series pattern matching); subscription tracker.
+- [ ] Implement: `easy_recurring_detection()` one-liner that returns configured RecurringDetector
+- [ ] Implement: `add_recurring_detection(app)` for FastAPI integration (uses svc-infra app)
+- [ ] Tests: mock transactions → subscription detection (Netflix monthly, rent fixed); false positive rate < 5%.
+- [ ] Verify: Detection works across multiple transaction cadences (monthly, bi-weekly, quarterly)
+- [ ] Verify: `easy_recurring_detection()` provides sensible defaults for tolerance thresholds
+- [ ] Docs: docs/recurring-detection.md with algorithm explanation + easy_recurring_detection usage + tuning parameters + svc-infra job integration.
+
+### 17. Net Worth Tracking (aggregated holdings)
+- [ ] **Research (svc-infra check)**:
+  - [ ] Check svc-infra for time-series data storage (historical net worth)
+  - [ ] Review svc-infra.jobs for daily net worth snapshots
+  - [ ] Classification: Type A (financial-specific net worth calculation)
+  - [ ] Justification: Net worth aggregation (bank balances + brokerage holdings + crypto + real estate) is financial domain
+  - [ ] Reuse plan: Use svc-infra.db for net worth snapshots, svc-infra.jobs for daily calculations, svc-infra.cache for current net worth
+- [ ] Research: Net worth calculation (assets - liabilities); asset types (cash, stocks, crypto, real estate, vehicles).
+- [ ] Research: Historical tracking strategies (daily snapshots, change detection triggers).
+- [ ] Design: NetWorthSnapshot, AssetAllocation, LiabilityBreakdown DTOs; aggregator interface. (ADR-0016)
+- [ ] Design: Easy builder signature: `easy_net_worth(**config)` with aggregation strategy
+- [ ] Implement: net_worth/aggregator.py (multi-provider balance aggregation); historical snapshot storage.
+- [ ] Implement: net_worth/calculator.py (assets - liabilities with currency normalization).
+- [ ] Implement: `easy_net_worth()` one-liner that returns configured NetWorthTracker
+- [ ] Implement: `add_net_worth_tracking(app)` for FastAPI integration (uses svc-infra app)
+- [ ] Tests: mock accounts → net worth calculation; historical snapshots → trend detection.
+- [ ] Verify: Net worth calculation aggregates across all providers (banking, brokerage, crypto)
+- [ ] Verify: `easy_net_worth()` provides daily snapshot scheduling by default
+- [ ] Docs: docs/net-worth.md with calculation methodology + easy_net_worth usage + historical tracking + svc-infra job/db integration.
 
 ⸻
 
 ## Nice‑to‑have (Fast Follows)
 
-### 13. Multi‑Broker Aggregation (read‑only)
+### 18. Multi‑Broker Aggregation (read‑only)
 - [ ] Research: SnapTrade pricing and coverage.
 - [ ] Design: BrokerageAggregatorProvider + account/positions sync cadence.
 - [ ] Implement: providers/brokerage/snaptrade.py (read‑only holdings, transactions).
 - [ ] Tests: diff‑merge holdings; symbol normalization across brokers.
 - [ ] Docs: enablement + limits.
 
-### 14. Portfolio Analytics & Optimization
+### 19. Portfolio Analytics & Optimization
 - [ ] Research: PyPortfolioOpt, QuantStats, Empyrical, Statsmodels.
 - [ ] Design: analytics module surface (returns, risk, factor-ish metrics; frontier/HRP optional).
 - [ ] Implement: analytics/portfolio.py + examples.
 - [ ] Tests: reproducibility (seeded), unit for metrics.
 - [ ] Docs: docs/analytics.md.
 
-### 15. Statements & OCR (import)
+### 20. Statements & OCR (import)
 - [ ] Research: CoinGecko/CCXT statement gaps; Ocrolus/Veryfi vs Tesseract.
 - [ ] Design: document ingestion pipeline; schema for transactions.
 - [ ] Implement: imports/statements/* + pluggable parser interface.
 - [ ] Tests: sample PDFs; redaction.
 - [ ] Docs: docs/imports.md.
 
-### 16. Identity/KYC (Stripe Identity)
+### 21. Identity/KYC (Stripe Identity)
 - [ ] Research: free allowances; required verifications.
 - [ ] Design: provider interface IdentityProvider.
 - [ ] Implement: providers/identity/stripe_identity.py (start/verify/status).
 - [ ] Tests: mocked integration; rate limits.
 - [ ] Docs: docs/identity.md.
 
-### 17. Payments
+### 22. Payments
 - [~] **REUSE svc-infra**: Payment infrastructure via `svc_infra.billing` and `svc_infra.apf_payments`
 - [~] **REUSE svc-infra**: Stripe/Adyen integration via svc-infra modules
 - [~] **REUSE svc-infra**: Webhook verification via `svc_infra.webhooks`
@@ -279,12 +581,12 @@ Owner: TBD — Evidence: PRs, tests, CI runs
 - [ ] Design: Payment provider adapters for financial use cases (if different from svc-infra billing)
 - [ ] Docs: Guide showing svc-infra payment integration with fin-infra banking connections
 
-### 18. Feature Flags & Experiments
+### 23. Feature Flags & Experiments
 - [~] **REUSE svc-infra**: Feature flags will be provided by svc-infra (planned feature)
 - [ ] Research: Financial-specific feature flags (provider switches, regulatory compliance)
 - [ ] Docs: Document provider selection via flags using svc-infra's flag system
 
-### 19. Internationalization & Trading Calendars
+### 24. Internationalization & Trading Calendars
 - [ ] Research: market calendars (NYSE, NASDAQ, LSE, crypto 24/7).
 - [ ] Design: calendar abstraction; localized formatting.
 - [ ] Implement: calendars/* + i18n helpers.
@@ -295,7 +597,7 @@ Owner: TBD — Evidence: PRs, tests, CI runs
 
 ## Quick Wins (Implement Early)
 
-### 20. Immediate Enhancements
+### 25. Immediate Enhancements
 - [ ] Implement: per‑provider rate‑limit headers surfaced to callers. (Optional if svc‑infra layer used.)
 - [ ] Implement: common error model (Problem+JSON) + error codes registry.
 - [ ] Implement: order idempotency key middleware (brokerage).
@@ -353,3 +655,53 @@ Track all svc-infra imports and their usage:
 - Tag version & generate changelog.
 
 Updated: Production‑readiness plan for fin‑infra with mandatory svc-infra reuse policy. fin-infra provides ONLY financial data integrations; ALL backend infrastructure comes from svc-infra.
+
+⸻
+
+## Update Summary (Must-Haves Standardization)
+
+### Changes Made
+1. **Mandatory Research Protocol Added to All Must-Haves (0-17)**
+   - Each section now includes svc-infra check checklist
+   - Classification (Type A/B/C) documented
+   - Justification for fin-infra vs svc-infra placement
+   - Reuse plan specifying which svc-infra modules to use
+
+2. **Easy Setup Functions Documented for All Capabilities**
+   - Provider setup: `easy_banking()`, `easy_market()`, `easy_crypto()`, `easy_brokerage()`, `easy_credit()`, `easy_tax()`
+   - Data processing: `easy_normalization()`, `easy_categorization()`, `easy_recurring_detection()`, `easy_net_worth()`
+   - Security/Observability: `add_financial_security(app)`, `add_financial_observability(app)`
+   - FastAPI integration: `add_banking(app)`, `add_market_data(app)`, `add_credit_monitoring(app)`, etc.
+   - All follow svc-infra pattern: one-call setup with sensible defaults + full flexibility
+
+3. **New Must-Haves Added for Comprehensive Fintech Coverage (13-17)**
+   - **#13 Credit Score Monitoring**: Experian/Equifax/TransUnion integration (Credit Karma functionality)
+   - **#14 Tax Data Integration**: TaxBit (crypto), IRS forms, PDF parsing (tax season support)
+   - **#15 Transaction Categorization**: ML-based categorization for PFM apps (Mint functionality)
+   - **#16 Recurring Transaction Detection**: Subscription/bill detection (YNAB/Mint functionality)
+   - **#17 Net Worth Tracking**: Multi-account aggregation (Personal Capital functionality)
+
+4. **Section Renumbering**
+   - Must-haves now: 0-17 (18 sections)
+   - Nice-to-haves: 18-24 (7 sections)
+   - Quick wins: 25 (1 section)
+
+### Fintech App Coverage Verification
+| App | Capabilities Covered | Must-Have Sections |
+|-----|---------------------|-------------------|
+| **Mint** | Account aggregation, categorization, recurring detection, budgeting | #2, #15, #16 |
+| **Credit Karma** | Credit monitoring, scores, reports | #13 |
+| **Robinhood** | Brokerage, trading, market data | #3, #4, #5 |
+| **Personal Capital** | Net worth, portfolio, wealth management | #5, #17, Nice-to-have #19 |
+| **YNAB** | Banking, categorization, recurring detection | #2, #15, #16 |
+| **TurboTax/Tax Apps** | Tax forms, crypto tax reporting | #14 |
+
+All must-haves now include:
+- ✅ Research protocol with svc-infra check
+- ✅ Easy setup function (`easy_*()` or `add_*(app)`)
+- ✅ Clear classification (Type A/B/C)
+- ✅ Justification for placement
+- ✅ svc-infra reuse plan
+- ✅ Comprehensive tests and docs sections
+
+**Result**: fin-infra now provides complete fintech infrastructure while strictly delegating all backend concerns to svc-infra.
