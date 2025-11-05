@@ -60,7 +60,7 @@ add_prefixed_docs(
   - Example usage pattern
 
 ## Testing
-Created `tests/acceptance/test_cards_app.py` to verify cards appear:
+Created `tests/test_cards_app.py` to verify cards appear:
 - Mounts banking at `/banking`
 - Mounts market data at `/market`
 - Expected cards: "Banking" and "Market Data" on landing page
@@ -68,7 +68,7 @@ Created `tests/acceptance/test_cards_app.py` to verify cards appear:
 To test:
 ```bash
 cd fin-infra
-python tests/acceptance/test_cards_app.py
+python tests/test_cards_app.py
 # Visit http://localhost:8000/ and verify cards appear
 ```
 
@@ -77,7 +77,7 @@ python tests/acceptance/test_cards_app.py
 2. `/Users/alikhatami/ide/infra/fin-infra/src/fin_infra/markets/__init__.py` - Added `add_prefixed_docs()` call
 3. `/Users/alikhatami/ide/infra/fin-infra/.github/copilot-instructions.md` - Updated requirements and examples
 4. `/Users/alikhatami/ide/infra/fin-infra/.github/plans.md` - Updated checklist and added explanation section
-5. `/Users/alikhatami/ide/infra/fin-infra/tests/acceptance/test_cards_app.py` - Created test app (NEW FILE)
+5. `/Users/alikhatami/ide/infra/fin-infra/tests/test_cards_app.py` - Created test app (NEW FILE)
 
 ## Impact
 - ✅ Banking capability now has landing page card with links to /banking/docs, /banking/redoc, /banking/openapi.json
