@@ -892,12 +892,32 @@ Completed in follow-up iteration:
 - ✅ Acceptance test with real Alpaca paper trading API - 5 tests (get_account, list_positions, list_orders, submit_and_cancel_order, get_portfolio_history)
 - ✅ docs/brokerage.md documentation - 492 lines comprehensive guide
 
-### 6. Caching, Rate Limits & Retries (cross‑cutting)
-- [~] **REUSE svc-infra**: All caching via `svc_infra.cache` (init_cache, cache_read, cache_write)
-- [~] **REUSE svc-infra**: Rate limiting via `svc_infra.api.fastapi.middleware.rate_limit`
-- [~] **REUSE svc-infra**: HTTP retries via `svc_infra.http` with tenacity/httpx wrappers
-- [ ] Research: Document which svc-infra modules to import for provider rate limiting
-- [ ] Docs: Add examples showing svc-infra cache integration with fin-infra providers
+### 6. Caching, Rate Limits & Retries (cross‑cutting) - ✅ COMPLETE
+**Status**: Documentation-only task completed. All functionality provided by svc-infra.
+
+**Evidence**:
+- **Documentation**: docs/caching-rate-limits-retries.md - 550+ lines comprehensive guide ✅
+- **Cache Integration**: Examples of cache_read decorator with TTL/tags for market quotes, banking accounts, crypto tickers ✅
+- **Rate Limiting**: Middleware setup, endpoint-level limiting, user-specific limits, provider quota tracking ✅
+- **HTTP Retries**: httpx client with exponential backoff, provider-specific strategies, circuit breaker pattern ✅
+- **Complete Example**: Full production setup showing all three patterns integrated ✅
+- **Provider Patterns**: Specific caching TTLs and rate limits for banking (600s), market (300s), crypto (60s), brokerage (no cache for balances) ✅
+
+**svc-infra Modules Used**:
+- `svc_infra.cache`: init_cache, init_cache_async, cache_read, cache_write, invalidate_tags
+- `svc_infra.api.fastapi.middleware.ratelimit`: SimpleRateLimitMiddleware, RateLimiter dependency
+- `svc_infra.api.fastapi.middleware.ratelimit_store`: RedisRateLimitStore, InMemoryRateLimitStore
+- `svc_infra.http`: new_httpx_client, new_async_httpx_client, make_timeout
+- External: tenacity for custom retry logic
+
+**Completed**:
+- ✅ Research svc-infra modules (cache, rate limit, HTTP client APIs) - Documented in guide
+- ✅ Create comprehensive documentation guide - docs/caching-rate-limits-retries.md (550+ lines)
+- ✅ Cache integration examples - Market quotes, banking accounts, crypto tickers, resource-based caching
+- ✅ Rate limiting examples - Application-level, route-specific, user-specific, provider quota tracking
+- ✅ HTTP retry examples - Automatic retries, custom strategies, provider-specific patterns, circuit breaker
+- ✅ Complete integration example - Full production FastAPI app with all three patterns
+- ✅ Provider-specific patterns - TTL recommendations, rate limits, caching rules for all providers
 
 ### 7. Data Normalization & Symbol Resolution (centralized)
 - [ ] **Research (svc-infra check)**:
