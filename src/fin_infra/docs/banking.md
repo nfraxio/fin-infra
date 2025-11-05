@@ -334,18 +334,216 @@ async def my_accounts(user = Depends(get_current_user)):
     return banking.accounts(access_token=access_token)
 ```
 
-### Easy Add Banking (Coming Soon)
+### Easy Add Banking (One-Liner Setup)
 ```python
 from fin_infra.banking import add_banking
 
-# One-liner to mount routes (future feature)
-add_banking(
+# ✅ Mount complete banking API with one call
+banking_provider = add_banking(
     app,
-    provider="teller",
-    mount_path="/api/v1/banking",
-    require_auth=True
+    provider="teller",  # or "plaid" (optional, defaults to env)
+    prefix="/banking"   # default: "/banking"
 )
-# Auto-generates: /accounts, /transactions, /balances, /identity
+
+# Auto-generated routes (using svc-infra dual routers):
+# POST   /banking/link            - Create Plaid Link token or Teller enrollment URL
+# POST   /banking/exchange        - Exchange public token for access token
+# GET    /banking/accounts        - Fetch user's bank accounts
+# GET    /banking/transactions    - Fetch transactions with date range
+# GET    /banking/balances        - Fetch account balances only
+# GET    /banking/identity        - Fetch identity/owner information (PII)
+
+# Landing page card automatically registered at /banking/docs
+# OpenAPI schema available at /banking/openapi.json
+```
+
+**What `add_banking()` Does:**
+- ✅ Initializes banking provider (Teller/Plaid) with environment config
+- ✅ Mounts all 6 banking endpoints with proper request/response models
+- ✅ Uses `public_router()` from svc-infra (supports Bearer token auth)
+- ✅ Registers landing page documentation card
+- ✅ Stores provider instance on `app.state.banking_provider`
+- ✅ Returns provider for programmatic access
+
+## Integration Examples
+
+### Complete Production App (fin-infra + svc-infra)
+```python
+from fastapi import FastAPI, HTTPException, Depends
+from svc_infra.api.fastapi.ease import easy_service_app
+from svc_infra.logging import setup_logging
+from svc_infra.cache import init_cache
+from svc_infra.obs import add_observability
+from svc_infra.api.fastapi.auth.add import add_auth_users
+from svc_infra.api.fastapi.auth.dependencies import get_current_user
+from fin_infra.banking import add_banking, easy_banking
+
+# 1. Setup logging (svc-infra)
+setup_logging(level="INFO", fmt="json")
+
+# 2. Create service app (svc-infra)
+app = easy_service_app(
+    name="FinanceAPI",
+    release="production",
+    api_version="v1"
+)
+
+# 3. Initialize cache (svc-infra)
+init_cache(url="redis://localhost:6379", prefix="finapi", version="v1")
+
+# 4. Add observability (svc-infra)
+shutdown_obs = add_observability(
+    app,
+    metrics_path="/metrics",
+    skip_metric_paths=["/health", "/metrics"]
+)
+
+# 5. Add auth (svc-infra)
+add_auth_users(
+    app,
+    db_url="postgresql://user:pass@localhost/db",
+    secret_key="your-secret-key",
+    prefix="/auth"
+)
+
+# 6. Add banking (fin-infra) - One-liner!
+banking_provider = add_banking(app, provider="teller", prefix="/banking")
+
+# 7. Custom protected routes using banking provider
+from svc_infra.cache import resource
+
+bank_cache = resource("bank", "user_id")
+
+@app.get("/me/accounts")
+@bank_cache.cache_read(ttl=60, suffix="accounts")
+async def my_accounts(user=Depends(get_current_user)):
+    """Get current user's bank accounts (cached 60s)"""
+    if not user.bank_access_token:
+        raise HTTPException(status_code=404, detail="No bank connected")
+    
+    # Use banking provider from app.state or returned instance
+    accounts = banking_provider.accounts(access_token=user.bank_access_token)
+    return {"accounts": accounts}
+
+@app.get("/me/transactions")
+@bank_cache.cache_read(ttl=300, suffix="transactions")  # 5 min cache
+async def my_transactions(
+    user=Depends(get_current_user),
+    start_date: str = "2025-01-01",
+    end_date: str = "2025-01-31"
+):
+    """Get current user's transactions (cached 5min)"""
+    if not user.bank_access_token:
+        raise HTTPException(status_code=404, detail="No bank connected")
+    
+    txns = banking_provider.transactions(
+        access_token=user.bank_access_token,
+        start_date=start_date,
+        end_date=end_date
+    )
+    return {"transactions": txns, "count": len(txns)}
+
+# 8. Cleanup on shutdown
+@app.on_event("shutdown")
+async def shutdown_event():
+    shutdown_obs()  # Cleanup observability resources
+```
+
+**Run it:**
+```bash
+# Set environment variables
+export SQL_URL="postgresql://user:pass@localhost/db"
+export REDIS_URL="redis://localhost:6379"
+export TELLER_CERT_PATH="/path/to/certificate.pem"
+export TELLER_KEY_PATH="/path/to/private_key.key"
+export APP_SECRET_KEY="your-secret-key"
+
+# Start server
+uvicorn main:app --reload
+
+# API available at:
+# - Docs: http://localhost:8000/docs
+# - Banking card: http://localhost:8000/banking/docs
+# - Auth endpoints: http://localhost:8000/auth/*
+# - Banking endpoints: http://localhost:8000/banking/*
+# - Custom endpoints: http://localhost:8000/me/accounts
+```
+
+### Minimal Example (Just Banking)
+```python
+from fastapi import FastAPI
+from fin_infra.banking import add_banking
+
+app = FastAPI(title="Banking API")
+
+# One-liner setup
+add_banking(app, provider="teller")
+
+# That's it! 6 endpoints ready to use:
+# POST /banking/link
+# POST /banking/exchange  
+# GET  /banking/accounts
+# GET  /banking/transactions
+# GET  /banking/balances
+# GET  /banking/identity
+```
+
+### Programmatic Usage (No FastAPI)
+```python
+from fin_infra.banking import easy_banking
+
+# Initialize provider
+banking = easy_banking(provider="teller")
+
+# Use directly in scripts, background jobs, etc.
+access_token = "user_access_token"
+
+accounts = banking.accounts(access_token=access_token)
+for acc in accounts:
+    print(f"{acc.name}: ${acc.balance}")
+
+transactions = banking.transactions(
+    access_token=access_token,
+    start_date="2025-01-01",
+    end_date="2025-01-31"
+)
+print(f"Found {len(transactions)} transactions")
+```
+
+### With Background Jobs (svc-infra)
+```python
+from svc_infra.jobs.easy import easy_jobs
+from fin_infra.banking import easy_banking
+
+# Setup jobs (svc-infra)
+worker, scheduler = easy_jobs(app, redis_url="redis://localhost:6379")
+
+# Banking provider
+banking = easy_banking()
+
+@worker.task
+async def sync_bank_data(user_id: str, access_token: str):
+    """Background job to sync bank data"""
+    accounts = banking.accounts(access_token=access_token)
+    transactions = banking.transactions(
+        access_token=access_token,
+        start_date="2025-01-01",
+        end_date="2025-01-31"
+    )
+    
+    # Store in database (using svc-infra DB utilities)
+    await db.save_accounts(user_id, accounts)
+    await db.save_transactions(user_id, transactions)
+    
+    return {"accounts": len(accounts), "transactions": len(transactions)}
+
+# Schedule daily sync
+@scheduler.scheduled_job("cron", hour=2, minute=0)  # 2 AM daily
+async def daily_bank_sync():
+    """Sync all users' bank data"""
+    users = await db.get_users_with_banks()
+    for user in users:
+        await sync_bank_data.kiq(user.id, user.bank_access_token)
 ```
 
 ## Security & PII

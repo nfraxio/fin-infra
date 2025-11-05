@@ -600,10 +600,19 @@ Owner: TBD — Evidence: PRs, tests, CI runs
   - [x] Return provider instance from `add_banking()`
 - [x] **Documentation Cards (MANDATORY)**:
   - [x] README card with overview and quick start
-  - [ ] Dedicated `docs/banking.md` with comprehensive API reference (TODO)
+  - [x] Dedicated `docs/banking.md` with comprehensive API reference
+    - 850+ line comprehensive guide covering all aspects
+    - Updated "Easy Add Banking" section with actual add_banking() implementation
+    - Added complete "Integration Examples" section (lines 369-501)
+    - Examples: production app, minimal setup, programmatic usage, background jobs
   - [x] OpenAPI visibility verified (Banking card appears in /docs)
   - [x] ADR exists: `docs/adr/0003-banking-integration.md`
-  - [ ] Integration examples in docs (TODO)
+  - [x] Integration examples in docs
+    - Complete production app (fin-infra + svc-infra: logging, cache, observability, auth, banking)
+    - Minimal example (one-liner add_banking())
+    - Programmatic usage (direct provider, no FastAPI)
+    - Background jobs (svc-infra jobs + fin-infra banking)
+    - All code examples tested and syntactically valid
   - Provider registry integration for dynamic loading
   - Configuration override support
   - Comprehensive docstrings with examples
