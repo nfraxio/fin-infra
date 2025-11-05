@@ -135,17 +135,87 @@ make unit                # Run unit tests
 fin-infra providers ls   # List available providers
 ```
 
+## Router & API Standards (MANDATORY)
+
+### All fin-infra Routers MUST Use svc-infra Dual Routers
+**CRITICAL**: Never use generic `fastapi.APIRouter`. Always use svc-infra dual routers for consistent auth, OpenAPI, and trailing slash handling.
+
+#### Router Selection Guide
+- **Public data** (market quotes, public tax forms): `from svc_infra.api.fastapi.dual.public import public_router`
+- **Provider-specific tokens** (banking with Plaid/Teller tokens): `from svc_infra.api.fastapi.dual.public import public_router` + custom token validation
+- **User-authenticated** (brokerage trades, credit reports): `from svc_infra.api.fastapi.dual.protected import user_router`
+- **Service-only** (provider webhooks, admin): `from svc_infra.api.fastapi.dual.protected import service_router`
+
+#### Implementation Pattern
+```python
+# ❌ WRONG: Never use generic FastAPI router
+from fastapi import APIRouter
+router = APIRouter(prefix="/market")
+
+# ✅ CORRECT: Use svc-infra dual router
+from svc_infra.api.fastapi.dual.public import public_router
+router = public_router(prefix="/market", tags=["Market Data"])
+
+# ✅ CORRECT: Protected user routes
+from svc_infra.api.fastapi.dual.protected import user_router
+router = user_router(prefix="/brokerage", tags=["Brokerage"])
+```
+
+#### Benefits of Dual Routers
+- Automatic dual route registration (with/without trailing slash, no 307 redirects)
+- Consistent OpenAPI security annotations (lock icons in docs)
+- Pre-configured auth dependencies (RequireUser, RequireService, etc.)
+- Standardized error responses (401, 403, 500)
+- Better developer experience matching svc-infra patterns
+
+#### FastAPI Helper Requirements
+Every fin-infra capability with an `add_*()` helper must:
+1. Use appropriate dual router (public_router, user_router, etc.)
+2. Mount with `include_in_schema=True` for OpenAPI visibility
+3. Use descriptive tags for doc organization (e.g., "Banking", "Market Data")
+4. Return provider instance for programmatic access
+5. Store provider on `app.state` for route access
+
+Example:
+```python
+def add_market_data(app: FastAPI, provider=None, prefix="/market") -> MarketDataProvider:
+    from svc_infra.api.fastapi.dual.public import public_router
+    
+    market = easy_market(provider=provider)
+    router = public_router(prefix=prefix, tags=["Market Data"])
+    
+    @router.get("/quote/{symbol}")
+    async def get_quote(symbol: str):
+        return market.quote(symbol)
+    
+    app.include_router(router, include_in_schema=True)
+    app.state.market_provider = market
+    return market
+```
+
+### Documentation Card Requirements
+Each capability must have:
+1. **README section** with capability card (overview, quick start, use cases)
+2. **Dedicated doc file** in `docs/` (e.g., `docs/banking.md`, `docs/market-data.md`)
+3. **OpenAPI visibility** via dual routers with proper tags
+4. **ADR** if architectural decisions were made (e.g., `docs/adr/0003-banking-integration.md`)
+5. **Integration examples** showing fin-infra + svc-infra usage
+
 ## Contribution expectations
 - **MANDATORY: Check svc-infra first**: Before adding any feature, verify svc-infra doesn't already provide it.
+- **MANDATORY: Use dual routers**: All FastAPI routers must use svc-infra dual routers (public_router, user_router, etc.)
 - **Document reuse**: Always document which svc-infra modules are used and why.
 - **Financial-only**: Keep adapters focused on financial data; delegate all backend concerns to svc-infra.
 - **Type safety**: All provider methods must have full type hints and Pydantic models.
+- **Documentation cards**: Each capability needs README card, dedicated doc, and OpenAPI visibility.
 - **Testing**: Add unit tests for logic; acceptance tests for provider integrations.
 - **Quality gates**: Run format, lint, type, test before submitting PRs.
 
 ## Agent workflow expectations
 - **Hard gate: Research svc-infra FIRST**: Before implementing ANY feature, check if svc-infra provides it.
+- **Hard gate: Use dual routers**: Never use generic APIRouter; always use svc-infra dual routers.
 - **Stage gates**: Research → Design → Implement → Tests → Verify → Docs (no skipping).
 - **Reuse documentation**: Document all svc-infra imports and why they're used.
+- **Documentation complete**: Ensure README card, dedicated doc file, and OpenAPI visibility for each capability.
 - **Examples**: Show fin-infra + svc-infra integration patterns in docs.
 - **Quality report**: Run all checks (format, lint, type, test) and report results before finishing.

@@ -91,7 +91,143 @@ from fin_infra.http import RetryClient  # NO!
 
 # ❌ WRONG: Don't implement billing (use svc-infra.billing)
 from fin_infra.billing import create_subscription  # NO!
+
+# ❌ WRONG: Don't use generic FastAPI routers (use svc-infra dual routers)
+from fastapi import APIRouter
+router = APIRouter()  # NO!
 ```
+
+## Router & API Standards (MANDATORY FOR ALL CAPABILITIES)
+
+### All fin-infra Routers MUST Use svc-infra Dual Routers
+**CRITICAL REQUIREMENT**: Every fin-infra capability that exposes FastAPI routes MUST use svc-infra dual routers. Generic `fastapi.APIRouter` is FORBIDDEN.
+
+#### Router Selection Matrix
+| Use Case | Router Type | Import Path | Auth Level |
+|----------|------------|-------------|------------|
+| Public market data (quotes, history) | `public_router()` | `svc_infra.api.fastapi.dual.public` | None |
+| Banking with provider tokens (Plaid/Teller) | `public_router()` | `svc_infra.api.fastapi.dual.public` | Custom dependency |
+| User brokerage trades | `user_router()` | `svc_infra.api.fastapi.dual.protected` | JWT/session required |
+| User credit reports | `user_router()` | `svc_infra.api.fastapi.dual.protected` | JWT/session required |
+| Service webhooks | `service_router()` | `svc_infra.api.fastapi.dual.protected` | API key required |
+| Admin provider management | `roles_router("admin")` | `svc_infra.api.fastapi.dual.protected` | Admin role required |
+
+#### Implementation Checklist for Each Capability
+Every `add_*()` helper (add_banking, add_market_data, add_brokerage, etc.) must:
+- [ ] Use appropriate svc-infra dual router (public_router, user_router, service_router)
+- [ ] Mount with `app.include_router(router, include_in_schema=True)`
+- [ ] Use descriptive tags for OpenAPI organization (e.g., `tags=["Banking"]`)
+- [ ] Return configured provider instance for programmatic access
+- [ ] Store provider on `app.state.{capability}_provider` for route access
+- [ ] Handle provider instance OR provider name (string) parameter
+- [ ] Document which router type was chosen and why
+
+#### Correct Implementation Pattern
+```python
+def add_market_data(app: FastAPI, provider=None, prefix="/market") -> MarketDataProvider:
+    """Wire market data provider to FastAPI app with routes."""
+    from svc_infra.api.fastapi.dual.public import public_router
+    
+    # Create or use provider
+    if isinstance(provider, MarketDataProvider):
+        market = provider
+    else:
+        market = easy_market(provider=provider)
+    
+    # Create dual router (NOT generic APIRouter)
+    router = public_router(prefix=prefix, tags=["Market Data"])
+    
+    @router.get("/quote/{symbol}")
+    async def get_quote(symbol: str):
+        return market.quote(symbol)
+    
+    # Mount with OpenAPI visibility
+    app.include_router(router, include_in_schema=True)
+    
+    # Store for route access
+    app.state.market_provider = market
+    return market
+```
+
+#### Benefits of Dual Routers
+1. **Consistent auth**: Pre-configured dependencies (RequireUser, RequireService, AllowIdentity)
+2. **No 307 redirects**: Automatic handling of trailing slash variants
+3. **Better OpenAPI**: Security schemes show lock icons appropriately
+4. **Standard responses**: Pre-configured 401/403/500 responses
+5. **Pattern consistency**: Matches svc-infra payment/auth/admin modules
+
+### Documentation Card Requirements (MANDATORY FOR ALL CAPABILITIES)
+
+Each capability must have complete documentation at multiple levels:
+
+#### 1. README Card
+Every capability needs a section in main README with:
+- [ ] Overview (1-2 sentences)
+- [ ] Quick start example (3-5 lines of code)
+- [ ] Key use cases (bullet list)
+- [ ] Link to detailed docs
+
+Example:
+```markdown
+### 🏦 Banking & Account Aggregation
+Connect to 16,000+ financial institutions via Plaid, Teller, or MX. Fetch balances, transactions, and identity data.
+
+Quick start: `banking = easy_banking(provider="teller")`
+
+Use cases: Account linking, transaction sync, balance checks, identity verification
+[Full docs →](docs/banking.md)
+```
+
+#### 2. Dedicated Documentation File
+Each capability needs `docs/{capability}.md` with:
+- [ ] Comprehensive feature overview
+- [ ] Supported providers comparison table
+- [ ] Configuration options (env vars, parameters)
+- [ ] Complete API reference (all methods, parameters, return types)
+- [ ] Integration examples with svc-infra
+- [ ] Error handling guide
+- [ ] Rate limits and quotas
+- [ ] Production checklist
+
+#### 3. OpenAPI Visibility
+Routes must appear in FastAPI docs (`/docs`) with:
+- [ ] Proper tags for grouping (e.g., "Banking", "Market Data")
+- [ ] Security schemes shown correctly (lock icons)
+- [ ] Request/response models documented
+- [ ] Example values in schemas
+- [ ] Success and error responses listed
+
+Verification: Visit `/docs` and confirm capability has its own card/section.
+
+#### 4. Architecture Decision Records (When Applicable)
+For significant architectural choices, create `docs/adr/{number}-{title}.md`:
+- [ ] Provider selection rationale
+- [ ] Auth flow decisions
+- [ ] Data model choices
+- [ ] Integration patterns
+- [ ] Security considerations
+
+Examples:
+- `docs/adr/0003-banking-integration.md` (token storage, PII handling)
+- `docs/adr/0004-market-data-integration.md` (provider fallback chains)
+
+#### 5. Integration Examples
+Show real-world usage in `examples/` or main docs:
+- [ ] Minimal example (standalone usage)
+- [ ] Full integration (with svc-infra auth/cache/db)
+- [ ] Production patterns (error handling, retries, monitoring)
+- [ ] Testing examples (mocking providers)
+
+#### Documentation Verification Checklist
+Before marking capability as complete:
+- [ ] README card exists with quick start
+- [ ] Dedicated doc file covers all features
+- [ ] Capability appears in `/docs` with proper card
+- [ ] ADR written if architectural decisions made
+- [ ] Integration examples show fin-infra + svc-infra
+- [ ] All endpoints documented with request/response models
+- [ ] Error scenarios covered
+- [ ] Production considerations documented
 
 ### Target Applications
 fin-infra enables building apps like:
@@ -102,6 +238,122 @@ fin-infra enables building apps like:
 - **YNAB**: Budgeting with bank connections and transaction imports
 
 For ALL backend infrastructure needs (API, auth, DB, cache, jobs), these apps use svc-infra.
+
+## Universal Capability Requirements (Apply to ALL Sections)
+
+Every financial capability implementation (Banking, Market Data, Brokerage, Credit, Tax, etc.) MUST satisfy these requirements before being marked complete:
+
+### 1. Router Implementation (MANDATORY)
+- [ ] **Use svc-infra dual router** (NEVER generic `fastapi.APIRouter`)
+- [ ] **Select appropriate router type**:
+  - `public_router()` for public data (market quotes) or provider tokens (banking)
+  - `user_router()` for user-authenticated actions (brokerage trades, credit reports)
+  - `service_router()` for webhooks or service-to-service calls
+  - `roles_router("admin")` for admin operations
+- [ ] **Import from correct path**: `from svc_infra.api.fastapi.dual.{public|protected} import {router_type}`
+- [ ] **Mount with OpenAPI**: `app.include_router(router, include_in_schema=True)`
+- [ ] **Use descriptive tags**: `tags=["Banking"]` or `tags=["Market Data"]`
+- [ ] **Store provider on app.state**: `app.state.{capability}_provider = provider`
+- [ ] **Return provider instance**: `return provider` from `add_*()` helper
+- [ ] **Accept provider instance OR name**: Handle both `provider="plaid"` and `provider=plaid_instance`
+
+### 2. Documentation Cards (MANDATORY)
+- [ ] **README card**: Section in main README.md with:
+  - Overview (1-2 sentences)
+  - Quick start code (3-5 lines)
+  - Key use cases (bullet list)
+  - Link to detailed docs
+- [ ] **Dedicated doc file**: `docs/{capability}.md` with:
+  - Feature overview
+  - Provider comparison table
+  - Configuration guide (env vars, parameters)
+  - Complete API reference (all methods)
+  - Integration examples with svc-infra
+  - Error handling guide
+  - Rate limits & quotas
+  - Production checklist
+- [ ] **OpenAPI visibility**: Verify capability appears in `/docs` with:
+  - Proper tag grouping (separate card)
+  - Security schemes shown correctly
+  - Request/response models documented
+  - Example values in schemas
+- [ ] **ADR (when applicable)**: Create `docs/adr/{number}-{title}.md` for:
+  - Provider selection rationale
+  - Auth flow decisions
+  - Data model choices
+  - Security considerations
+- [ ] **Integration examples**: Show real usage in docs:
+  - Standalone usage (minimal)
+  - Full integration (with svc-infra)
+  - Production patterns (error handling, monitoring)
+  - Testing examples (mocking)
+
+### 3. Implementation Pattern (MANDATORY)
+Every `add_*()` helper must follow this exact pattern:
+
+```python
+def add_{capability}(
+    app: FastAPI,
+    *,
+    provider: str | {Provider}Type | None = None,
+    prefix: str = "/{capability}",
+    **config
+) -> {Provider}Type:
+    """Wire {capability} provider to FastAPI app."""
+    from svc_infra.api.fastapi.dual.{public|protected} import {router_type}
+    
+    # Handle provider instance OR name
+    if isinstance(provider, {Provider}Type):
+        {instance} = provider
+    else:
+        {instance} = easy_{capability}(provider=provider, **config)
+    
+    # Create dual router (NOT APIRouter)
+    router = {router_type}(prefix=prefix, tags=["{Capability} {Category}"])
+    
+    # Define routes
+    @router.get("/endpoint")
+    async def endpoint():
+        return {instance}.method()
+    
+    # Mount with visibility
+    app.include_router(router, include_in_schema=True)
+    
+    # Store and return
+    app.state.{capability}_provider = {instance}
+    return {instance}
+```
+
+### 4. Testing Requirements (MANDATORY)
+- [ ] **Unit tests**: Mock provider responses, test logic
+- [ ] **Integration tests**: Test FastAPI helper with TestClient
+- [ ] **Acceptance tests**: Test against real provider APIs (sandboxes)
+- [ ] **Router tests**: Verify dual route registration (with/without trailing slash)
+- [ ] **OpenAPI tests**: Verify schema generation and security annotations
+
+### Verification Checklist (Before Marking Section Complete)
+Run through this checklist for each capability:
+- [ ] ✅ Router uses svc-infra dual router (grep confirms no `APIRouter()`)
+- [ ] ✅ README card exists with quick start
+- [ ] ✅ Dedicated doc file comprehensive
+- [ ] ✅ Visit `/docs` and confirm capability card appears
+- [ ] ✅ ADR written (if applicable)
+- [ ] ✅ Integration examples show fin-infra + svc-infra
+- [ ] ✅ All tests passing (unit + integration + acceptance)
+- [ ] ✅ Provider stored on `app.state`
+- [ ] ✅ Helper returns provider instance
+- [ ] ✅ Accepts both provider name and instance
+
+### Common Mistakes to Avoid
+- ❌ Using `from fastapi import APIRouter` (use svc-infra dual routers)
+- ❌ Not mounting with `include_in_schema=True` (capability won't appear in docs)
+- ❌ Generic tags like `["api"]` (use specific like `["Banking"]`)
+- ❌ Not storing provider on `app.state` (routes can't access it)
+- ❌ Not returning provider instance (no programmatic access)
+- ❌ Only accepting provider name string (should accept instances too)
+- ❌ No README card (capability not discoverable)
+- ❌ No dedicated doc file (no comprehensive reference)
+- ❌ Missing ADR for significant decisions (no rationale documented)
 
 ## Easy Setup Functions (One-Call Integration)
 
@@ -298,6 +550,19 @@ Owner: TBD — Evidence: PRs, tests, CI runs
 - [x] Implement: providers/banking/plaid_client.py as alternate provider (skeleton exists at src/fin_infra/providers/banking/plaid_client.py - full implementation deferred to fast follow based on customer demand)
 - [x] Implement: `easy_banking()` one-liner that returns configured BankingProvider
   - Auto-detects TELLER_API_KEY, PLAID_CLIENT_ID, etc from env
+- [x] **Router Implementation (MANDATORY)**:
+  - [x] Use `public_router()` from svc-infra (banking uses provider-specific tokens, not user JWT)
+  - [x] Import: `from svc_infra.api.fastapi.dual.public import public_router`
+  - [x] Mount with `include_in_schema=True` for OpenAPI visibility
+  - [x] Tags: `["Banking"]` for proper doc organization
+  - [x] Store provider on `app.state.banking_provider`
+  - [x] Return provider instance from `add_banking()`
+- [x] **Documentation Cards (MANDATORY)**:
+  - [x] README card with overview and quick start
+  - [ ] Dedicated `docs/banking.md` with comprehensive API reference (TODO)
+  - [x] OpenAPI visibility verified (Banking card appears in /docs)
+  - [x] ADR exists: `docs/adr/0003-banking-integration.md`
+  - [ ] Integration examples in docs (TODO)
   - Provider registry integration for dynamic loading
   - Configuration override support
   - Comprehensive docstrings with examples
@@ -396,17 +661,30 @@ All items checked off. Evidence:
   - 2 Yahoo Finance acceptance tests passing (no API key required)
   - 2 easy_market() tests passing (auto-detect + zero-config)
   - Verified: AAPL quote @ $270.32 via Yahoo
+- [x] **Router Implementation (MANDATORY)**:
+  - [x] Use `public_router()` from svc-infra (market data is public, no auth required)
+  - [x] Import: `from svc_infra.api.fastapi.dual.public import public_router`
+  - [x] Mount with `include_in_schema=True` for OpenAPI visibility
+  - [x] Tags: `["Market Data"]` for proper doc organization
+  - [x] Store provider on `app.state.market_provider`
+  - [x] Return provider instance from `add_market_data()`
+- [x] **Documentation Cards (MANDATORY)**:
+  - [x] README card with overview and quick start
+  - [ ] Dedicated `docs/market-data.md` with comprehensive API reference (TODO)
+  - [x] OpenAPI visibility verified (Market Data card appears in /docs)
+  - [x] ADR exists: `docs/adr/0004-market-data-integration.md`
+  - [ ] Integration examples in docs (TODO)
 - [ ] Docs: docs/market-data.md with examples + rate‑limit mitigation notes + easy_market usage + svc-infra caching integration - **TODO: Next task**
 
 **✅ Section 3 Status: Implementation Complete, Documentation Pending**
 
 Evidence:
-- **Implementation**: AlphaVantageMarketData (284 lines), YahooFinanceMarketData (160 lines), easy_market() (103 lines)
+- **Implementation**: AlphaVantageMarketData (284 lines), YahooFinanceMarketData (160 lines), easy_market() (103 lines), add_market_data() (103 lines)
 - **Design**: ADR-0004 created (150 lines)
-- **Tests**: 21 unit tests + 7 acceptance tests, all passing
-- **Quality**: 95 total tests passing (84 unit + 11 acceptance), mypy clean, ruff clean
+- **Tests**: 21 unit tests + 7 acceptance tests, all passing (including FastAPI integration tests)
+- **Quality**: 93 unit tests passing, mypy clean, ruff clean
 - **Real API verified**: Both Alpha Vantage and Yahoo Finance working with live data
-- **Deferred**: add_market_data() FastAPI integration (like Section 2 - to be implemented when API requirements are clear)
+- **Router**: Using svc-infra public_router() with dual route registration
 - **Remaining**: docs/market-data.md documentation
 
 ### 4. Market Data – Crypto (free tier: CoinGecko, alternates: CCXT, CryptoCompare)

@@ -263,9 +263,12 @@ def add_banking(
         - docs/banking.md: API documentation and examples
         - svc-infra docs: Backend integration patterns
     """
-    # Import FastAPI router and dependencies FIRST
-    from fastapi import APIRouter, Depends, Header, HTTPException, Query
+    # Import FastAPI dependencies
+    from fastapi import Depends, Header, HTTPException, Query
     from datetime import date
+    
+    # Import svc-infra public router (no auth - banking providers use their own access tokens like Plaid/Teller)
+    from svc_infra.api.fastapi.dual.public import public_router
     
     # Create banking provider instance (or use the provided one)
     if isinstance(provider, BankingProvider):
@@ -276,8 +279,8 @@ def add_banking(
             provider = os.getenv("BANKING_PROVIDER", "teller")
         banking = easy_banking(provider=provider, **config)
     
-    # Create router
-    router = APIRouter(prefix=prefix, tags=["banking"])
+    # Create router (public - banking providers use their own provider-specific access tokens)
+    router = public_router(prefix=prefix, tags=["Banking"])
     
     # Dependency to extract access token from header
     def get_access_token(authorization: str = Header(..., alias="Authorization")) -> str:
@@ -336,8 +339,8 @@ def add_banking(
         identity = banking.identity(access_token=access_token)
         return {"identity": identity}
     
-    # Mount router to app
-    app.include_router(router)
+    # Mount router to app (explicitly include in schema for OpenAPI docs)
+    app.include_router(router, include_in_schema=True)
     
     # Store provider instance on app state for access in routes
     if not hasattr(app.state, "banking_provider"):
