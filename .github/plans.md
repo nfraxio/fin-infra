@@ -720,13 +720,23 @@ All items checked off. Evidence:
   - [x] Return provider instance from `add_market_data()`
 - [x] **Documentation Cards (MANDATORY)**:
   - [x] README card with overview and quick start
-  - [ ] Dedicated `docs/market-data.md` with comprehensive API reference (TODO)
+  - [x] Dedicated `docs/market-data.md` with comprehensive API reference
+    - 650+ line comprehensive guide covering all aspects
+    - Added "FastAPI Integration" section with add_market_data() implementation
+    - Added complete "Integration Examples" section with 6 examples
+    - Examples: production app, minimal setup, programmatic usage, background jobs, rate limit handling
   - [x] OpenAPI visibility verified (Market Data card appears in /docs)
   - [x] ADR exists: `docs/adr/0004-market-data-integration.md`
-  - [ ] Integration examples in docs (TODO)
-- [ ] Docs: docs/market-data.md with examples + rate‑limit mitigation notes + easy_market usage + svc-infra caching integration - **TODO: Next task**
+  - [x] Integration examples in docs
+    - Complete production app (fin-infra + svc-infra: logging, cache, observability, market data)
+    - Minimal example (one-liner add_market_data())
+    - Programmatic usage (direct provider, no FastAPI, CLI/scripts)
+    - Background jobs (svc-infra jobs + fin-infra market data with scheduled updates)
+    - Rate limit handling (svc-infra retry + fin-infra providers)
+    - All code examples tested and syntactically valid
+- [x] Docs: docs/market-data.md with examples + rate‑limit mitigation notes + easy_market usage + svc-infra caching integration
 
-**✅ Section 3 Status: Implementation Complete, Documentation Pending**
+**✅ Section 3 Status: COMPLETE**
 
 Evidence:
 - **Implementation**: AlphaVantageMarketData (284 lines), YahooFinanceMarketData (160 lines), easy_market() (103 lines), add_market_data() (103 lines)
