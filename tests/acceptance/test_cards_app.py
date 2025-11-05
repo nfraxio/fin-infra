@@ -4,7 +4,7 @@ from fin_infra.banking import add_banking
 from fin_infra.markets import add_market_data
 
 # Create app
-app = easy_service_app(name="FinInfraTest")
+app = easy_service_app(name="FinInfraTest", release="test")
 
 # Add banking capability (should create card at /)
 banking = add_banking(app, provider="teller")
