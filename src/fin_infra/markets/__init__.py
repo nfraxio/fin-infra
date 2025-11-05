@@ -180,8 +180,11 @@ def add_market_data(
         - docs/market-data.md: API documentation and examples
         - docs/adr/0004-market-data-integration.md: Architecture decisions
     """
-    from fastapi import APIRouter, HTTPException, Query
+    from fastapi import HTTPException, Query
     from typing import TYPE_CHECKING, Optional
+    
+    # Import svc-infra public router (no auth required for market data)
+    from svc_infra.api.fastapi.dual.public import public_router
     
     if TYPE_CHECKING:
         from fastapi import FastAPI
@@ -192,8 +195,8 @@ def add_market_data(
     else:
         market = easy_market(provider=provider, **config)
     
-    # Create router
-    router = APIRouter(prefix=prefix, tags=["market"])
+    # Create router (public - no auth required)
+    router = public_router(prefix=prefix, tags=["Market Data"])
     
     # Routes
     @router.get("/quote/{symbol}")
@@ -248,8 +251,8 @@ def add_market_data(
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
     
-    # Mount router to app
-    app.include_router(router)
+    # Mount router to app (explicitly include in schema for OpenAPI docs)
+    app.include_router(router, include_in_schema=True)
     
     # Store provider instance on app state for access in routes
     if not hasattr(app.state, "market_provider"):
