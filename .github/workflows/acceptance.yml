@@ -89,6 +89,39 @@ jobs:
           name: sbom-cdx-${{ matrix.profile }}
           path: sbom-${{ matrix.profile }}.cdx.json
 
+      # Security scanning with Trivy (matching svc-infra pattern)
+      - name: Scan python:3.12-slim with Trivy (CRITICAL gate)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'image'
+          image-ref: 'python:3.12-slim'
+          format: 'table'
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
+          ignore-unfixed: true
+          scanners: 'vuln'
+          skip-files: '/usr/local/bin/gosu'
+          trivyignores: '.trivyignore'
+          exit-code: '1'
+        continue-on-error: false
+
+      - name: Scan redis:7-alpine with Trivy (CRITICAL gate)
+        if: matrix.profile == 'redis'
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'image'
+          image-ref: 'redis:7-alpine'
+          format: 'table'
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
+          ignore-unfixed: true
+          scanners: 'vuln'
+          skip-files: '/usr/local/bin/gosu'
+          trivyignores: '.trivyignore'
+          exit-code: '1'
+        continue-on-error: false
+
+      # Provenance: keyless sign the SBOM artifact
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
 
