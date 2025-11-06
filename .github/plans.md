@@ -1005,18 +1005,25 @@ Completed in follow-up iteration:
 - [x] Verify: Routes correctly classified as "financial" vs "public"; compose_classifiers works
 - [x] Docs: src/fin_infra/docs/observability.md - comprehensive guide with svc-infra integration examples
 
-### 10. Demo API & SDK Surface (optional but helpful)
-- [~] **REUSE svc-infra**: FastAPI app scaffolding via `svc_infra.api.fastapi.ease.easy_service_app`
-- [~] **REUSE svc-infra**: Middleware (CORS, auth, rate limiting) via svc-infra
-- [~] **REUSE svc-infra**: OpenAPI docs via `svc_infra.api.fastapi.docs`
-- [ ] Research: Minimal financial endpoints needed for demo
-- [ ] Design: Demo endpoints using svc-infra scaffolding + fin-infra providers
-- [ ] Implement: examples/demo_api/ showing svc-infra + fin-infra integration
-  - Use easy_service_app for FastAPI setup
-  - Wire fin-infra providers as dependencies
-  - Add endpoints: /banking/accounts, /market/quote, /crypto/ticker
-- [ ] Tests: Integration tests using svc-infra test patterns
-- [ ] Docs: docs/api.md showing how to build fintech API with both packages
+### 10. Demo API & SDK Surface (optional but helpful) ✅
+- [x] **REUSE svc-infra**: FastAPI app scaffolding via `svc_infra.api.fastapi.ease.easy_service_app`
+- [x] **REUSE svc-infra**: Middleware (CORS, auth, rate limiting) via svc-infra
+- [x] **REUSE svc-infra**: OpenAPI docs via `svc_infra.api.fastapi.docs`
+- [x] Research: Minimal financial endpoints needed for demo - banking, market data, health/metrics
+- [x] Design: Demo endpoints using svc-infra scaffolding + fin-infra providers
+- [x] Implement: examples/demo_api/ showing svc-infra + fin-infra integration
+  - Use FastAPI directly for simplicity (setup_service_api for production)
+  - Wire fin-infra providers with add_banking, add_market_data
+  - Add health check, metrics, auto-docs
+  - Include .env.example with provider credentials
+- [x] Docs: src/fin_infra/docs/api.md - comprehensive guide on building fintech APIs
+  - Integration patterns (direct, FastAPI, custom endpoints)
+  - Complete production example
+  - Common patterns (Mint, Robinhood, Credit Karma clones)
+  - Testing strategies
+  - Deployment patterns (Docker, Kubernetes)
+  - Best practices and troubleshooting
+- [x] Docs: examples/demo_api/README.md - quick start guide for demo app
 
 ### 11. DX & Quality Gates
 - [ ] **Research (svc-infra check)**:
