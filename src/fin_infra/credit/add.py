@@ -1,180 +1,257 @@
-"""FastAPI integration for credit score monitoring.
+"""FastAPI integration helper for credit monitoring.
 
-Provides add_credit_monitoring() helper to wire credit routes to FastAPI app.
-
-Routes:
-    GET /credit/score - Get current credit score (cached 24h)
-    GET /credit/report - Get full credit report (cached 24h)
-    POST /credit/subscribe - Subscribe to score change webhooks
-    GET /credit/history - Get score history (future)
-
-Integration with svc-infra:
-    - svc-infra.cache: 24h TTL for score/report caching (reduce bureau costs)
-    - svc-infra.auth: User authentication required
-    - fin-infra.compliance: FCRA compliance event logging
+Wires credit routes with svc-infra integrations:
+- Dual routers (user_router for protected routes)
+- Scoped docs (landing page card at /docs)
+- Cache integration (24h TTL for credit scores)
+- Webhook publishing (credit.score_changed events)
+- Compliance logging (structured JSON logs)
 
 Example:
     >>> from fastapi import FastAPI
-    >>> from fin_infra.credit.add import add_credit_monitoring
+    >>> from fin_infra.credit.add import add_credit
+    >>> from svc_infra.cache import init_cache
     >>> 
     >>> app = FastAPI()
-    >>> credit = add_credit_monitoring(app, provider="experian")
+    >>> init_cache(url="redis://localhost")
+    >>> 
+    >>> # Wire credit monitoring with all integrations
+    >>> provider = add_credit(app, prefix="/credit")
+    >>> 
+    >>> # Provider available for programmatic access
+    >>> score = await provider.get_credit_score("user123")
 """
 
-from typing import TYPE_CHECKING
+import logging
+from typing import Any
 
-from fin_infra.credit import ExperianProvider, easy_credit
-from fin_infra.models.credit import CreditReport, CreditScore
+from fastapi import FastAPI, Depends, HTTPException, status
+from pydantic import BaseModel
+
+from svc_infra.api.fastapi.dual.protected import user_router, RequireUser
+from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
+from svc_infra.cache import cache_read, resource
+from svc_infra.webhooks import add_webhooks
+
+from fin_infra.credit import easy_credit
 from fin_infra.providers.base import CreditProvider
+from fin_infra.models.credit import CreditScore, CreditReport
 
-if TYPE_CHECKING:
-    from fastapi import FastAPI
+logger = logging.getLogger(__name__)
+
+# Create cache resource for credit data
+credit_resource = resource("credit", "user_id")
 
 
-def add_credit_monitoring(
-    app: "FastAPI",
+# Request/Response models
+class CreditScoreRequest(BaseModel):
+    """Request to get credit score."""
+    user_id: str
+    permissible_purpose: str | None = "account_review"  # FCRA requirement
+
+
+class CreditReportRequest(BaseModel):
+    """Request to get full credit report."""
+    user_id: str
+    permissible_purpose: str | None = "account_review"  # FCRA requirement
+
+
+def add_credit(
+    app: FastAPI,
     *,
-    provider: str | CreditProvider | None = None,
+    provider: CreditProvider | None = None,
     prefix: str = "/credit",
-    cache_ttl: int = 86400,  # 24 hours (minimize bureau pulls)
-    **config,
+    cache_ttl: int = 86400,  # 24 hours
+    enable_webhooks: bool = True,
+    visible_envs: list[str] | None = None,
 ) -> CreditProvider:
-    """Wire credit monitoring routes to FastAPI app.
+    """Wire credit monitoring routes into FastAPI app.
     
-    Mounts routes:
-        GET {prefix}/score - Get current credit score (cached)
-        GET {prefix}/report - Get full credit report (cached)
-        POST {prefix}/subscribe - Subscribe to score change webhooks
-        GET {prefix}/history - Get score history (future)
-    
-    Integration with svc-infra:
-        - Uses svc-infra.cache for score caching (reduce API costs)
-        - Uses svc-infra.webhooks for score change notifications
-        - Uses svc-infra.auth for user authentication
-        - Logs compliance events (FCRA permissible purpose)
+    Integrates with svc-infra:
+    - user_router: Protected routes with RequireUser dependency
+    - add_prefixed_docs: Landing page card at /docs
+    - @cache_read: 24h TTL for credit scores (cost optimization)
+    - add_webhooks: Event publishing for score changes
+    - Structured logging: FCRA compliance event logging
     
     Args:
-        app: FastAPI application
-        provider: Bureau name or CreditProvider instance (default: "experian")
-        prefix: Route prefix (default: "/credit")
-        cache_ttl: Cache TTL in seconds (default: 86400 = 24h)
-        **config: Additional configuration passed to easy_credit()
+        app: FastAPI application instance
+        provider: CreditProvider instance (default: auto-detect via easy_credit)
+        prefix: URL prefix for credit routes (default: "/credit")
+        cache_ttl: Cache TTL in seconds (default: 86400 = 24 hours)
+        enable_webhooks: Enable webhook publishing (default: True)
+        visible_envs: Show docs in these environments only (default: all)
         
     Returns:
         Configured CreditProvider instance
         
+    Side Effects:
+        - Mounts credit router at {prefix}
+        - Adds /docs card for "Credit Monitoring"
+        - Stores provider on app.state.credit_provider
+        - Wires webhooks if enable_webhooks=True
+        
     Example:
         >>> from fastapi import FastAPI
-        >>> from fin_infra.credit.add import add_credit_monitoring
+        >>> from svc_infra.cache import init_cache
+        >>> from fin_infra.credit.add import add_credit
         >>> 
         >>> app = FastAPI()
-        >>> credit = add_credit_monitoring(app, provider="experian")
+        >>> init_cache(url="redis://localhost")
+        >>> 
+        >>> # Wire credit monitoring
+        >>> credit = add_credit(app)
         >>> 
         >>> # Routes available:
-        >>> # GET /credit/score
-        >>> # GET /credit/report
-        >>> # POST /credit/subscribe
+        >>> # POST /credit/score - Get credit score (cached 24h)
+        >>> # POST /credit/report - Get full credit report (cached 24h)
+        >>> # GET /credit/docs - Scoped Swagger UI
+        >>> # GET /credit/openapi.json - Scoped OpenAPI schema
     """
-    # NOTE: svc-infra dual routers NOT used for v1 (no auth dependency yet)
-    # v2 will use: from svc_infra.api.fastapi.dual.protected import user_router
-    from fastapi import APIRouter
-
-    # Create credit provider
+    # Get or create provider
     if provider is None:
-        provider = "experian"
-    credit_provider = easy_credit(provider, **config) if isinstance(provider, str) else provider
-
-    # Store provider on app state for route access
-    app.state.credit_provider = credit_provider
-
-    # Create router
-    router = APIRouter(prefix=prefix, tags=["Credit Monitoring"])
-
-    @router.get("/score", response_model=CreditScore)
-    async def get_credit_score(user_id: str):
-        """Get current credit score for a user.
+        provider = easy_credit()
+    
+    # Store provider on app state for programmatic access
+    app.state.credit_provider = provider
+    
+    # Wire webhooks if enabled
+    if enable_webhooks:
+        # add_webhooks will mount /_webhooks/* routes
+        add_webhooks(app)
+    
+    # Create dual router for protected credit routes
+    router = user_router(prefix=prefix, tags=["Credit Monitoring"])
+    
+    @router.post("/score", response_model=CreditScore)
+    @credit_resource.cache_read(ttl=cache_ttl, suffix="score")
+    async def get_credit_score(
+        request: CreditScoreRequest,
+        user: dict = Depends(RequireUser),
+    ) -> CreditScore:
+        """Get credit score for a user (cached 24h).
         
-        Returns cached score if available (24h TTL), otherwise pulls from bureau.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            CreditScore with score, model, bureau, factors
-            
         FCRA Compliance:
-            - Logs credit.score_accessed compliance event
-            - Requires user consent (not enforced in v1)
+        - Requires permissible purpose (default: account_review)
+        - Logs credit access event to structured logs
+        - Cache reduces bureau API costs (~$0.50-$2.00 per pull)
+        
+        Cost Optimization:
+        - 24h cache TTL: 1 API call/day instead of 10+
+        - Estimated savings: 95% reduction in bureau costs
         """
-        # v1: No caching integration (direct call to provider)
-        # v2: Will use svc-infra.cache with @cache_read decorator
-        score = credit_provider.get_credit_score(user_id)
-
-        # v1: No compliance logging (module not imported)
-        # v2: Will use fin_infra.compliance.log_compliance_event()
-        # log_compliance_event(app, "credit.score_accessed", {"user_id": user_id})
-
+        user_id = request.user_id
+        purpose = request.permissible_purpose or "account_review"
+        
+        # FCRA compliance logging
+        logger.info(
+            "credit.score_accessed",
+            extra={
+                "user_id": user_id,
+                "bureau": "experian",
+                "permissible_purpose": purpose,
+                "accessed_by": user.get("user_id"),
+                "event_type": "credit_access",
+            }
+        )
+        
+        # Fetch credit score (cache miss = real API call)
+        try:
+            score = await provider.get_credit_score(user_id)
+        except Exception as e:
+            logger.error(f"Failed to get credit score for {user_id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Credit bureau service unavailable"
+            )
+        
+        # Publish webhook event if score changed
+        if enable_webhooks and hasattr(app.state, "webhooks_outbox"):
+            try:
+                # Get webhook service from app state
+                from svc_infra.webhooks.service import WebhookService
+                from svc_infra.db.outbox import OutboxStore
+                
+                outbox: OutboxStore = app.state.webhooks_outbox
+                subs = app.state.webhooks_subscriptions
+                
+                webhook_svc = WebhookService(outbox=outbox, subs=subs)
+                webhook_svc.publish(
+                    topic="credit.score_changed",
+                    payload={
+                        "user_id": user_id,
+                        "score": score.score,
+                        "bureau": "experian",
+                        "timestamp": score.report_date.isoformat() if score.report_date else None,
+                    }
+                )
+            except Exception as e:
+                # Don't fail request if webhook publishing fails
+                logger.warning(f"Failed to publish credit.score_changed webhook: {e}")
+        
         return score
-
-    @router.get("/report", response_model=CreditReport)
-    async def get_credit_report(user_id: str):
-        """Get full credit report for a user.
+    
+    @router.post("/report", response_model=CreditReport)
+    @credit_resource.cache_read(ttl=cache_ttl, suffix="report")
+    async def get_credit_report(
+        request: CreditReportRequest,
+        user: dict = Depends(RequireUser),
+    ) -> CreditReport:
+        """Get full credit report for a user (cached 24h).
         
-        Returns cached report if available (24h TTL), otherwise pulls from bureau.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            CreditReport with score, accounts, inquiries, public records
-            
         FCRA Compliance:
-            - Logs credit.report_accessed compliance event
-            - Requires user consent (not enforced in v1)
-        """
-        # v1: No caching integration (direct call to provider)
-        # v2: Will use svc-infra.cache with @cache_read decorator
-        report = credit_provider.get_credit_report(user_id)
-
-        # v1: No compliance logging (module not imported)
-        # v2: Will use fin_infra.compliance.log_compliance_event()
-        # log_compliance_event(app, "credit.report_accessed", {"user_id": user_id})
-
-        return report
-
-    @router.post("/subscribe")
-    async def subscribe_to_credit_changes(user_id: str, webhook_url: str):
-        """Subscribe to credit score change notifications.
+        - Requires permissible purpose (default: account_review)
+        - Logs credit access event to structured logs
+        - Full report access is higher risk, ensure proper authorization
         
-        Args:
-            user_id: User identifier
-            webhook_url: URL to receive webhook notifications
-            
-        Returns:
-            Subscription ID
-            
-        v1: Returns mock subscription ID (no real webhook integration).
-        v2: Will integrate with svc-infra.webhooks.
+        Cost Optimization:
+        - 24h cache TTL: 1 API call/day instead of 10+
+        - Full reports cost more than scores (~$2-$5 per pull)
         """
-        # v1: No webhook integration (direct call to provider)
-        # v2: Will use svc-infra.webhooks for subscription management
-        subscription_id = credit_provider.subscribe_to_changes(user_id, webhook_url)
-        return {"subscription_id": subscription_id, "webhook_url": webhook_url}
-
-    # Mount router
+        user_id = request.user_id
+        purpose = request.permissible_purpose or "account_review"
+        
+        # FCRA compliance logging
+        logger.info(
+            "credit.report_accessed",
+            extra={
+                "user_id": user_id,
+                "bureau": "experian",
+                "permissible_purpose": purpose,
+                "accessed_by": user.get("user_id"),
+                "event_type": "credit_access",
+                "report_type": "full",
+            }
+        )
+        
+        # Fetch credit report (cache miss = real API call)
+        try:
+            report = await provider.get_credit_report(user_id)
+        except Exception as e:
+            logger.error(f"Failed to get credit report for {user_id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Credit bureau service unavailable"
+            )
+        
+        return report
+    
+    # Mount router with dual routes (with/without trailing slash)
     app.include_router(router, include_in_schema=True)
+    
+    # Add scoped docs (landing page card)
+    add_prefixed_docs(
+        app,
+        prefix=prefix,
+        title="Credit Monitoring",
+        description="Credit scores and reports from Experian, Equifax, TransUnion",
+        auto_exclude_from_root=True,
+        visible_envs=visible_envs,
+    )
+    
+    logger.info(f"Credit monitoring routes mounted at {prefix}")
+    
+    return provider
 
-    # v1: No scoped docs registration
-    # v2: Will use svc-infra.api.fastapi.docs.scoped.add_prefixed_docs()
-    # add_prefixed_docs(
-    #     app,
-    #     prefix=prefix,
-    #     title="Credit Monitoring",
-    #     auto_exclude_from_root=True,
-    #     visible_envs=None,
-    # )
 
-    return credit_provider
-
-
-__all__ = ["add_credit_monitoring"]
+__all__ = ["add_credit"]

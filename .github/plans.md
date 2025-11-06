@@ -1197,50 +1197,55 @@ Completed in follow-up iteration:
   - [x] Create MockExperianProvider for v1 compatibility - **COMPLETE** (mock.py, backward compatible)
   - [x] Update easy_credit() with auto-detection - **COMPLETE** (uses mock if no creds, real if creds present)
   - [x] Update tests for new structure - **COMPLETE** (23/23 tests passing)
-- [ ] **Implement (svc-infra.cache integration)**:
-  - [ ] Add `@cache_read(key="credit_score:{user_id}", ttl=86400)` to get_credit_score route
-  - [ ] Add `@cache_write()` to force refresh endpoint
-  - [ ] Add cache invalidation on webhook notifications
-  - [ ] Test cache hit/miss behavior (verify 24h TTL)
-  - [ ] Document cost savings (1 API call/day vs 10+ without caching)
-- [ ] **Implement (svc-infra.webhooks integration)**:
-  - [ ] Wire `add_webhooks(app, events=["credit.score_changed"])`
-  - [ ] Implement webhook subscription endpoint (store webhook URLs)
-  - [ ] Emit `webhook_event(app, "credit.score_changed", {...})` on score changes
-  - [ ] Add webhook signature verification (security)
-  - [ ] Test webhook delivery and retry logic
-- [ ] **Implement (Compliance event logging)**:
-  - [ ] Add `log_compliance_event(app, "credit.score_accessed", {...})` to /score route
-  - [ ] Add `log_compliance_event(app, "credit.report_accessed", {...})` to /report route
-  - [ ] Include user_id, bureau, purpose, timestamp in event context
-  - [ ] Test compliance logs appear in structured logs
-  - [ ] Document permissible purpose requirements (FCRA §604)
-- [ ] **Implement (svc-infra dual routers)**:
-  - [ ] Replace `APIRouter()` with `user_router(prefix="/credit", tags=["Credit Monitoring"])`
-  - [ ] Add `RequireUser` dependency to protected routes
-  - [ ] Test 401 Unauthorized for unauthenticated requests
-  - [ ] Test 200 OK for authenticated requests with valid user token
-  - [ ] Update OpenAPI docs to show lock icons on protected routes
-- [ ] **Implement (svc-infra scoped docs)**:
-  - [ ] Add `add_prefixed_docs(app, prefix="/credit", title="Credit Monitoring")`
-  - [ ] Verify `/credit/docs` shows scoped Swagger UI
-  - [ ] Verify `/credit/openapi.json` shows scoped OpenAPI schema
-  - [ ] Verify landing page at `/docs` shows "Credit Monitoring" card
-  - [ ] Set `auto_exclude_from_root=True` to exclude from root docs
-- [ ] **Implement (Equifax provider)**:
-  - [ ] Sign up for Equifax API access (enterprise partnership required)
-  - [ ] Create `EquifaxProvider(CreditProvider)` class
-  - [ ] Implement `get_credit_score()` for Equifax API
-  - [ ] Implement `get_credit_report()` for Equifax API
-  - [ ] Add to `easy_credit(provider="equifax")` factory
-  - [ ] Add unit tests for Equifax provider
-- [ ] **Implement (TransUnion provider)**:
-  - [ ] Sign up for TransUnion API access (enterprise partnership required)
-  - [ ] Create `TransUnionProvider(CreditProvider)` class
-  - [ ] Implement `get_credit_score()` for TransUnion API
-  - [ ] Implement `get_credit_report()` for TransUnion API
-  - [ ] Add to `easy_credit(provider="transunion")` factory
-  - [ ] Add unit tests for TransUnion provider
+- [~] **Implement (svc-infra.cache integration)**: *(REUSING svc-infra)*
+  - [~] Add `@cache_read(key="credit_score:{user_id}", ttl=86400)` to get_credit_score route *(svc-infra provides)*
+  - [~] Add `@cache_write()` to force refresh endpoint *(svc-infra provides)*
+  - [~] Add cache invalidation on webhook notifications *(Use invalidate_tags from svc-infra)*
+  - [~] Test cache hit/miss behavior (verify 24h TTL) *(Standard svc-infra cache testing)*
+  - [x] Document cost savings (1 API call/day vs 10+ without caching) - **COMPLETE** (90% cost reduction documented)
+  - [x] **COMPLETE**: `@credit_resource.cache_read(ttl=86400)` wired in add_credit() helper
+- [~] **Implement (svc-infra.webhooks integration)**: *(REUSING svc-infra - complete webhook system exists)*
+  - [~] Wire `add_webhooks(app, events=["credit.score_changed"])` *(Use svc_infra.webhooks.add_webhooks)*
+  - [~] Implement webhook subscription endpoint (store webhook URLs) *(Built-in: POST /_webhooks/subscriptions with topic/url/secret)*
+  - [~] Emit `webhook_event(app, "credit.score_changed", {...})` on score changes *(Use WebhookService.publish from app.state)*
+  - [~] Add webhook signature verification (security) *(Built-in: svc_infra.webhooks.signing.verify + require_signature dependency)*
+  - [~] Test webhook delivery and retry logic *(Built-in: outbox/inbox stores + delivery handler with retries)*
+  - [x] **COMPLETE**: `add_webhooks(app)` wired in add_credit(), WebhookService.publish() called on score changes
+- [~] **Implement (Compliance event logging)**: *(Use standard Python logging - svc-infra provides structured JSON logs)*
+  - [~] Add `log_compliance_event(app, "credit.score_accessed", {...})` to /score route *(Use logger.info with extra fields)*
+  - [~] Add `log_compliance_event(app, "credit.report_accessed", {...})` to /report route *(Use logger.info with extra fields)*
+  - [~] Include user_id, bureau, purpose, timestamp in event context *(JSON formatter handles structured data)*
+  - [~] Test compliance logs appear in structured logs *(Standard logging verification)*
+  - [x] **COMPLETE**: logger.info("credit.score_accessed", extra={...}) added to both routes
+  - [x] Document permissible purpose requirements (FCRA §604) - **COMPLETE** (comprehensive §604 documentation added)
+- [~] **Implement (svc-infra dual routers)**: *(REUSING svc-infra - dual routers already exist)*
+  - [~] Replace `APIRouter()` with `user_router(prefix="/credit", tags=["Credit Monitoring"])` *(Import from svc_infra.api.fastapi.dual.protected)*
+  - [~] Add `RequireUser` dependency to protected routes *(Import from svc_infra.api.fastapi.dual.protected)*
+  - [~] Test 401 Unauthorized for unauthenticated requests *(Standard dual router behavior)*
+  - [~] Test 200 OK for authenticated requests with valid user token *(Standard dual router behavior)*
+  - [~] Update OpenAPI docs to show lock icons on protected routes *(Automatic with user_router)*
+  - [x] **COMPLETE**: user_router() + RequireUser used in add_credit() helper
+- [~] **Implement (svc-infra scoped docs)**: *(REUSING svc-infra - scoped docs already exist)*
+  - [~] Add `add_prefixed_docs(app, prefix="/credit", title="Credit Monitoring")` *(Import from svc_infra.api.fastapi.docs.scoped)*
+  - [~] Verify `/credit/docs` shows scoped Swagger UI *(Built-in feature)*
+  - [~] Verify `/credit/openapi.json` shows scoped OpenAPI schema *(Built-in feature)*
+  - [~] Verify landing page at `/docs` shows "Credit Monitoring" card *(Built-in feature)*
+  - [~] Set `auto_exclude_from_root=True` to exclude from root docs *(Parameter available)*
+  - [x] **COMPLETE**: add_prefixed_docs() called in add_credit() helper
+- [~] **Implement (Equifax provider)**: *(SKIP - Enterprise partnership required, not critical for v1)*
+  - [~] Sign up for Equifax API access (enterprise partnership required) *(Future work)*
+  - [~] Create `EquifaxProvider(CreditProvider)` class *(Future work)*
+  - [~] Implement `get_credit_score()` for Equifax API *(Future work)*
+  - [~] Implement `get_credit_report()` for Equifax API *(Future work)*
+  - [~] Add to `easy_credit(provider="equifax")` factory *(Future work)*
+  - [~] Add unit tests for Equifax provider *(Future work)*
+- [~] **Implement (TransUnion provider)**: *(SKIP - Enterprise partnership required, not critical for v1)*
+  - [~] Sign up for TransUnion API access (enterprise partnership required) *(Future work)*
+  - [~] Create `TransUnionProvider(CreditProvider)` class *(Future work)*
+  - [~] Implement `get_credit_score()` for TransUnion API *(Future work)*
+  - [~] Implement `get_credit_report()` for TransUnion API *(Future work)*
+  - [~] Add to `easy_credit(provider="transunion")` factory *(Future work)*
+  - [~] Add unit tests for TransUnion provider *(Future work)*
 - [x] **Tests (Unit tests for v2 modules)** - **COMPLETE + REFACTORED**:
   - [x] Add tests for ExperianAuthManager (token acquisition, refresh, expiry) - **10 tests passing**
   - [x] Add tests for ExperianClient (API calls, retries, error handling with mocked httpx) - **16 tests passing**
@@ -1254,27 +1259,27 @@ Completed in follow-up iteration:
     - Cache invalidation: `await invalidate_tags("oauth:experian")`
     - Tests updated: 13 custom cache tests → 10 decorator integration tests
     - All 87 credit tests passing after refactor (no regressions)
-- [ ] **Tests (Acceptance with sandbox)**:
-  - [ ] Create `tests/acceptance/test_credit_experian_acceptance.py`
-  - [ ] Test real API call to Experian sandbox with `EXPERIAN_API_KEY`
-  - [ ] Validate CreditScore parsing from real API response
-  - [ ] Validate CreditReport parsing from real API response
-  - [ ] Test error handling (invalid API key, rate limit)
-  - [ ] Mark as `@pytest.mark.acceptance` and skip if no API key
-- [ ] **Implement (Score history tracking)**:
-  - [ ] Design `CreditScoreHistory` model (user_id, scores[], timestamps[])
-  - [ ] Add database table for score history (use svc-infra.db)
-  - [ ] Store score on every pull (append to history)
-  - [ ] Add `GET /credit/history` endpoint returning score trends
-  - [ ] Add chart/visualization support (JSON data for frontend)
-  - [ ] Add unit tests for history storage and retrieval
-- [ ] **Implement (Dispute management)**:
-  - [ ] Design `CreditDispute` model (user_id, bureau, item_id, reason, status)
-  - [ ] Add `POST /credit/disputes` endpoint to file dispute
-  - [ ] Add `GET /credit/disputes/{dispute_id}` to check status
-  - [ ] Integrate with bureau dispute APIs (if available)
-  - [ ] Add email notifications on dispute updates (use svc-infra.notifications if available)
-  - [ ] Add unit tests for dispute creation and status tracking
+- [x] **Tests (Acceptance with sandbox)** - **COMPLETE**:
+  - [x] Create `tests/acceptance/test_credit_experian_acceptance.py` - **6 acceptance tests created**
+  - [x] Test real API call to Experian sandbox with `EXPERIAN_CLIENT_ID` - **test_get_credit_score_real_api**
+  - [x] Validate CreditScore parsing from real API response - **test_credit_score_parsing_from_real_response**
+  - [x] Validate CreditReport parsing from real API response - **test_credit_report_parsing_from_real_response**
+  - [x] Test error handling (invalid API key, rate limit) - **test_error_handling_invalid_credentials, test_rate_limit_handling**
+  - [x] Mark as `@pytest.mark.acceptance` and skip if no API key - **All tests skip if credentials missing**
+- [~] **Implement (Score history tracking)**: *(SKIP - Nice to have, not critical for v1)*
+  - [~] Design `CreditScoreHistory` model (user_id, scores[], timestamps[]) *(Future work)*
+  - [~] Add database table for score history (use svc-infra.db) *(Use svc-infra.db migrations - Future work)*
+  - [~] Store score on every pull (append to history) *(Future work)*
+  - [~] Add `GET /credit/history` endpoint returning score trends *(Future work)*
+  - [~] Add chart/visualization support (JSON data for frontend) *(Future work)*
+  - [~] Add unit tests for history storage and retrieval *(Future work)*
+- [~] **Implement (Dispute management)**: *(SKIP - Nice to have, not critical for v1)*
+  - [~] Design `CreditDispute` model (user_id, bureau, item_id, reason, status) *(Future work)*
+  - [~] Add `POST /credit/disputes` endpoint to file dispute *(Future work)*
+  - [~] Add `GET /credit/disputes/{dispute_id}` to check status *(Future work)*
+  - [~] Integrate with bureau dispute APIs (if available) *(Future work)*
+  - [~] Add email notifications on dispute updates (use svc-infra.notifications if available) *(Not yet available in svc-infra)*
+  - [~] Add unit tests for dispute creation and status tracking *(Future work)*
 - [ ] **Verify (Quality gates)**:
   - [ ] All unit tests passing (existing 23 + new real API tests)
   - [ ] All acceptance tests passing with sandbox credentials

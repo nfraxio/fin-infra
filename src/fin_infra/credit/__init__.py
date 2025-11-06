@@ -173,9 +173,11 @@ def easy_credit(
 # Re-export for backward compatibility
 from fin_infra.credit.experian import ExperianProvider
 from fin_infra.credit.mock import MockExperianProvider
+from fin_infra.credit.add import add_credit
 
 __all__ = [
     "ExperianProvider",
     "MockExperianProvider",
     "easy_credit",
+    "add_credit",
 ]
