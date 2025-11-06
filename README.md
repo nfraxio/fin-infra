@@ -33,6 +33,7 @@ Alpha. Core functionality is stable, but the surface is intentionally small whil
 | Tax Data | Tax documents and data management | [Tax](src/fin_infra/docs/tax.md) |
 | Cashflows | NPV, IRR, loan calculations | [Cashflows](src/fin_infra/docs/cashflows.md) |
 | Observability | Metrics and route classification for financial endpoints | [Observability](src/fin_infra/docs/observability.md) |
+| **Compliance** | **PII boundaries, vendor ToS, GLBA/FCRA/PCI-DSS, data lifecycle** | **[Compliance](src/fin_infra/docs/compliance.md)** |
 | Contributing | Dev setup and quality gates | [Contributing](src/fin_infra/docs/contributing.md) |
 | Acceptance | Acceptance testing guide | [Acceptance](src/fin_infra/docs/acceptance.md) |
 
