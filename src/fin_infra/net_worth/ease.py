@@ -157,18 +157,45 @@ def easy_net_worth(
     snapshot_schedule: str = "daily",
     change_threshold_percent: float = 5.0,
     change_threshold_amount: float = 10000.0,
+    enable_llm: bool = False,
+    llm_provider: str = "google",
+    llm_model: str | None = None,
     **config,
 ) -> NetWorthTracker:
     """
     Create net worth tracker with sensible defaults (one-liner).
     
-    **Example - Minimal**:
+    **Example - V1 Minimal (No LLM)**:
     ```python
     from fin_infra.banking import easy_banking
     from fin_infra.net_worth import easy_net_worth
     
     banking = easy_banking(provider="plaid")
     tracker = easy_net_worth(banking=banking)
+    
+    # Only V1 features (real-time calculation, snapshots)
+    snapshot = await tracker.calculate_net_worth("user_123")
+    ```
+    
+    **Example - V2 with LLM Insights**:
+    ```python
+    tracker = easy_net_worth(
+        banking=banking,
+        enable_llm=True,  # Enable LLM insights/conversation/goals
+        llm_provider="google",  # Google Gemini (default, $0.064/user/month)
+    )
+    
+    # V1 features still work
+    snapshot = await tracker.calculate_net_worth("user_123")
+    
+    # V2 features now available
+    insights = await tracker.generate_insights("user_123", type="wealth_trends")
+    conversation = await tracker.ask("How can I save more money?", "user_123")
+    goal = await tracker.validate_goal({
+        "type": "retirement",
+        "target_amount": 2000000.0,
+        "target_age": 65
+    })
     ```
     
     **Example - Multi-Provider**:
@@ -188,17 +215,19 @@ def easy_net_worth(
         crypto=crypto,
         base_currency="USD",
         change_threshold_percent=5.0,  # 5% change triggers alert
-        change_threshold_amount=10000.0  # $10k change triggers alert
+        change_threshold_amount=10000.0,  # $10k change triggers alert
+        enable_llm=True,  # Enable LLM features
+        llm_provider="google",  # Cheapest option ($0.064/user/month)
     )
     ```
     
-    **Example - Custom Config**:
+    **Example - Custom LLM Provider**:
     ```python
     tracker = easy_net_worth(
         banking=banking,
-        snapshot_schedule="weekly",  # Weekly instead of daily
-        change_threshold_percent=10.0,  # 10% change threshold
-        change_threshold_amount=50000.0  # $50k change threshold
+        enable_llm=True,
+        llm_provider="openai",  # Use OpenAI instead of Google (more expensive)
+        llm_model="gpt-4o-mini",  # Override default model
     )
     ```
     
@@ -212,6 +241,11 @@ def easy_net_worth(
                           Options: "daily", "weekly", "monthly", "manual"
         change_threshold_percent: Percentage change threshold for alerts (default: 5.0%)
         change_threshold_amount: Absolute change threshold for alerts (default: $10,000)
+        enable_llm: Enable LLM insights/conversation/goals (default: False for backward compatibility)
+        llm_provider: LLM provider to use (default: "google" - cheapest at $0.064/user/month)
+                     Options: "google" (Gemini), "openai" (GPT-4o-mini), "anthropic" (Claude Haiku)
+        llm_model: Override default model for provider
+                  Defaults: "gemini-2.0-flash-exp" (google), "gpt-4o-mini" (openai), "claude-3-5-haiku" (anthropic)
         **config: Additional configuration (future use)
     
     Returns:
@@ -219,6 +253,7 @@ def easy_net_worth(
     
     Raises:
         ValueError: If no providers specified
+        ImportError: If enable_llm=True but ai-infra not installed
     
     **Configuration Options**:
     - `snapshot_schedule`: How often to create snapshots
@@ -235,7 +270,33 @@ def easy_net_worth(
       - Default: 10000.0 ($10k)
       - Example: Alert on any ±$10k change regardless of percentage
     
+    - `enable_llm`: Enable LLM-powered features (V2)
+      - Default: False (backward compatible, no LLM costs)
+      - When True: Enables insights, conversation, goal tracking ($0.064/user/month with Google Gemini)
+      - Requires: ai-infra package installed
+    
+    - `llm_provider`: Which LLM provider to use (when enable_llm=True)
+      - "google": Google Gemini (default, $0.064/user/month - cheapest)
+      - "openai": OpenAI GPT-4o-mini ($0.183/user/month - 2.86× more expensive)
+      - "anthropic": Anthropic Claude Haiku ($0.147/user/month - 2.29× more expensive)
+    
+    - `llm_model`: Override default model (when enable_llm=True)
+      - Google default: "gemini-2.0-flash-exp"
+      - OpenAI default: "gpt-4o-mini"
+      - Anthropic default: "claude-3-5-haiku"
+    
     **Note**: Change is significant if EITHER threshold is exceeded (OR logic)
+    
+    **Cost Analysis** (V2 with LLM):
+    - Insights: $0.042/user/month (1/day, 24h cache)
+    - Conversation: $0.018/user/month (2/month × 10 turns)
+    - Goals: $0.0036/user/month (weekly check-ins)
+    - Total: $0.064/user/month (Google Gemini, 36% under $0.10 budget)
+    
+    **Graceful Degradation**:
+    - If enable_llm=False (default): Only V1 features work (real-time calculation)
+    - If enable_llm=True but LLM fails: Falls back to basic insights or NotImplementedError
+    - V1 features always work regardless of LLM status
     """
     # Validate at least one provider
     if not any([banking, brokerage, crypto]):

@@ -2181,32 +2181,52 @@ Completed in follow-up iteration:
 #### V2 Phase: LLM-Enhanced Insights & Recommendations
 **Goal**: Use LLM for natural language insights, financial advice, and goal tracking
 
-- [ ] **Research (ai-infra check)**:
-  - [ ] Check ai-infra.llm for structured output with Pydantic schemas
-  - [ ] Review few-shot prompting for financial insights (wealth building, debt reduction)
-  - [ ] Classification: Type A (net worth tracking is financial-specific, LLM is general AI)
-  - [ ] Justification: Use ai-infra for LLM calls, fin-infra for financial prompts and domain logic
-  - [ ] Reuse plan: CoreLLM for inference, structured output for insights, svc-infra.cache for generated advice (24h TTL)
-- [ ] Research: LLM-generated financial insights (wealth trends, debt reduction strategies, goal recommendations)
-  - [ ] Wealth trend analysis: "Your net worth increased 15% ($50k) this year, driven by investment gains (+$45k) and salary (+$20k), offset by new mortgage (-$15k)"
-  - [ ] Debt reduction strategies: "Pay off $5k credit card first (22% APR) before student loans (4% APR) - save $1,100/year in interest"
-  - [ ] Goal recommendations: "To reach $1M net worth by 2030 (5 years), increase savings by $800/month or achieve 8% investment returns"
-  - [ ] Asset allocation advice: "Your portfolio is 90% stocks (high risk). Consider rebalancing to 70/30 stocks/bonds for your age (35)"
-- [ ] Research: Multi-turn conversation for financial planning (follow-up questions, clarifications)
-  - [ ] Context: Previous insights + current net worth + user goals
-  - [ ] Follow-ups: "How can I save more?", "Should I pay off mortgage early?", "Is my retirement on track?"
-  - [ ] Conversation memory: Store last 10 exchanges (svc-infra.cache, 1-day TTL)
-  - [ ] Cost analysis: ~$0.002/conversation (10 turns × $0.0002/turn) with caching
-- [ ] Research: Goal tracking with LLM validation (retirement, home purchase, debt-free)
-  - [ ] Goal types: Retirement (age + income), home purchase (down payment + timeline), debt-free (payoff date), wealth milestone ($1M net worth)
-  - [ ] LLM validation: "Retirement goal of $2M by age 65 requires saving $1,500/month at 7% returns (feasible given current income)"
-  - [ ] Progress tracking: Monthly check-ins with LLM-generated progress reports
-  - [ ] Course correction: "You're $5k behind goal this quarter. Consider reducing dining out by $200/month or increasing 401k by 2%"
-- [ ] Design: LLM-enhanced net worth architecture (ADR-0021)
-  - [ ] Layer 1: Real-time net worth calculation (existing V1, fast)
-  - [ ] Layer 2: LLM insights generation (on-demand via API endpoint)
-  - [ ] Layer 3: LLM goal tracking (weekly progress checks with scheduler)
-  - [ ] Layer 4: LLM conversation (multi-turn Q&A for financial planning)
+- [x] **Research (ai-infra check)**: **COMPLETE** (src/fin_infra/docs/research/net-worth-llm-insights.md - 25,000+ words)
+  - [x] Check ai-infra.llm for structured output with Pydantic schemas - **FOUND** (CoreLLM.with_structured_output, PydanticOutputParser, coerce_structured_result)
+  - [x] Review few-shot prompting for financial insights (wealth building, debt reduction) - **CONFIRMED** (build_structured_messages with system_preamble for examples)
+  - [x] Classification: Type A (net worth tracking is financial-specific, LLM is general AI) - **CONFIRMED**
+  - [x] Justification: Use ai-infra for LLM calls, fin-infra for financial prompts and domain logic - **DOCUMENTED**
+  - [x] Reuse plan: CoreLLM for inference, structured output for insights, svc-infra.cache for generated advice (24h TTL) - **DOCUMENTED**
+  - [x] Cost target: <$0.10/user/month with caching (insights $0.042, conversation $0.018, goals $0.0036 = $0.064 total) - **CONFIRMED**
+- [x] Research: LLM-generated financial insights (wealth trends, debt reduction strategies, goal recommendations) - **COMPLETE**
+  - [x] Wealth trend analysis: "Your net worth increased 15% ($50k) this year, driven by investment gains (+$45k) and salary (+$20k), offset by new mortgage (-$15k)"
+  - [x] Debt reduction strategies: "Pay off $5k credit card first (22% APR) before student loans (4% APR) - save $1,100/year in interest"
+  - [x] Goal recommendations: "To reach $1M net worth by 2030 (5 years), increase savings by $800/month or achieve 8% investment returns"
+  - [x] Asset allocation advice: "Your portfolio is 90% stocks (high risk). Consider rebalancing to 70/30 stocks/bonds for your age (35)"
+  - [x] Pydantic schemas: WealthTrendAnalysis, DebtReductionPlan, GoalRecommendation, AssetAllocationAdvice with validation
+  - [x] Few-shot prompts: 10 examples for wealth trends, debt prioritization, goal feasibility, portfolio rebalancing
+- [x] Research: Multi-turn conversation for financial planning (follow-up questions, clarifications) - **COMPLETE**
+  - [x] Context: Previous insights + current net worth + user goals
+  - [x] Follow-ups: "How can I save more?", "Should I pay off mortgage early?", "Is my retirement on track?"
+  - [x] Conversation memory: Store last 10 exchanges (svc-infra.cache, 1-day TTL)
+  - [x] Cost analysis: ~$0.0054/conversation (10 turns × $0.0005/turn) with context caching
+  - [x] Safety filters: Detect sensitive questions (SSN, passwords, account numbers) and refuse to answer
+  - [x] Context structure: ConversationContext with session_id, previous_exchanges, current_net_worth, goals
+- [x] Research: Goal tracking with LLM validation (retirement, home purchase, debt-free) - **COMPLETE**
+  - [x] Goal types: Retirement (age + income), home purchase (down payment + timeline), debt-free (payoff date), wealth milestone ($1M net worth)
+  - [x] LLM validation: "Retirement goal of $2M by age 65 requires saving $1,500/month at 7% returns (feasible given current income)"
+  - [x] Progress tracking: Weekly check-ins with LLM-generated progress reports (via svc-infra.jobs scheduler)
+  - [x] Course correction: "You're $5k behind goal this quarter. Consider reducing dining out by $200/month or increasing 401k by 2%"
+  - [x] Pydantic schemas: RetirementGoal, HomePurchaseGoal, DebtFreeGoal, WealthMilestone, GoalProgressReport, CourseCorrectionPlan
+  - [x] Validation logic: Calculate required savings, compare vs actual, generate feasibility assessment
+
+#### Design
+- [x] Design: LLM-enhanced net worth architecture (ADR-0021) - **COMPLETE**
+  - [x] Layer 1: Real-time net worth calculation (V1, always enabled, <100ms, $0 cost)
+  - [x] Layer 2: LLM insights generation (V2, on-demand, cached 24h, $0.042/user/month)
+    - WealthTrendAnalysis, DebtReductionPlan, GoalRecommendation, AssetAllocationAdvice (Pydantic schemas)
+  - [x] Layer 3: LLM goal tracking (V2, weekly via svc-infra.jobs, $0.0036/user/month)
+    - 4 goal types: retirement, home purchase, debt-free, wealth milestone with validation
+  - [x] Layer 4: LLM conversation (V2, multi-turn Q&A, $0.018/user/month)
+    - 10-turn context, safety filters (SSN/passwords), follow-up questions
+  - [x] Document alternatives: OpenAI +183%, self-hosted +$500/mo infra, template-based $0 (all rejected)
+  - [x] Document cost analysis: $0.064/user/month with Google Gemini (36% under $0.10 budget)
+  - [x] Document graceful degradation: V1 fallback when LLM disabled, error handling, NotImplementedError
+  - [x] Document validation strategy: Local math calculations + LLM context (don't trust LLM for arithmetic)
+  - [x] Document safety filters: Sensitive question detection (SSN, passwords, account numbers), disclaimers
+  - [x] Document ai-infra integration: CoreLLM.with_structured_output, Pydantic validation, few-shot prompting
+  - [x] Document svc-infra integration: Cache (24h TTL), jobs (weekly scheduler), webhooks (goal alerts)
+  - File: docs/adr/0021-net-worth-llm-insights.md (~650 lines)
 - [ ] Design: Easy builder signature update
   - [ ] `easy_net_worth(banking=None, brokerage=None, crypto=None, enable_llm=False, llm_provider="google", **config)`
   - [ ] Default: LLM disabled (backward compatible, no API costs)
