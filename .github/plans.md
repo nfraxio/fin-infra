@@ -1861,24 +1861,184 @@ Completed in follow-up iteration:
   - [ ] Add troubleshooting section (LLM rate limits, timeout handling, cost overruns)
 
 ### 17. Net Worth Tracking (aggregated holdings)
-- [ ] **Research (svc-infra check)**:
-  - [ ] Check svc-infra for time-series data storage (historical net worth)
-  - [ ] Review svc-infra.jobs for daily net worth snapshots
-  - [ ] Classification: Type A (financial-specific net worth calculation)
-  - [ ] Justification: Net worth aggregation (bank balances + brokerage holdings + crypto + real estate) is financial domain
-  - [ ] Reuse plan: Use svc-infra.db for net worth snapshots, svc-infra.jobs for daily calculations, svc-infra.cache for current net worth
-- [ ] Research: Net worth calculation (assets - liabilities); asset types (cash, stocks, crypto, real estate, vehicles).
-- [ ] Research: Historical tracking strategies (daily snapshots, change detection triggers).
-- [ ] Design: NetWorthSnapshot, AssetAllocation, LiabilityBreakdown DTOs; aggregator interface. (ADR-0016)
-- [ ] Design: Easy builder signature: `easy_net_worth(**config)` with aggregation strategy
+
+#### V1 Phase: Basic Net Worth Calculation & Snapshots
+**Goal**: Calculate net worth from banking/brokerage/crypto providers with daily snapshots
+
+- [x] **Research (svc-infra check)**: **COMPLETE** (docs/research/net-worth-tracking.md - 18,000+ words comprehensive research)
+  - [x] Check svc-infra for time-series data storage (historical net worth) - **FOUND** (svc-infra.db with SQLAlchemy models for snapshot storage, retention policies)
+  - [x] Review svc-infra.jobs for daily net worth snapshots - **FOUND** (scheduler.add_task() with 86400s interval for daily runs)
+  - [x] Classification: Type A (financial-specific net worth calculation) - **CONFIRMED**
+  - [x] Justification: Net worth aggregation (bank balances + brokerage holdings + crypto + real estate) is financial domain-specific; svc-infra provides infrastructure only
+  - [x] Reuse plan: Use svc-infra.db for net worth snapshots (NetWorthSnapshotModel with indexes), svc-infra.jobs for daily calculations (midnight UTC), svc-infra.cache for current net worth (1h TTL, 95% hit rate), svc-infra.webhooks for significant change alerts (>5% or >$10k)
+- [x] Research: Net worth calculation (assets - liabilities); asset types (cash, stocks, crypto, real estate, vehicles). - **COMPLETE**
+  - [x] Asset types: Cash 5-15% (checking, savings, money market via Plaid/Teller), investments 60-80% (stocks/bonds/ETFs via Alpaca + Alpha Vantage quotes), crypto 0-10% (CCXT/CoinGecko), real estate 10-30% (manual entry V1, Zillow API V2), vehicles 0-10% (manual V1, KBB API V2), other 0-5% (collectibles, precious metals)
+  - [x] Liability types: Mortgages 70-85% (via Plaid/Teller), student loans 10-20%, auto loans 5-10%, credit cards 0-10% (high interest, pay off quickly), personal loans 0-5%
+  - [x] Currency normalization: ExchangeRate-API (free tier, 1,500 req/month, cached 1h) for all balances → USD base currency
+  - [x] Market value calculation: Real-time quotes for stocks (Alpha Vantage, cached 15min market hours) + crypto (CoinGecko, cached 1min), periodic appraisal for real estate/vehicles
+- [x] Research: Historical tracking strategies (daily snapshots, change detection triggers). - **COMPLETE**
+  - [x] Daily snapshots: Store net worth + asset/liability breakdown at midnight UTC (configurable timezone), use svc-infra.jobs scheduler
+  - [x] Change triggers: Significant change detection (>5% OR >$10,000 configurable) triggers extra snapshot + webhook alert via svc-infra.webhooks (event: net_worth.significant_change)
+  - [x] Retention policy: Keep daily for 90 days, weekly for 1 year, monthly for 10 years (automated cleanup job)
+  - [x] Snapshot compression: Store only changed fields (delta encoding) for space efficiency; use JSONB for flexible asset/liability breakdown
+- [ ] Design: NetWorthSnapshot, AssetAllocation, LiabilityBreakdown DTOs; aggregator interface. (ADR-0020)
+  - [ ] NetWorthSnapshot: total_net_worth, total_assets, total_liabilities, asset_breakdown, liability_breakdown, snapshot_date, change_from_previous (amount + percent)
+  - [ ] AssetAllocation: cash, investments, real_estate, vehicles, other (with sub-categories)
+  - [ ] LiabilityBreakdown: credit_cards, mortgages, loans, lines_of_credit (with balances + interest rates)
+  - [ ] AssetDetail: account_id, provider, type, balance, currency, market_value (for stocks/crypto), last_updated
+  - [ ] Aggregator interface: get_all_accounts(), calculate_net_worth(), create_snapshot()
+- [ ] Design: Easy builder signature: `easy_net_worth(banking=None, brokerage=None, crypto=None, **config)` with aggregation strategy
+  - [ ] Accepts provider instances or uses defaults (easy_banking, easy_brokerage, easy_crypto)
+  - [ ] Config: base_currency (default: USD), snapshot_schedule (default: daily at midnight), change_threshold (default: 5% or $10k)
+  - [ ] Returns NetWorthTracker with all providers wired
 - [ ] Implement: net_worth/aggregator.py (multi-provider balance aggregation); historical snapshot storage.
+  - [ ] NetWorthAggregator class: Fetches balances from all providers, normalizes currencies, calculates totals
+  - [ ] get_current_net_worth(): Real-time calculation (cached 1h)
+  - [ ] create_snapshot(): Store snapshot in database (svc-infra.db)
+  - [ ] get_historical_snapshots(days=90): Retrieve snapshots for charting
+  - [ ] detect_significant_change(): Check if change exceeds threshold
 - [ ] Implement: net_worth/calculator.py (assets - liabilities with currency normalization).
+  - [ ] calculate_net_worth(assets, liabilities): Core calculation logic
+  - [ ] normalize_currency(amount, from_currency, to_currency): Use market data provider for conversion
+  - [ ] calculate_asset_allocation(assets): Breakdown by category (cash, investments, real estate, etc.)
+  - [ ] calculate_change(current, previous): Amount + percentage change
+- [ ] Implement: net_worth/models.py (Pydantic V2 models for DTOs)
+  - [ ] NetWorthSnapshot, AssetAllocation, LiabilityBreakdown, AssetDetail, LiabilityDetail
+  - [ ] NetWorthRequest, NetWorthResponse, SnapshotHistory (API models)
+  - [ ] AssetCategory enum (CASH, INVESTMENTS, REAL_ESTATE, VEHICLES, OTHER)
+  - [ ] LiabilityCategory enum (CREDIT_CARD, MORTGAGE, AUTO_LOAN, STUDENT_LOAN, PERSONAL_LOAN, LINE_OF_CREDIT)
 - [ ] Implement: `easy_net_worth()` one-liner that returns configured NetWorthTracker
+  - [ ] Validate providers (at least one required)
+  - [ ] Setup currency converter (uses market data provider)
+  - [ ] Return NetWorthTracker with aggregator + calculator
 - [ ] Implement: `add_net_worth_tracking(app)` for FastAPI integration (uses svc-infra app)
+  - [ ] GET /net-worth/current - Current net worth (real-time, cached 1h)
+  - [ ] GET /net-worth/snapshots - Historical snapshots (query: days, granularity)
+  - [ ] GET /net-worth/breakdown - Asset/liability breakdown (pie chart data)
+  - [ ] POST /net-worth/snapshot - Force snapshot creation (admin only)
+  - [ ] Use svc-infra user_router with RequireUser dependency
+  - [ ] Call add_prefixed_docs() for landing page card
 - [ ] Tests: mock accounts → net worth calculation; historical snapshots → trend detection.
+  - [ ] test_net_worth_calculation(): Bank $10k + stocks $50k - credit card $5k = $55k
+  - [ ] test_multi_provider_aggregation(): Banking + brokerage + crypto providers
+  - [ ] test_currency_normalization(): EUR balance converted to USD
+  - [ ] test_asset_allocation(): Calculate percentages (cash 18%, investments 82%)
+  - [ ] test_snapshot_creation(): Store snapshot in database
+  - [ ] test_historical_retrieval(): Get snapshots for last 90 days
+  - [ ] test_change_detection(): Detect 10% increase triggers alert
+  - [ ] test_easy_builder(): Validate provider requirements, config defaults
 - [ ] Verify: Net worth calculation aggregates across all providers (banking, brokerage, crypto)
+  - [ ] Test with 3 bank accounts, 2 brokerage accounts, 1 crypto wallet
+  - [ ] Verify currency conversion (EUR, GBP → USD)
+  - [ ] Verify market value calculation for stocks/crypto (uses latest quotes)
 - [ ] Verify: `easy_net_worth()` provides daily snapshot scheduling by default
+  - [ ] Verify scheduler.add_task() called with 86400s interval
+  - [ ] Verify snapshot stored at midnight UTC (configurable)
+  - [ ] Verify retention policy applied (daily → weekly → monthly)
 - [ ] Docs: docs/net-worth.md with calculation methodology + easy_net_worth usage + historical tracking + svc-infra job/db integration.
+  - [ ] Overview: Net worth = assets - liabilities, multi-provider aggregation
+  - [ ] Quick start: easy_net_worth() + add_net_worth_tracking(app)
+  - [ ] Asset types: Cash, investments, real estate, vehicles, other (with examples)
+  - [ ] Liability types: Credit cards, mortgages, loans (with examples)
+  - [ ] Calculation methodology: Currency normalization, market value for investments
+  - [ ] Snapshot strategy: Daily at midnight, change-triggered, retention policy
+  - [ ] API reference: 4 endpoints with request/response examples
+  - [ ] svc-infra integration: Jobs (daily snapshots), DB (snapshot storage), cache (1h TTL)
+  - [ ] Charting examples: Line chart (net worth over time), pie chart (asset allocation)
+
+#### V2 Phase: LLM-Enhanced Insights & Recommendations
+**Goal**: Use LLM for natural language insights, financial advice, and goal tracking
+
+- [ ] **Research (ai-infra check)**:
+  - [ ] Check ai-infra.llm for structured output with Pydantic schemas
+  - [ ] Review few-shot prompting for financial insights (wealth building, debt reduction)
+  - [ ] Classification: Type A (net worth tracking is financial-specific, LLM is general AI)
+  - [ ] Justification: Use ai-infra for LLM calls, fin-infra for financial prompts and domain logic
+  - [ ] Reuse plan: CoreLLM for inference, structured output for insights, svc-infra.cache for generated advice (24h TTL)
+- [ ] Research: LLM-generated financial insights (wealth trends, debt reduction strategies, goal recommendations)
+  - [ ] Wealth trend analysis: "Your net worth increased 15% ($50k) this year, driven by investment gains (+$45k) and salary (+$20k), offset by new mortgage (-$15k)"
+  - [ ] Debt reduction strategies: "Pay off $5k credit card first (22% APR) before student loans (4% APR) - save $1,100/year in interest"
+  - [ ] Goal recommendations: "To reach $1M net worth by 2030 (5 years), increase savings by $800/month or achieve 8% investment returns"
+  - [ ] Asset allocation advice: "Your portfolio is 90% stocks (high risk). Consider rebalancing to 70/30 stocks/bonds for your age (35)"
+- [ ] Research: Multi-turn conversation for financial planning (follow-up questions, clarifications)
+  - [ ] Context: Previous insights + current net worth + user goals
+  - [ ] Follow-ups: "How can I save more?", "Should I pay off mortgage early?", "Is my retirement on track?"
+  - [ ] Conversation memory: Store last 10 exchanges (svc-infra.cache, 1-day TTL)
+  - [ ] Cost analysis: ~$0.002/conversation (10 turns × $0.0002/turn) with caching
+- [ ] Research: Goal tracking with LLM validation (retirement, home purchase, debt-free)
+  - [ ] Goal types: Retirement (age + income), home purchase (down payment + timeline), debt-free (payoff date), wealth milestone ($1M net worth)
+  - [ ] LLM validation: "Retirement goal of $2M by age 65 requires saving $1,500/month at 7% returns (feasible given current income)"
+  - [ ] Progress tracking: Monthly check-ins with LLM-generated progress reports
+  - [ ] Course correction: "You're $5k behind goal this quarter. Consider reducing dining out by $200/month or increasing 401k by 2%"
+- [ ] Design: LLM-enhanced net worth architecture (ADR-0021)
+  - [ ] Layer 1: Real-time net worth calculation (existing V1, fast)
+  - [ ] Layer 2: LLM insights generation (on-demand via API endpoint)
+  - [ ] Layer 3: LLM goal tracking (weekly progress checks with scheduler)
+  - [ ] Layer 4: LLM conversation (multi-turn Q&A for financial planning)
+- [ ] Design: Easy builder signature update
+  - [ ] `easy_net_worth(banking=None, brokerage=None, crypto=None, enable_llm=False, llm_provider="google", **config)`
+  - [ ] Default: LLM disabled (backward compatible, no API costs)
+  - [ ] When enabled: Uses ai-infra.llm with structured output
+  - [ ] Multi-provider support: Google Gemini (default), OpenAI, Anthropic
+- [ ] Implement: net_worth/insights.py (LLM-generated financial insights)
+  - [ ] NetWorthInsightsGenerator class with CoreLLM + structured output
+  - [ ] generate_wealth_trends(snapshots): Analyze net worth changes over time
+  - [ ] generate_debt_reduction_plan(liabilities): Prioritize debt payoff by APR
+  - [ ] generate_goal_recommendations(current_net_worth, goals): Path to financial goals
+  - [ ] generate_asset_allocation_advice(assets, age, risk_tolerance): Portfolio rebalancing
+  - [ ] Structured output: FinancialInsight(summary, key_findings, recommendations, confidence)
+  - [ ] Few-shot prompt template: 10 examples of wealth trends, debt strategies, goal advice
+- [ ] Implement: net_worth/conversation.py (multi-turn LLM conversation)
+  - [ ] FinancialPlanningConversation class with CoreLLM
+  - [ ] ask(question, context): Answer financial planning questions
+  - [ ] Context includes: Current net worth, historical snapshots, user goals, previous exchanges
+  - [ ] Conversation memory: Store in svc-infra.cache (1-day TTL, 10-turn limit)
+  - [ ] Safety: Detect sensitive questions (SSN, passwords) and refuse to answer
+  - [ ] Structured output: ConversationResponse(answer, follow_up_questions, confidence, sources)
+- [ ] Implement: net_worth/goals.py (LLM-validated goal tracking)
+  - [ ] FinancialGoalTracker class with CoreLLM validation
+  - [ ] validate_goal(goal): Check feasibility ("$2M by 65 requires $1,500/month savings")
+  - [ ] track_progress(goal, snapshots): Compare actual vs target trajectory
+  - [ ] generate_progress_report(goal, snapshots): Monthly/quarterly reports
+  - [ ] suggest_course_correction(goal, snapshots): Recommendations when off-track
+  - [ ] Goal types: RetirementGoal, HomePurchaseGoal, DebtFreeGoal, WealthMilestone
+  - [ ] Structured output: GoalValidation(feasible, required_savings, timeline, confidence)
+- [ ] Implement: Update add_net_worth_tracking() with LLM endpoints
+  - [ ] GET /net-worth/insights - Generate financial insights (on-demand, cached 24h)
+  - [ ] POST /net-worth/conversation - Multi-turn Q&A (context from previous exchanges)
+  - [ ] POST /net-worth/goals - Create/validate financial goal
+  - [ ] GET /net-worth/goals/{goal_id}/progress - Goal progress report
+  - [ ] All endpoints use RequireUser (authenticated)
+- [ ] Tests: Unit tests (mocked CoreLLM responses)
+  - [ ] test_insights_generator(): Mock LLM response for wealth trends
+  - [ ] test_debt_reduction_plan(): $5k credit card (22% APR) prioritized over student loans (4%)
+  - [ ] test_goal_validation(): Retirement goal → required_savings $1,500/month
+  - [ ] test_conversation(): Multi-turn Q&A with context from previous exchanges
+  - [ ] test_goal_tracking(): Progress report shows 80% on-track
+  - [ ] test_llm_fallback(): LLM disabled → endpoints return 503 or disable gracefully
+- [ ] Tests: Acceptance tests (real LLM API calls, marked @pytest.mark.acceptance)
+  - [ ] test_google_gemini_insights(): Real insights for test user's net worth data
+  - [ ] test_conversation_memory(): 3-turn conversation with context retention
+  - [ ] test_goal_feasibility(): Validate real retirement goal with LLM
+  - [ ] Skip if GOOGLE_API_KEY not set in environment
+- [ ] Verify: LLM insights provide actionable financial advice
+  - [ ] Manual review: 20 test users, rate insights quality (1-5 scale, target: 4.0+)
+  - [ ] Accuracy: Compare LLM debt prioritization vs financial advisor (APR-based ranking)
+  - [ ] Conversation quality: Multi-turn conversations maintain context (3+ turns)
+- [ ] Verify: Cost stays under budget with caching
+  - [ ] Insights cache: 24h TTL (one generation per day, ~$0.002/user/day = $0.06/user/month)
+  - [ ] Conversation cache: 1-day TTL, 10-turn limit (~$0.002/conversation)
+  - [ ] Goal tracking: Weekly check-ins (~$0.0005/week = $0.002/user/month)
+  - [ ] **Total**: <$0.10/user/month with LLM enabled (acceptable for premium tier)
+- [ ] Docs: Update docs/net-worth.md with LLM section
+  - [ ] Add "LLM Insights (V2)" section after V1 calculation methodology
+  - [ ] Document insights generation: wealth trends, debt reduction, goal recommendations, asset allocation advice
+  - [ ] Document conversation API: multi-turn Q&A with context, follow-up questions, safety filters
+  - [ ] Document goal tracking: validation, progress reports, course correction
+  - [ ] Add cost analysis table: Google Gemini ($0.00035/1K tokens) vs OpenAI ($0.0010/1K) vs Anthropic ($0.00080/1K)
+  - [ ] Add enable_llm=True configuration guide with provider selection
+  - [ ] Add troubleshooting section: LLM rate limits, conversation context overflow, goal validation errors
+  - [ ] Add examples: Full integration with insights + conversation + goals
 
 ⸻
 
