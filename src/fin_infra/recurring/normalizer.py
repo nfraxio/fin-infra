@@ -26,10 +26,11 @@ def normalize_merchant(raw_name: str) -> str:
 
     Pipeline:
     1. Lowercase: "NETFLIX.COM" → "netflix.com"
-    2. Remove special chars: "netflix.com" → "netflixcom"
-    3. Remove store/transaction numbers: "starbucks #12345" → "starbucks"
-    4. Remove legal entities: "netflix inc" → "netflix"
-    5. Strip whitespace: "  netflix  " → "netflix"
+    2. Remove domain suffixes: "netflix.com" → "netflix"
+    3. Remove special chars: "netflix*subscription" → "netflix subscription"
+    4. Remove store/transaction numbers: "starbucks #12345" → "starbucks"
+    5. Remove legal entities: "netflix inc" → "netflix"
+    6. Strip whitespace: "  netflix  " → "netflix"
 
     Args:
         raw_name: Original merchant name
@@ -48,16 +49,20 @@ def normalize_merchant(raw_name: str) -> str:
     # 1. Lowercase
     name = raw_name.lower()
 
-    # 2. Remove special characters (keep alphanumeric and spaces)
-    name = re.sub(r"[^a-z0-9\s]", "", name)
+    # 2. Remove common domain suffixes
+    name = re.sub(r"\.(com|net|org|io|co|us|uk)$", "", name)
+    name = re.sub(r"\.(com|net|org|io|co|us|uk)[/\s]", " ", name)
 
-    # 3. Remove store/transaction numbers (4+ digits with optional #)
+    # 3. Remove special characters (keep alphanumeric and spaces)
+    name = re.sub(r"[^a-z0-9\s]", " ", name)
+
+    # 4. Remove store/transaction numbers (4+ digits with optional #)
     name = re.sub(r"\s*#?\d{4,}", "", name)
 
-    # 4. Remove legal entity suffixes
+    # 5. Remove legal entity suffixes
     name = re.sub(r"\b(inc|llc|corp|ltd|co|limited|corporation)\b", "", name)
 
-    # 5. Normalize whitespace
+    # 6. Normalize whitespace
     name = re.sub(r"\s+", " ", name).strip()
 
     return name
@@ -216,22 +221,25 @@ class FuzzyMatcher:
 
 # Pre-defined merchant groupings (common subscriptions)
 # Can be extended by users
+# Note: All values should be in normalized form (lowercase, no special chars)
+# Use these exact strings after normalize_merchant() is applied
 KNOWN_MERCHANT_GROUPS = {
-    "netflix": ["netflix.com", "nflx*subscription", "netflix inc", "netflix streaming"],
-    "spotify": ["spotify usa", "spotify premium", "spotifyusa", "spotify.com"],
+    "netflix": ["netflix", "nflx", "nflx subscription", "netflix subscription", "netflix streaming"],
+    "spotify": ["spotify", "spotify usa", "spotify premium", "spotifyusa"],
     "amazon": [
+        "amazon",
         "amazon prime",
         "amzn mktp us",
-        "amazon.com",
         "prime video",
         "amazon web services",
+        "aws",
     ],
-    "starbucks": ["starbucks #", "starbucks coffee", "sbux"],
-    "apple": ["apple.com/bill", "apple itunes", "apple music", "app store"],
-    "google": ["google*youtube", "google storage", "google one", "googleplay"],
-    "hulu": ["hulu.com", "hulu subscription", "hulu plus"],
-    "disney": ["disneyplus", "disney+", "disney plus"],
-    "hbo": ["hbo max", "hbomax", "hbo now"],
+    "starbucks": ["starbucks", "starbucks coffee", "sbux"],
+    "apple": ["apple", "apple bill", "apple itunes", "apple music", "app store"],
+    "google": ["google", "google youtube", "google storage", "google one", "googleplay"],
+    "hulu": ["hulu", "hulu subscription", "hulu plus"],
+    "disney": ["disney", "disneyplus", "disney plus"],
+    "hbo": ["hbo", "hbo max", "hbomax", "hbo now"],
 }
 
 
