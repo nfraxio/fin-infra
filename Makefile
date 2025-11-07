@@ -41,7 +41,7 @@ compose_up:
 wait:
 	@if [ -n "$$COMPOSE_PROFILES" ]; then \
 		echo "[accept] Waiting for services (redis)"; \
-		poetry run python scripts/wait_for.py 127.0.0.1 6379 20 || exit $$?; \
+		poetry run python examples/scripts/wait_for.py 127.0.0.1 6379 20 || exit $$?; \
 	else \
 		echo "[accept] Nothing to wait for in library mode"; \
 	fi

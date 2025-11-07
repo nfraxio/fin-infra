@@ -1098,9 +1098,633 @@ progress = await tracker.check_goal_progress(user_id, goal)
 
 ---
 
-## Troubleshooting
+## LLM Insights (V2)
 
-### Issue: Net worth is $0 (but I have accounts)
+> **AI-powered financial insights, conversation, and goal tracking**
+
+### Overview
+
+V2 adds LLM-powered capabilities using [ai-infra's CoreLLM](../../ai_infra/docs/llm.md) for:
+- **Financial Insights** (4 types): Wealth trends, debt reduction plans, goal recommendations, asset allocation advice
+- **Multi-turn Conversation**: Natural dialogue Q&A about finances (maintains context across turns)
+- **Goal Tracking**: Validate goals, track progress, suggest course corrections
+
+**Cost**: <$0.10/user/month with 95% cache hit rate (Google Gemini 2.0 Flash recommended)
+
+### Design Choice: Natural Dialogue vs Structured Output
+
+See [ADR-0021: LLM Insights Architecture](./adr/0021-net-worth-llm-insights.md) for full rationale.
+
+**Key Decision**: Conversation uses `achat()` **WITHOUT** `output_schema` for natural dialogue, while insights/goals use `with_structured_output()` for predictable structure.
+
+```python
+# ✅ CONVERSATION: Natural dialogue (NO forced JSON)
+response_text = await llm.achat(
+    user_msg="How can I save more?",
+    system="You are a helpful financial advisor...",
+    # NO output_schema - allows natural, flexible responses
+)
+
+# ✅ INSIGHTS: Structured output (predictable schema)
+structured = llm.with_structured_output(
+    schema=WealthTrendAnalysis,  # Pydantic model
+    method="json_mode",
+)
+result = await structured.ainvoke("Analyze trends...")
+```
+
+**Why?**
+- **Conversation**: Multi-turn dialogue needs flexibility. Users ask follow-ups, context changes, forced JSON breaks natural flow.
+- **Insights**: Single-shot analysis needs predictable fields for UI rendering (trend_percentage, risk_factors, etc.)
+
+---
+
+### Quick Start (LLM Features)
+
+```python
+from fin_infra.net_worth import easy_net_worth
+from fin_infra.banking import easy_banking
+
+# Setup providers
+banking = easy_banking(provider="plaid", client_id="...", secret="...")
+
+# Enable LLM features
+tracker = easy_net_worth(
+    banking=banking,
+    base_currency="USD",
+    enable_llm=True,  # ← Enable LLM insights
+    llm_provider="google",  # Google Gemini (recommended)
+    llm_api_key="...",  # Or set GOOGLE_API_KEY env
+    llm_model="gemini-2.0-flash-exp",  # Cost-optimized model
+)
+
+# Generate insights
+snapshot = await tracker.calculate_net_worth(user_id="user_123", access_token="...")
+insights = await tracker.insights_generator.analyze_wealth_trends([snapshot])
+
+print(f"Trend: {insights.summary}")
+print(f"Change: {insights.change_percent:.1%}")
+print(f"Drivers: {', '.join(insights.primary_drivers)}")
+```
+
+---
+
+### Feature 1: Financial Insights (4 Types)
+
+#### Wealth Trends Analysis
+
+**Analyzes net worth changes over time (7-365 days) and identifies key drivers.**
+
+```python
+# Get 90 days of snapshots
+snapshots = await tracker.get_snapshots(user_id="user_123", days=90)
+
+# Analyze trends
+trends = await tracker.insights_generator.analyze_wealth_trends(snapshots)
+
+print(f"Period: {trends.period}")
+print(f"Change: ${trends.change_amount:,.2f} ({trends.change_percent:.1%})")
+print(f"Primary Drivers: {', '.join(trends.primary_drivers)}")
+print(f"Risk Factors: {', '.join(trends.risk_factors)}")
+print(f"Recommendations: {', '.join(trends.recommendations)}")
+print(f"Confidence: {trends.confidence:.0%}")
+```
+
+**Example Output**:
+```
+Period: 3 months
+Change: +$5,000 (+10.5%)
+Primary Drivers: Investment growth, Reduced credit card debt
+Risk Factors: Market volatility, Variable income
+Recommendations: Continue debt payoff, Maintain emergency fund
+Confidence: 85%
+```
+
+**API Endpoint**: `GET /net-worth/insights?type=wealth_trends&days=90`
+
+**Cache**: 24h TTL (one generation per day)
+
+---
+
+#### Debt Reduction Plan
+
+**Prioritizes debts by APR and generates payoff strategy (avalanche method).**
+
+```python
+debts = [
+    {"type": "credit_card", "balance": 5000, "apr": 0.22, "min_payment": 150},
+    {"type": "student_loan", "balance": 15000, "apr": 0.04, "min_payment": 200},
+    {"type": "auto_loan", "balance": 8000, "apr": 0.06, "min_payment": 300},
+]
+
+plan = await tracker.insights_generator.generate_debt_reduction_plan(snapshots)
+
+print(f"Priority: {plan.priority_order}")  # ['credit_card', 'auto_loan', 'student_loan']
+print(f"Total Interest: ${plan.total_interest_without_plan:,.2f}")
+print(f"Savings: ${plan.interest_saved:,.2f}")
+print(f"Payoff Timeline: {plan.estimated_payoff_months} months")
+```
+
+**Why Avalanche?**
+- Minimizes total interest paid
+- Mathematically optimal (pays highest APR first)
+- See [ADR-0021](./adr/0021-net-worth-llm-insights.md) for comparison vs snowball method
+
+**API Endpoint**: `GET /net-worth/insights?type=debt_reduction`
+
+**Cost**: ~$0.002/generation (500 input + 300 output tokens)
+
+---
+
+#### Goal Recommendations
+
+**Suggests personalized financial goals based on age, income, net worth.**
+
+```python
+goals = await tracker.insights_generator.recommend_financial_goals(snapshots)
+
+for goal in goals.recommended_goals:
+    print(f"Goal: {goal.goal_type}")
+    print(f"Target: ${goal.target_amount:,.2f} by {goal.target_date}")
+    print(f"Monthly: ${goal.required_monthly_savings:,.2f}")
+    print(f"Rationale: {goal.rationale}")
+    print()
+```
+
+**Example Goals**:
+- **Retirement**: $2M by age 65 (save $1,500/month)
+- **Home Purchase**: $100K down payment by 2028 (save $2,000/month)
+- **Debt-Free**: Pay off $20K by 2027 (pay $700/month)
+- **Emergency Fund**: 6 months expenses ($18K) by 2026
+
+**API Endpoint**: `GET /net-worth/insights?type=goal_recommendations`
+
+---
+
+#### Asset Allocation Advice
+
+**Analyzes portfolio allocation and suggests rebalancing.**
+
+```python
+allocation = await tracker.insights_generator.suggest_asset_allocation(snapshots)
+
+print(f"Current: {allocation.current_allocation}")
+# {'cash': 0.20, 'stocks': 0.70, 'bonds': 0.10}
+
+print(f"Recommended: {allocation.recommended_allocation}")
+# {'cash': 0.10, 'stocks': 0.65, 'bonds': 0.20, 'real_estate': 0.05}
+
+print(f"Rationale: {allocation.rationale}")
+print(f"Rebalancing Steps: {', '.join(allocation.rebalancing_steps)}")
+```
+
+**Considers**:
+- Age (more conservative as you age)
+- Risk tolerance (inferred from current allocation)
+- Diversification (avoid concentration risk)
+- Modern portfolio theory principles
+
+**API Endpoint**: `GET /net-worth/insights?type=asset_allocation`
+
+---
+
+### Feature 2: Multi-turn Conversation
+
+**Natural language Q&A about finances with context retention.**
+
+```python
+# First question
+response1 = await tracker.conversation.ask(
+    user_id="user_123",
+    question="How can I save $10,000 in 2 years?",
+    session_id="session_456",  # Track conversation
+    current_net_worth=50000.0,
+    goals=[],
+)
+
+print(f"Answer: {response1.answer}")
+print(f"Follow-ups: {', '.join(response1.follow_up_questions)}")
+print(f"Confidence: {response1.confidence:.0%}")
+
+# Follow-up question (uses context)
+response2 = await tracker.conversation.ask(
+    user_id="user_123",
+    question="What if I want to save it in 1 year instead?",
+    session_id="session_456",  # Same session - maintains context
+    current_net_worth=50000.0,
+    goals=[],
+)
+
+print(f"Answer: {response2.answer}")  # References previous conversation
+```
+
+**Example Dialogue**:
+```
+User: How can I save $10,000 in 2 years?
+Bot:  To save $10,000 in 2 years, you'd need to set aside approximately $417 per month.
+      Based on your current net worth of $50,000, this seems achievable if you...
+      [detailed advice with context]
+      
+      Follow-up questions:
+      - What if I want to save more aggressively?
+      - Should I cut my spending or increase my income?
+      
+      Confidence: 85%
+
+User: What if I want to save it in 1 year instead?
+Bot:  For a 1-year timeline, you'd need to save $833 per month - double your previous target.
+      This is more aggressive but possible if you... [references previous context]
+```
+
+**Key Features**:
+- **Context Retention**: Remembers previous turns (10-turn limit)
+- **Natural Dialogue**: Uses `achat()` WITHOUT `output_schema` (no forced JSON)
+- **Safety Filters**: Blocks sensitive questions (SSN, passwords, account numbers)
+- **Follow-up Questions**: Suggests relevant next questions
+- **Confidence Scores**: 0.0-1.0 (based on data quality and context)
+
+**API Endpoint**: `POST /net-worth/conversation`
+
+**Request**:
+```json
+{
+  "user_id": "user_123",
+  "question": "How can I save more?",
+  "session_id": "session_456",
+  "access_token": "plaid_token"
+}
+```
+
+**Response**:
+```json
+{
+  "answer": "Based on your current spending...",
+  "follow_up_questions": [
+    "Should I focus on reducing expenses or increasing income?",
+    "What's a realistic savings rate for my situation?"
+  ],
+  "confidence": 0.85,
+  "sources": ["net_worth_snapshot", "conversation_history"]
+}
+```
+
+**Cache**: 24h TTL for conversation context
+
+**Cost**: ~$0.002/conversation (600 input + 400 output tokens)
+
+---
+
+### Feature 3: Goal Tracking
+
+**Validate financial goals, track progress, suggest course corrections.**
+
+#### Goal Validation (LLM-Enhanced)
+
+```python
+# Define goal
+goal = {
+    "type": "retirement",
+    "target_amount": 2000000.0,
+    "target_age": 65,
+    "current_age": 35,
+}
+
+# Get current snapshot
+snapshot = await tracker.calculate_net_worth(user_id="user_123", access_token="...")
+
+# Validate with LLM
+validation = await tracker.goal_tracker.validate_goal(goal, snapshot)
+
+print(f"Feasibility: {validation.feasibility}")  # 'feasible', 'challenging', 'unrealistic'
+print(f"Required Monthly: ${validation.required_monthly_savings:,.2f}")
+print(f"Timeline: {validation.projected_completion_date}")
+print(f"Current Progress: {validation.current_progress:.1%}")
+print(f"Alternative Paths: {', '.join(validation.alternative_paths)}")
+print(f"Recommendations: {', '.join(validation.recommendations)}")
+```
+
+**LLM Context Around Local Math**:
+- ✅ Local functions calculate required savings, timelines (accurate math)
+- ✅ LLM provides context, alternatives, recommendations (creative reasoning)
+- ❌ LLM does NOT calculate numbers (prevents hallucination)
+
+**Example**:
+```python
+# Local calculation (accurate)
+required_savings = calculate_retirement_goal(
+    target_amount=2000000.0,
+    current_savings=50000.0,
+    years_remaining=30,
+    expected_return=0.07,
+)  # Returns $1,492.37/month
+
+# LLM adds context
+validation = GoalValidation(
+    feasibility="feasible",
+    required_monthly_savings=1492.37,  # From local calc
+    recommendations=[
+        "Max out 401k contributions ($22,500/year)",
+        "Consider Roth IRA ($6,500/year)",
+        "Invest in index funds (target 7% return)",
+    ],
+    confidence=0.85,
+)
+```
+
+**API Endpoint**: `POST /net-worth/goals`
+
+**Cost**: ~$0.0009/validation (400 input + 300 output tokens)
+
+---
+
+#### Goal Progress Tracking
+
+```python
+# Track progress weekly
+progress = await tracker.goal_tracker.track_progress(goal, current_net_worth=75000.0)
+
+print(f"Progress: {progress.progress_percentage:.1%}")
+print(f"On Track: {progress.on_track}")
+print(f"Required vs Actual: ${progress.required_monthly_savings:,.2f} vs ${progress.actual_monthly_savings:,.2f}")
+print(f"Estimated Completion: {progress.estimated_completion_date}")
+print(f"Recommendations: {', '.join(progress.recommendations)}")
+```
+
+**Weekly Check-ins**: Compares actual progress vs target trajectory
+
+**API Endpoint**: `GET /net-worth/goals/{goal_id}/progress`
+
+**Cost**: ~$0.0009/week = $0.0036/user/month (4 check-ins)
+
+---
+
+### Cost Analysis
+
+#### Pricing Comparison (Per 1K Tokens)
+
+| Provider | Input | Output | Total (avg) | Notes |
+|----------|-------|--------|-------------|-------|
+| **Google Gemini 2.0 Flash** | $0.00035 | $0.0014 | ~$0.0009 | ✅ **Recommended** (best cost/performance) |
+| OpenAI GPT-4o mini | $0.00015 | $0.0006 | ~$0.0004 | Cheaper but less capable |
+| OpenAI GPT-4o | $0.0025 | $0.010 | ~$0.006 | 6x more expensive |
+| Anthropic Claude 3.5 Sonnet | $0.003 | $0.015 | ~$0.009 | 10x more expensive |
+
+#### Per-User Monthly Costs (Google Gemini 2.0 Flash)
+
+| Feature | Frequency | Tokens (avg) | Cost/Call | Monthly Cost |
+|---------|-----------|--------------|-----------|--------------|
+| **Insights** | 1/day | 800 (500 in + 300 out) | $0.0006 | $0.018 |
+| **Conversation** | 10/month | 1000 (600 in + 400 out) | $0.0008 | $0.008 |
+| **Goal Validation** | 1/month | 700 (400 in + 300 out) | $0.0006 | $0.0006 |
+| **Goal Progress** | 4/month | 700 (400 in + 300 out) | $0.0006 | $0.0024 |
+| **Total** | | | | **$0.029/month** |
+
+**With Cache (95% hit rate)**: $0.029 × 5% = **$0.0015/user/month** ✅
+
+**Target**: <$0.10/user/month (well under target)
+
+#### Cost Optimization Strategies
+
+1. **Cache Aggressively**:
+   - Insights: 24h TTL (one generation per day)
+   - Conversation: 24h context cache
+   - Goal validation: Cache identical goals
+
+2. **Use Cost-Efficient Models**:
+   - ✅ Google Gemini 2.0 Flash (recommended)
+   - ✅ OpenAI GPT-4o mini (alternative)
+   - ❌ Avoid GPT-4o, Claude 3.5 (overkill for this use case)
+
+3. **Prompt Optimization**:
+   - Keep prompts concise (<500 tokens)
+   - Use structured output to reduce verbose responses
+   - Limit conversation history (10 turns max)
+
+4. **Measure Production Costs**:
+   ```bash
+   # Simulate 1000 users for 30 days
+   GOOGLE_API_KEY=your_key poetry run python examples/scripts/measure_llm_costs.py \
+     --users 1000 --days 30 --feature all
+   ```
+
+See [examples/scripts/measure_llm_costs.py](../../examples/scripts/measure_llm_costs.py) for detailed cost measurement script.
+
+---
+
+### Configuration
+
+#### Environment Variables
+
+```bash
+# LLM Provider (required if enable_llm=True)
+GOOGLE_API_KEY=your_google_api_key
+OPENAI_API_KEY=your_openai_api_key  # Alternative
+
+# Cache (recommended for cost optimization)
+REDIS_URL=redis://localhost:6379/0
+CACHE_PREFIX=fin_infra
+CACHE_VERSION=1.0
+
+# Conversation Settings
+CONVERSATION_CONTEXT_TTL=86400  # 24 hours
+CONVERSATION_MAX_TURNS=10  # Limit context size
+
+# Insights Settings
+INSIGHTS_CACHE_TTL=86400  # 24 hours
+INSIGHTS_MIN_DAYS=7  # Minimum days for trends
+INSIGHTS_MAX_DAYS=365  # Maximum days for trends
+```
+
+#### Programmatic Configuration
+
+```python
+tracker = easy_net_worth(
+    banking=banking,
+    
+    # LLM Configuration
+    enable_llm=True,
+    llm_provider="google",  # 'google', 'openai', 'anthropic'
+    llm_api_key="...",  # Or use env var
+    llm_model="gemini-2.0-flash-exp",
+    
+    # Cache Configuration
+    cache_url="redis://localhost:6379/0",
+    cache_ttl=86400,  # 24 hours
+    
+    # Conversation Settings
+    conversation_max_turns=10,
+    conversation_context_ttl=86400,
+    
+    # Insights Settings
+    insights_cache_ttl=86400,
+    insights_min_days=7,
+    insights_max_days=365,
+    
+    # Goal Settings
+    goal_progress_frequency="weekly",  # 'daily', 'weekly', 'monthly'
+)
+```
+
+---
+
+### Migration Guide (V1 → V2)
+
+#### V1 (Calculation Only)
+
+```python
+# V1: Basic net worth calculation
+tracker = easy_net_worth(banking=banking)
+
+result = await tracker.calculate_net_worth(
+    user_id="user_123",
+    access_token="plaid_token",
+)
+
+print(f"Net Worth: ${result['total_net_worth']:,.2f}")
+```
+
+#### V2 (With LLM Insights)
+
+```python
+# V2: Add LLM features (backward compatible)
+tracker = easy_net_worth(
+    banking=banking,
+    enable_llm=True,  # ← Add this line
+    llm_provider="google",
+    llm_api_key=os.getenv("GOOGLE_API_KEY"),
+)
+
+# Existing code works unchanged
+result = await tracker.calculate_net_worth(
+    user_id="user_123",
+    access_token="plaid_token",
+)
+
+# NEW: Generate insights
+snapshots = await tracker.get_snapshots(user_id="user_123", days=90)
+insights = await tracker.insights_generator.analyze_wealth_trends(snapshots)
+
+# NEW: Ask questions
+response = await tracker.conversation.ask(
+    user_id="user_123",
+    question="How can I save more?",
+    session_id="session_456",
+    current_net_worth=result['total_net_worth'],
+    goals=[],
+)
+
+# NEW: Validate goals
+validation = await tracker.goal_tracker.validate_goal(goal, result)
+```
+
+**Backward Compatibility**: V1 code works unchanged. LLM features are opt-in via `enable_llm=True`.
+
+---
+
+### Troubleshooting (V2 LLM Features)
+
+#### Issue: LLM insights return 503 error
+
+**Cause**: LLM not enabled or API key missing.
+
+**Solution**: Check `enable_llm=True` and API key is set.
+
+```python
+# ❌ WRONG: LLM not enabled
+tracker = easy_net_worth(banking=banking)  # enable_llm defaults to False
+
+# ✅ CORRECT: Enable LLM
+tracker = easy_net_worth(
+    banking=banking,
+    enable_llm=True,
+    llm_api_key=os.getenv("GOOGLE_API_KEY"),
+)
+```
+
+---
+
+#### Issue: Conversation loses context after 10 turns
+
+**Cause**: Context window limit (intentional, prevents runaway costs).
+
+**Solution**: Increase `conversation_max_turns` or start new session.
+
+```python
+tracker = easy_net_worth(
+    banking=banking,
+    enable_llm=True,
+    conversation_max_turns=20,  # Default is 10
+)
+```
+
+---
+
+#### Issue: Goal validation returns unrealistic numbers
+
+**Cause**: LLM hallucinating numbers instead of using local calculations.
+
+**Solution**: Verify local calculation functions are called (not LLM).
+
+```python
+# ✅ CORRECT: Local calculation
+required_savings = calculate_retirement_goal(...)  # Accurate math
+
+# LLM only provides context
+validation = await tracker.goal_tracker.validate_goal(goal, snapshot)
+# Uses required_savings from local calc, adds LLM recommendations
+```
+
+---
+
+#### Issue: High LLM costs
+
+**Cause**: Cache misconfigured or hit rate too low.
+
+**Solution**: 
+1. Verify Redis is running and cache is enabled
+2. Measure actual costs with simulation script
+3. Increase cache TTL for insights (24h recommended)
+
+```bash
+# Measure costs
+GOOGLE_API_KEY=your_key poetry run python examples/scripts/measure_llm_costs.py \
+  --users 1000 --days 30
+
+# Expected output:
+# Cache Hit Rate: 95%+
+# Cost/User/Month: <$0.10
+```
+
+---
+
+#### Issue: Insights are too generic
+
+**Cause**: Insufficient context in LLM prompts.
+
+**Solution**: See quality review guide for improvement strategies.
+
+- [docs/testing/llm-quality-review.md](./testing/llm-quality-review.md)
+- Target: 4.0+ average rating from 20 test users
+
+---
+
+#### Issue: Conversation blocks legitimate questions
+
+**Cause**: Over-aggressive safety filters.
+
+**Solution**: Review safety filter logic in `conversation/planning.py:_is_safe_question()`.
+
+Safety filters currently block:
+- SSN, social security, tax ID
+- Password, PIN, account number, routing number
+- Credit card, CVV, security code
+- Driver license, passport
+
+If legitimate question is blocked, adjust filter patterns or add exception.
+
+---
+
+## Troubleshooting
 
 **Cause**: Non-USD accounts are skipped in V1.
 
@@ -1160,11 +1784,19 @@ async def create_snapshots():
 
 ## Related Documentation
 
+### Core Integrations
 - [Banking Integration](./banking.md) - Plaid, Teller adapters for account balances
 - [Brokerage Integration](./brokerage.md) - Alpaca adapter for stock holdings
 - [Crypto Integration](./crypto.md) - CCXT, CoinGecko for crypto balances
 - [Market Data](./market-data.md) - Alpha Vantage for stock quotes, exchange rates
-- [ADR-0020: Net Worth Architecture](./adr/0020-net-worth-architecture.md) - Design decisions
+
+### LLM Features (V2)
+- [ADR-0021: LLM Insights Architecture](./adr/0021-net-worth-llm-insights.md) - Design decisions for V2
+- [LLM Quality Review Guide](./testing/llm-quality-review.md) - Manual testing process (20 users, 4.0+ target)
+- [Cost Measurement Script](../../examples/scripts/measure_llm_costs.py) - Simulate production costs
+
+### Architecture
+- [ADR-0020: Net Worth Architecture](./adr/0020-net-worth-architecture.md) - V1 design decisions
 
 ---
 

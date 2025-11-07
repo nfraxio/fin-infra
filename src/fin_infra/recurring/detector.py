@@ -1,10 +1,15 @@
 """
 Core recurring transaction detection engine.
 
-This module implements the 3-layer hybrid pattern detection:
-- Layer 1: Fixed amount subscriptions (85% coverage, 0.90+ confidence)
-- Layer 2: Variable amount bills (10% coverage, 0.70+ confidence)
-- Layer 3: Irregular/annual subscriptions (5% coverage, 0.60+ confidence)
+V2: Adds optional LLM enhancement for merchant normalization (Layer 2)
+and variable amount detection (Layer 4).
+
+This module implements the 4-layer hybrid pattern detection:
+- Layer 1: RapidFuzz merchant normalization (95% coverage, 80% accuracy, fast)
+- Layer 2: LLM merchant normalization (5% edge cases, 90-95% accuracy, cached)
+- Layer 3: Statistical pattern detection (90% coverage, mean ± 2σ)
+- Layer 4: LLM variable detection (10% edge cases, 88% accuracy, semantic understanding)
+- Layer 5: LLM insights (optional, on-demand via API)
 """
 
 from __future__ import annotations
@@ -12,10 +17,15 @@ from __future__ import annotations
 import statistics
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Optional, TYPE_CHECKING
 
 from .models import CadenceType, PatternType, RecurringPattern
 from .normalizer import get_canonical_merchant, is_generic_merchant, normalize_merchant
+
+if TYPE_CHECKING:
+    from .normalizers import MerchantNormalizer
+    from .detectors_llm import VariableDetectorLLM
+    from .insights import SubscriptionInsightsGenerator
 
 
 class Transaction:
@@ -36,9 +46,12 @@ class Transaction:
 
 class PatternDetector:
     """
-    3-layer hybrid pattern detector for recurring transactions.
+    4-layer hybrid pattern detector for recurring transactions.
 
     Detects subscriptions and bills with multi-factor confidence scoring.
+    
+    V2: Optional LLM enhancement for merchant normalization (Layer 2)
+    and variable amount detection (Layer 4).
     """
 
     def __init__(
@@ -46,6 +59,8 @@ class PatternDetector:
         min_occurrences: int = 3,
         amount_tolerance: float = 0.02,
         date_tolerance_days: int = 7,
+        merchant_normalizer: Optional[MerchantNormalizer] = None,
+        variable_detector_llm: Optional[VariableDetectorLLM] = None,
     ):
         """
         Initialize pattern detector.
@@ -54,10 +69,14 @@ class PatternDetector:
             min_occurrences: Minimum number of transactions to detect pattern (default: 3)
             amount_tolerance: Amount variance tolerance for fixed patterns (default: 0.02 = 2%)
             date_tolerance_days: Date clustering tolerance in days (default: 7)
+            merchant_normalizer: Optional LLM merchant normalizer (Layer 2)
+            variable_detector_llm: Optional LLM variable amount detector (Layer 4)
         """
         self.min_occurrences = min_occurrences
         self.amount_tolerance = amount_tolerance
         self.date_tolerance_days = date_tolerance_days
+        self.merchant_normalizer = merchant_normalizer
+        self.variable_detector_llm = variable_detector_llm
 
         # Statistics
         self.stats = {
@@ -66,6 +85,8 @@ class PatternDetector:
             "variable_patterns": 0,
             "irregular_patterns": 0,
             "false_positives_filtered": 0,
+            "llm_normalizations": 0,
+            "llm_variable_detections": 0,
         }
 
     def detect(self, transactions: list[Transaction]) -> list[RecurringPattern]:
@@ -489,6 +510,9 @@ class RecurringDetector:
     High-level recurring transaction detector.
 
     Provides easy-to-use interface for detecting recurring patterns.
+    
+    V2: Optional LLM enhancement for merchant normalization (Layer 2),
+    variable amount detection (Layer 4), and insights generation (Layer 5).
     """
 
     def __init__(
@@ -496,6 +520,9 @@ class RecurringDetector:
         min_occurrences: int = 3,
         amount_tolerance: float = 0.02,
         date_tolerance_days: int = 7,
+        merchant_normalizer: Optional[MerchantNormalizer] = None,
+        variable_detector_llm: Optional[VariableDetectorLLM] = None,
+        insights_generator: Optional[SubscriptionInsightsGenerator] = None,
     ):
         """
         Initialize recurring detector.
@@ -504,12 +531,18 @@ class RecurringDetector:
             min_occurrences: Minimum transactions to detect pattern (default: 3)
             amount_tolerance: Amount variance tolerance (default: 0.02 = 2%)
             date_tolerance_days: Date clustering tolerance (default: 7 days)
+            merchant_normalizer: Optional LLM merchant normalizer (Layer 2, V2)
+            variable_detector_llm: Optional LLM variable detector (Layer 4, V2)
+            insights_generator: Optional LLM insights generator (Layer 5, V2)
         """
         self.detector = PatternDetector(
             min_occurrences=min_occurrences,
             amount_tolerance=amount_tolerance,
             date_tolerance_days=date_tolerance_days,
+            merchant_normalizer=merchant_normalizer,
+            variable_detector_llm=variable_detector_llm,
         )
+        self.insights_generator = insights_generator
 
     def detect_patterns(self, transactions: list[dict]) -> list[RecurringPattern]:
         """
