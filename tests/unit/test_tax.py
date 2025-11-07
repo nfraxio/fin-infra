@@ -213,42 +213,46 @@ class TestAddTaxData:
         # FastAPI tests require full svc-infra setup
         assert hasattr(app.state, "tax_provider")
     
-    @pytest.mark.skip("Requires svc-infra database setup")
-    def test_get_tax_documents_endpoint_with_svc_infra(self):
-        """GET /tax/documents returns list of tax documents."""
+    # NOTE: These endpoint tests are skipped in unit tests because they use svc-infra's
+    # user_router which automatically includes database session dependencies.
+    # These should be run as part of acceptance tests with full database setup.
+    @pytest.mark.skip("Integration test - requires svc-infra database session. Run in acceptance suite.")
+    def test_get_tax_documents_endpoint(self):
+        """GET /tax/documents returns list of tax documents (INTEGRATION TEST)."""
         app = FastAPI()
         add_tax_data(app, provider="mock")
         
         client = TestClient(app)
         response = client.get("/tax/documents?user_id=user123&tax_year=2024")
         
-        # May be 401 if auth required (svc-infra user_router), or 200 if fallback
-        assert response.status_code in [200, 401]
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 5  # W-2, 1099-INT/DIV/B/MISC
         
-        if response.status_code == 200:
-            data = response.json()
-            assert isinstance(data, list)
-            assert len(data) == 5  # W-2, 1099-INT/DIV/B/MISC
+        # Verify form types
+        form_types = [d["form_type"] for d in data]
+        assert set(form_types) == {"W2", "1099-INT", "1099-DIV", "1099-B", "1099-MISC"}
     
-    @pytest.mark.skip("Requires svc-infra database setup")
-    def test_get_tax_document_by_id_endpoint_with_svc_infra(self):
-        """GET /tax/documents/{document_id} returns specific document."""
+    @pytest.mark.skip("Integration test - requires svc-infra database session. Run in acceptance suite.")
+    def test_get_tax_document_by_id_endpoint(self):
+        """GET /tax/documents/{document_id} returns specific document (INTEGRATION TEST)."""
         app = FastAPI()
         add_tax_data(app, provider="mock")
         
         client = TestClient(app)
         response = client.get("/tax/documents/w2_2024_user123")
         
-        assert response.status_code in [200, 401]
-        
-        if response.status_code == 200:
-            data = response.json()
-            assert data["document_id"] == "w2_2024_user123"
-            assert data["form_type"] == "W2"
+        assert response.status_code == 200
+        data = response.json()
+        assert data["document_id"] == "w2_2024_user123"
+        assert data["form_type"] == "W2"
+        assert "wages" in data
+        assert "federal_tax_withheld" in data
     
-    @pytest.mark.skip("Requires svc-infra database setup")
-    def test_calculate_crypto_gains_endpoint_with_svc_infra(self):
-        """POST /tax/crypto-gains calculates crypto gains."""
+    @pytest.mark.skip("Integration test - requires svc-infra database session. Run in acceptance suite.")
+    def test_calculate_crypto_gains_endpoint(self):
+        """POST /tax/crypto-gains calculates crypto gains (INTEGRATION TEST)."""
         app = FastAPI()
         add_tax_data(app, provider="mock")
         
@@ -271,17 +275,17 @@ class TestAddTaxData:
         
         response = client.post("/tax/crypto-gains", json=payload)
         
-        assert response.status_code in [200, 401, 422]
-        
-        if response.status_code == 200:
-            data = response.json()
-            assert data["user_id"] == "user123"
-            assert data["tax_year"] == 2024
-            assert "total_gain_loss" in data
+        assert response.status_code == 200
+        data = response.json()
+        assert data["user_id"] == "user123"
+        assert data["tax_year"] == 2024
+        assert "total_gain_loss" in data
+        assert data["cost_basis_method"] == "FIFO"
     
-    @pytest.mark.skip("Requires svc-infra database setup")
-    def test_calculate_tax_liability_endpoint_with_svc_infra(self):
-        """POST /tax/tax-liability estimates tax liability."""
+    
+    @pytest.mark.skip("Integration test - requires svc-infra database session. Run in acceptance suite.")
+    def test_calculate_tax_liability_endpoint(self):
+        """POST /tax/tax-liability estimates tax liability (INTEGRATION TEST)."""
         app = FastAPI()
         add_tax_data(app, provider="mock")
         
@@ -297,14 +301,13 @@ class TestAddTaxData:
         
         response = client.post("/tax/tax-liability", json=payload)
         
-        assert response.status_code in [200, 401, 422]
-        
-        if response.status_code == 200:
-            data = response.json()
-            assert data["user_id"] == "user123"
-            assert data["filing_status"] == "single"
-            assert "federal_tax" in data
-            assert "state_tax" in data
+        assert response.status_code == 200
+        data = response.json()
+        assert data["user_id"] == "user123"
+        assert data["filing_status"] == "single"
+        assert "federal_tax" in data
+        assert "state_tax" in data
+        assert "total_tax" in data
 
 
 class TestTaxDataModels:

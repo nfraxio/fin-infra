@@ -58,6 +58,17 @@ tracker = add_net_worth_tracking(app, prefix="/net-worth")
 - Webhooks: Significant change alerts (>5% or >$10k)
 """
 
+from fin_infra.net_worth.add import add_net_worth_tracking
+from fin_infra.net_worth.aggregator import NetWorthAggregator
+from fin_infra.net_worth.calculator import (
+    calculate_asset_allocation,
+    calculate_change,
+    calculate_liability_breakdown,
+    calculate_net_worth,
+    detect_significant_change,
+    normalize_currency,
+)
+from fin_infra.net_worth.ease import NetWorthTracker, easy_net_worth
 from fin_infra.net_worth.models import (
     AssetAllocation,
     AssetCategory,
@@ -73,6 +84,19 @@ from fin_infra.net_worth.models import (
 )
 
 __all__ = [
+    # Easy Integration
+    "add_net_worth_tracking",
+    "easy_net_worth",
+    "NetWorthTracker",
+    # Core Classes
+    "NetWorthAggregator",
+    # Calculation Functions
+    "calculate_net_worth",
+    "normalize_currency",
+    "calculate_asset_allocation",
+    "calculate_liability_breakdown",
+    "calculate_change",
+    "detect_significant_change",
     # DTOs
     "NetWorthSnapshot",
     "AssetAllocation",
