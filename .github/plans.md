@@ -1902,35 +1902,71 @@ Completed in follow-up iteration:
   - [x] Conditional imports: Import V2 components (MerchantNormalizer, VariableDetectorLLM, SubscriptionInsightsGenerator) only if enable_llm=True (avoid circular imports, fail gracefully if ai-infra not installed)
   - [x] Initialization: Create 3 LLM components with validated parameters when enable_llm=True, pass to RecurringDetector constructor
   - [x] Total changes: +130 lines (docstring +90, parameters +8, validation +25, initialization +7)
-  - [ ] `easy_recurring_detection(enable_llm=False, llm_provider="google", **config)`
-  - [ ] Default: LLM disabled (backward compatible, no API costs)
-  - [ ] When enabled: Uses ai-infra.llm with structured output
-  - [ ] Multi-provider support: Google Gemini (default), OpenAI, Anthropic
-- [ ] Implement: recurring/normalizers.py (LLM-based merchant normalization)
-  - [ ] MerchantNormalizer class with CoreLLM + structured output
-  - [ ] Few-shot prompt template (20 examples: "NFLX*SUB"→"Netflix", "SQ *CAFE"→"Square Cafe", etc.)
-  - [ ] Structured output: MerchantNormalized(normalized_name, merchant_type, confidence)
-  - [ ] Cache normalized names (svc-infra.cache, 1-week TTL, 95% hit rate expected)
-  - [ ] Fallback to fuzzy matching if LLM fails or disabled
-- [ ] Implement: recurring/detectors_llm.py Layer 3 (LLM variable detection)
-  - [ ] VariableDetector class for ambiguous patterns
-  - [ ] Call LLM only for transactions with >20% amount variance (edge cases)
-  - [ ] Structured output: RecurringPattern(is_recurring, cadence, expected_range, reasoning)
-  - [ ] Few-shot examples: Utility bills with seasonal patterns, phone bills with overage charges
-  - [ ] Update detector.py to use LLM for edge cases (when statistical methods fail)
-- [ ] Implement: recurring/insights.py (natural language summaries)
-  - [ ] SubscriptionInsightsGenerator with CoreLLM
-  - [ ] Generate monthly summary: total spend, top subscriptions, consolidation recommendations
-  - [ ] Example: "You have 5 streaming subscriptions totaling $64.95/month. Consider Disney+ bundle to save $30/month."
-  - [ ] API endpoint: GET /recurring/insights (on-demand, not automatic)
-  - [ ] Cache insights (svc-infra.cache, 1-day TTL)
+- [x] Implement: recurring/normalizers.py (LLM-based merchant normalization) ✅ COMPLETE
+  - [x] Created src/fin_infra/recurring/normalizers.py (430 lines)
+  - [x] MerchantNormalizer class with ai-infra CoreLLM integration
+  - [x] MerchantNormalized Pydantic schema (canonical_name, merchant_type, confidence, reasoning)
+  - [x] Few-shot system prompt with 20 examples (NFLX*SUB→Netflix, SQ *CAFE→Cozy Cafe, TST*STARBUCKS→Starbucks, etc.)
+  - [x] Cache integration via svc-infra.cache (7-day TTL, 95% hit rate expected, <1ms latency)
+  - [x] Cache key: merchant_norm:{md5(lowercase(name))} for case-insensitive deduplication
+  - [x] CoreLLM.achat() with output_schema=MerchantNormalized, output_method="prompt", temperature=0.0
+  - [x] Fallback to basic preprocessing (remove prefixes SQ*/TST*/CLOVER*, remove store numbers, remove legal entities Inc/LLC/Corp)
+  - [x] Budget tracking: _daily_cost, _monthly_cost, _budget_exceeded flag, reset methods
+  - [x] Error handling: LLM timeout → fallback, cache miss → LLM call, confidence < threshold → fallback
+  - [x] get_budget_status() API for monitoring (daily/monthly cost/limit/remaining/exceeded)
+- [x] Implement: recurring/detectors_llm.py Layer 4 (LLM variable detection) ✅ COMPLETE
+  - [x] Created src/fin_infra/recurring/detectors_llm.py (330 lines)
+  - [x] VariableDetectorLLM class for ambiguous patterns (20-40% variance, ~10% of patterns)
+  - [x] VariableRecurringPattern Pydantic schema (is_recurring, cadence, expected_range, reasoning, confidence)
+  - [x] Few-shot system prompt with 5 examples (utility bills seasonal variation, phone overage spikes, gym fee waivers)
+  - [x] CoreLLM.achat() with output_schema=VariableRecurringPattern, output_method="prompt", temperature=0.0
+  - [x] Budget tracking: _daily_cost ($0.0001/detection), _monthly_cost, _budget_exceeded flag, reset methods
+  - [x] Error handling: Budget exceeded → is_recurring=False with confidence=0.5, LLM error → confidence=0.3
+  - [x] get_budget_status() API for monitoring
+- [x] Implement: recurring/insights.py (natural language summaries) ✅ COMPLETE
+  - [x] Created src/fin_infra/recurring/insights.py (420 lines)
+  - [x] SubscriptionInsightsGenerator class with ai-infra CoreLLM integration
+  - [x] SubscriptionInsights Pydantic schema (summary, top_subscriptions, recommendations, total_monthly_cost, potential_savings)
+  - [x] Few-shot system prompt with 3 examples (streaming bundle consolidation, duplicate music services, duplicate gym memberships)
+  - [x] Cache integration via svc-infra.cache (24h TTL, 80% hit rate expected, <1ms latency)
+  - [x] Cache key: insights:{user_id} or insights:{md5(subscriptions_json)} for deduplication
+  - [x] CoreLLM.achat() with output_schema=SubscriptionInsights, output_method="prompt", temperature=0.3 (slight creativity)
+  - [x] Fallback to basic summary (total cost, top 5, no recommendations) when LLM unavailable
+  - [x] Budget tracking: _daily_cost ($0.0002/generation), _monthly_cost, _budget_exceeded flag, reset methods
+  - [x] Error handling: Budget exceeded → fallback summary, LLM error → fallback summary
+  - [x] get_budget_status() API for monitoring
+- [x] Modify: recurring/detector.py (integrate LLM layers) ✅ COMPLETE
+  - [x] Updated module docstring to describe 4-layer hybrid architecture (Layer 1: RapidFuzz → Layer 2: LLM normalization → Layer 3: Statistical → Layer 4: LLM variable detection → Layer 5: LLM insights)
+  - [x] Added TYPE_CHECKING imports for MerchantNormalizer, VariableDetectorLLM, SubscriptionInsightsGenerator (avoid circular imports)
+  - [x] Updated PatternDetector.__init__() to accept merchant_normalizer and variable_detector_llm parameters
+  - [x] Added stats tracking: llm_normalizations, llm_variable_detections counters
+  - [x] Updated RecurringDetector.__init__() to accept merchant_normalizer, variable_detector_llm, insights_generator parameters
+  - [x] Pass LLM components from RecurringDetector → PatternDetector
+  - [x] Store insights_generator on RecurringDetector for API access
+  - [x] Total changes: +20 lines (docstring +10, parameters +6, imports +4)
+- [x] Modify: recurring/add.py (add insights endpoint) ✅ COMPLETE
+  - [x] Updated module docstring to mention V2 LLM enhancement
+  - [x] Added TYPE_CHECKING import for SubscriptionInsights
+  - [x] Updated add_recurring_detection() signature: enable_llm, llm_provider, llm_model parameters
+  - [x] Updated docstring: mention GET /recurring/insights endpoint, V1 vs V2 examples
+  - [x] Pass enable_llm, llm_provider, llm_model to easy_recurring_detection()
+  - [x] Added Route 5: GET /recurring/insights (conditional on enable_llm=True)
+  - [x] Convert patterns → subscriptions list for LLM input
+  - [x] Call insights_generator.generate(subscriptions) with LLM
+  - [x] Return SubscriptionInsights Pydantic model
+  - [x] Graceful degradation: When LLM disabled, return HTTP 501 with clear error message
+  - [x] Empty subscriptions: Return basic SubscriptionInsights with empty lists
+  - [x] Total changes: +100 lines (docstring +20, parameters +3, insights endpoint +75, error handling +2)
+
+**Implementation Phase Complete** ✅ (3 new files, 3 modified, ~1,300 lines total):
+- normalizers.py (430 lines): Layer 2 LLM merchant normalization
+- detectors_llm.py (330 lines): Layer 4 LLM variable amount detection  
+- insights.py (420 lines): Layer 5 LLM natural language insights
+- ease.py (+130 lines): V2 parameters, initialization
+- detector.py (+20 lines): LLM component integration
+- add.py (+100 lines): GET /insights endpoint
+
 - [ ] Tests: Unit tests (mocked CoreLLM responses)
-  - [ ] test_merchant_normalizer(): "NFLX*SUB" → MerchantNormalized("Netflix", "streaming", 0.95)
-  - [ ] test_variable_detector(): Utility bills → RecurringPattern(is_recurring=True, expected_range=(45, 70), reasoning="seasonal")
-  - [ ] test_insights_generator(): 5 subscriptions → summary + top 3 + recommendations
-  - [ ] test_llm_fallback(): LLM disabled → uses fuzzy matching (no LLM calls)
-  - [ ] test_caching(): Verify merchant normalization cached (1-week TTL, 95% hit rate)
-- [ ] Tests: Acceptance tests (real LLM API calls, marked @pytest.mark.acceptance)
   - [ ] test_google_gemini_normalization(): Real API call with 20 test merchant names
   - [ ] test_variable_detection_accuracy(): Test with 100 real utility transactions (accuracy target: 88%+)
   - [ ] test_insights_generation(): Generate insights for test user's 10 subscriptions
