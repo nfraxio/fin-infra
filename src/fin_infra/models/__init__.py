@@ -5,6 +5,17 @@ from .money import Money
 from .candle import Candle
 from .brokerage import Order, Position, PortfolioHistory
 from .brokerage import Account as BrokerageAccount  # Avoid name conflict
+from .tax import (
+    TaxDocument,
+    TaxFormW2,
+    TaxForm1099INT,
+    TaxForm1099DIV,
+    TaxForm1099B,
+    TaxForm1099MISC,
+    CryptoTransaction,
+    CryptoTaxReport,
+    TaxLiability,
+)
 
 __all__ = [
     "Account",
@@ -17,4 +28,13 @@ __all__ = [
     "Position",
     "PortfolioHistory",
     "BrokerageAccount",
+    "TaxDocument",
+    "TaxFormW2",
+    "TaxForm1099INT",
+    "TaxForm1099DIV",
+    "TaxForm1099B",
+    "TaxForm1099MISC",
+    "CryptoTransaction",
+    "CryptoTaxReport",
+    "TaxLiability",
 ]
