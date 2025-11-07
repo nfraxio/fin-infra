@@ -1317,7 +1317,7 @@ Completed in follow-up iteration:
   - [x] Update README with v2 status - **COMPLETE** (Updated credit provider env vars to OAuth 2.0)
   - [x] Update ADR-0012 with v2 implementation notes - **COMPLETE** (Added v2 deliverables section with all modules documented)
 
-### 14. Tax Data Integration (default: TaxBit for crypto, IRS for forms)
+### 14a. Tax Data Integration (default: TaxBit for crypto, IRS for forms)
 - [x] **Research (svc-infra check)**:
   - [x] Check svc-infra for tax document management/storage - **COMPLETE** (No document storage; only data lifecycle APIs)
   - [x] Review svc-infra.data for document lifecycle management - **COMPLETE** (Found: retention.py, erasure.py, fixtures.py, backup.py - metadata lifecycle only, not file storage)
@@ -1370,6 +1370,182 @@ Completed in follow-up iteration:
 - [x] Docs: docs/tax.md with provider comparison + easy_tax usage + document parsing + crypto tax reporting + svc-infra integration. - **COMPLETE** (src/fin_infra/docs/tax-data.md - 650+ lines)
   - **Sections**: Quick start (mock/FastAPI/production), form descriptions (W-2/1099-INT/DIV/B/MISC), crypto calculations (FIFO/LIFO/HIFO), document management (7-year retention), provider comparison (Mock/IRS/TaxBit), FastAPI routes (4 endpoints), environment variables, integration patterns (svc-infra data lifecycle/jobs/webhooks), testing examples, error handling
   - **Cross-references**: ADR 0017, banking.md, brokerage.md, svc-infra data-lifecycle.md/webhooks.md
+
+### 14b. Tax Data Integration V2 (Real Provider Implementations)
+**Prerequisites**: V1 complete (MockTaxProvider, easy_tax(), add_tax_data(), data models, docs)
+**Goal**: Replace stubs with real IRS e-Services and TaxBit API integrations for production use
+**Keep**: MockTaxProvider (for development/testing), stubs (for reference)
+
+#### IRS e-Services Provider (Real W-2/1099 Transcripts)
+- [ ] **Research (IRS Registration)**:
+  - [ ] Check svc-infra for certificate/credential storage - use svc-infra.security for PKI cert management
+  - [ ] Review IRS e-Services registration requirements (https://www.irs.gov/e-file-providers/e-services)
+  - [ ] Classification: Type A (financial-specific IRS integration)
+  - [ ] Justification: IRS transcript retrieval is financial domain; svc-infra provides cert storage and HTTP retry logic
+  - [ ] Reuse plan: Use svc-infra.security for PKI certificate storage/rotation, svc-infra.http for retry logic (IRS rate limits), svc-infra.cache for transcript caching (1h TTL), svc-infra.jobs for annual bulk pulls
+- [ ] Research: IRS e-Services API documentation (https://www.irs.gov/e-file-providers/modernized-e-file-mef-guide-for-software-developers-and-transmitters)
+  - [ ] IRS endpoints: /esvc/transcripts (W-2/1099), /esvc/income (AGI verification), /esvc/consent (taxpayer authorization)
+  - [ ] Authentication: PKI certificate (client cert + private key), EFIN (Electronic Filing ID Number), TCC (Transmitter Control Code)
+  - [ ] Request format: XML (IRS 1040 form structure), SOAP envelope with WS-Security
+  - [ ] Response format: XML transcripts with form data (W-2 boxes, 1099 fields)
+  - [ ] Rate limits: 100 requests/hour per EFIN (use svc-infra.cache to avoid repeated calls)
+  - [ ] IP whitelist: Must register static IPs with IRS (document in ADR)
+- [ ] Research: IRS registration process timeline and costs
+  - [ ] Application: 6-8 weeks for EFIN approval (IRS Form 8633)
+  - [ ] PKI certificate: $200-$500/year from approved CA (IdenTrust, DigiCert)
+  - [ ] Testing: IRS Assurance Testing System (ATS) required before production access (2-4 weeks)
+  - [ ] Renewal: Annual EFIN renewal ($0 cost, 2 weeks processing)
+- [ ] Design: IRSProvider implementation with real API calls (ADR-0018)
+  - [ ] Replace NotImplementedError with real httpx client (use svc-infra.http for retries)
+  - [ ] XML request builder: IRS 1040 format with taxpayer consent token
+  - [ ] XML response parser: Extract W-2/1099 data → map to Pydantic models
+  - [ ] Error handling: IRS error codes (401 unauthorized, 429 rate limit, 503 service unavailable)
+  - [ ] Consent flow: Implement taxpayer authorization (OAuth-like flow with IRS redirect)
+  - [ ] Certificate rotation: Use svc-infra.security for cert expiry monitoring and renewal
+- [ ] Design: PDF parser for IRS transcripts (pdfplumber-based)
+  - [ ] W2Parser: Coordinate-based extraction for 20 W-2 boxes (use pdfplumber.extract_table)
+  - [ ] 1099Parser: Generic parser for 1099-INT/DIV/B/MISC (different layouts per form type)
+  - [ ] OCR fallback: pytesseract for scanned forms (low quality)
+  - [ ] Validation: IRS checksum validation (box 1 wages = box 3 SS wages + box 12 deferrals)
+- [ ] Implement: providers/tax/irs.py (real IRS e-Services client)
+  - [ ] Replace stub __init__ with real initialization (load PKI cert from svc-infra.security)
+  - [ ] Implement get_tax_documents(): Call /esvc/transcripts, parse XML → TaxDocument models
+  - [ ] Implement get_tax_document(): Retrieve specific document by document_id (IRS tracking number)
+  - [ ] Implement download_document(): Fetch PDF transcript from IRS (use svc-infra.cache for 1h)
+  - [ ] Implement calculate_tax_liability(): Call /esvc/income for AGI, apply IRS tax tables
+  - [ ] Add consent_url() method: Generate IRS authorization URL for taxpayer consent
+  - [ ] Add handle_consent_callback() method: Process IRS callback with authorization code
+- [ ] Implement: tax/parsers/w2.py (W-2 PDF parser)
+  - [ ] W2Parser class with parse(pdf_bytes) → TaxFormW2
+  - [ ] Extract 20 boxes using pdfplumber coordinate-based extraction
+  - [ ] Validate checksums (box 1 = box 3 + box 12D, box 5 = box 3)
+  - [ ] OCR fallback for scanned forms (pytesseract)
+- [ ] Implement: tax/parsers/f1099.py (1099 PDF parser)
+  - [ ] 1099Parser base class with form_type detection (INT/DIV/B/MISC)
+  - [ ] 1099INTParser, 1099DIVParser, 1099BParser, 1099MISCParser subclasses
+  - [ ] Extract form-specific fields (interest_income for INT, ordinary_dividends for DIV, etc.)
+  - [ ] Validate totals (1099-DIV: box 1a = box 1b + box 1c)
+- [ ] Tests: IRS provider unit tests (mocked httpx responses)
+  - [ ] test_irs_provider_initialization(): Load PKI cert from config/env
+  - [ ] test_irs_get_tax_documents(): Mock XML response → verify TaxDocument models
+  - [ ] test_irs_xml_parsing(): XML transcript → Pydantic models (W-2, 1099-INT, etc.)
+  - [ ] test_irs_error_handling(): 401/429/503 errors → raise appropriate exceptions
+  - [ ] test_irs_consent_flow(): consent_url() → handle_consent_callback() → access token
+  - [ ] test_w2_parser(): Sample W-2 PDF → TaxFormW2 with all 20 boxes
+  - [ ] test_1099_parser(): Sample 1099-INT/DIV/B/MISC PDFs → TaxForm1099 models
+  - [ ] test_irs_caching(): Verify svc-infra.cache integration (1h TTL for transcripts)
+- [ ] Tests: IRS provider acceptance tests (real IRS sandbox)
+  - [ ] test_irs_sandbox_connection(): Verify PKI cert works with IRS test environment
+  - [ ] test_irs_fetch_w2(): Fetch real W-2 from IRS sandbox (test taxpayer)
+  - [ ] test_irs_fetch_1099(): Fetch real 1099 forms from IRS sandbox
+  - [ ] test_irs_rate_limiting(): Verify 100 req/hr limit handling
+  - [ ] Mark with @pytest.mark.acceptance and skip if IRS_EFIN not set
+- [ ] Verify: IRS provider works with sandbox credentials
+  - [ ] Run acceptance tests with IRS test EFIN
+  - [ ] Verify W-2/1099 data matches IRS sandbox test data
+  - [ ] Verify consent flow redirects to IRS correctly
+  - [ ] Verify certificate rotation works (expire test cert, verify renewal)
+- [ ] Docs: Update docs/tax-data.md with IRS setup guide
+  - [ ] Add "IRS e-Services Setup" section with registration steps
+  - [ ] Document EFIN application process (Form 8633, 6-8 weeks)
+  - [ ] Document PKI certificate purchase ($200-$500/year)
+  - [ ] Document IP whitelist registration
+  - [ ] Document ATS testing requirements (2-4 weeks)
+  - [ ] Add code examples for consent flow
+  - [ ] Update provider comparison table (Mock vs IRS vs TaxBit)
+
+#### TaxBit Provider (Real Crypto Tax Calculations)
+- [ ] **Research (TaxBit Registration)**:
+  - [ ] Check svc-infra for OAuth token management - use svc-infra.security for token storage/refresh
+  - [ ] Review TaxBit pricing and sign up process (https://taxbit.com/products/api)
+  - [ ] Classification: Type A (financial-specific crypto tax integration)
+  - [ ] Justification: Crypto capital gains calculation is financial domain; svc-infra provides OAuth handling and HTTP retry
+  - [ ] Reuse plan: Use svc-infra.security for OAuth token storage/refresh, svc-infra.http for retry logic, svc-infra.cache for tax report caching (1h TTL), svc-infra.jobs for year-end batch calculations
+- [ ] Research: TaxBit API documentation (https://developer.taxbit.com)
+  - [ ] TaxBit endpoints: /transactions (upload), /reports/capital-gains (calculate), /forms/8949 (generate)
+  - [ ] Authentication: OAuth 2.0 client credentials flow (client_id + client_secret)
+  - [ ] Request format: JSON with crypto transactions (symbol, date, quantity, price, type)
+  - [ ] Response format: JSON with capital gains report (short-term, long-term, FIFO/LIFO/HIFO)
+  - [ ] Rate limits: 100 requests/min (use svc-infra.cache to avoid repeated calls)
+  - [ ] Cost basis methods: FIFO, LIFO, HIFO, Specific ID (allow user override)
+- [ ] Research: TaxBit pricing tiers
+  - [ ] Starter: $50/month + $1/user (up to 1,000 users, 10k transactions/month)
+  - [ ] Growth: $200/month + $2/user (up to 10,000 users, 100k transactions/month)
+  - [ ] Enterprise: Custom ($10k-$50k/month for 100k+ users, unlimited transactions)
+  - [ ] Free trial: 30 days, 100 users, 1k transactions (use for development)
+- [ ] Design: TaxBitProvider implementation with real API calls (ADR-0019)
+  - [ ] Replace NotImplementedError with real httpx client (use svc-infra.http for retries)
+  - [ ] OAuth token management: Use svc-infra.security for token storage and refresh
+  - [ ] Transaction upload: Batch crypto transactions to TaxBit (paginate if > 1k transactions)
+  - [ ] Capital gains calculation: Call /reports/capital-gains with cost_basis_method (FIFO/LIFO/HIFO)
+  - [ ] Form 8949 generation: Call /forms/8949 to generate PDF for tax filing
+  - [ ] Error handling: TaxBit error codes (401 unauthorized, 429 rate limit, 402 payment required)
+  - [ ] Webhook integration: Use svc-infra.webhooks for async calculation notifications
+- [ ] Implement: providers/tax/taxbit.py (real TaxBit API client)
+  - [ ] Replace stub __init__ with real initialization (OAuth client credentials)
+  - [ ] Implement calculate_crypto_gains(): Upload transactions, call /reports/capital-gains, return CryptoTaxReport
+  - [ ] Implement get_tax_documents(): Fetch 1099-B/1099-MISC forms from TaxBit (crypto income)
+  - [ ] Implement download_document(): Fetch Form 8949 PDF from TaxBit
+  - [ ] Add upload_transactions() method: Batch upload crypto transactions (paginate if needed)
+  - [ ] Add generate_form_8949() method: Generate IRS Form 8949 PDF
+  - [ ] Add webhook handler: Process async calculation completion notifications
+- [ ] Tests: TaxBit provider unit tests (mocked httpx responses)
+  - [ ] test_taxbit_provider_initialization(): OAuth client credentials flow
+  - [ ] test_taxbit_oauth_refresh(): Token expiry → refresh token → retry request
+  - [ ] test_taxbit_calculate_crypto_gains(): Mock JSON response → CryptoTaxReport
+  - [ ] test_taxbit_cost_basis_methods(): FIFO vs LIFO vs HIFO → different gain_or_loss
+  - [ ] test_taxbit_transaction_pagination(): 5k transactions → batch upload (5 pages × 1k)
+  - [ ] test_taxbit_error_handling(): 401/429/402 errors → raise appropriate exceptions
+  - [ ] test_taxbit_webhook_integration(): Async calculation → webhook notification → fetch report
+  - [ ] test_taxbit_caching(): Verify svc-infra.cache integration (1h TTL for reports)
+- [ ] Tests: TaxBit provider acceptance tests (real TaxBit sandbox)
+  - [ ] test_taxbit_sandbox_connection(): Verify OAuth works with TaxBit test environment
+  - [ ] test_taxbit_upload_transactions(): Upload test crypto transactions to TaxBit sandbox
+  - [ ] test_taxbit_calculate_gains(): Calculate real gains in sandbox (FIFO/LIFO/HIFO)
+  - [ ] test_taxbit_form_8949(): Generate Form 8949 PDF from sandbox
+  - [ ] Mark with @pytest.mark.acceptance and skip if TAXBIT_CLIENT_ID not set
+- [ ] Verify: TaxBit provider works with free trial credentials
+  - [ ] Sign up for TaxBit free trial (30 days, 100 users)
+  - [ ] Run acceptance tests with trial credentials
+  - [ ] Verify crypto gains calculation matches manual calculation
+  - [ ] Verify Form 8949 PDF has correct data
+  - [ ] Verify webhook notifications work (async calculation)
+- [ ] Docs: Update docs/tax-data.md with TaxBit setup guide
+  - [ ] Add "TaxBit Setup" section with signup process
+  - [ ] Document pricing tiers (Starter/Growth/Enterprise)
+  - [ ] Document OAuth client credentials flow
+  - [ ] Document free trial (30 days, 100 users, 1k transactions)
+  - [ ] Add code examples for transaction upload and gains calculation
+  - [ ] Update provider comparison table with real pricing
+
+#### Integration & Production Readiness
+- [ ] Implement: Automatic provider selection in easy_tax()
+  - [ ] If IRS_EFIN set → IRSProvider (for W-2/1099 forms)
+  - [ ] If TAXBIT_CLIENT_ID set → TaxBitProvider (for crypto gains)
+  - [ ] If both set → create hybrid provider (IRS for forms, TaxBit for crypto)
+  - [ ] If neither set → MockTaxProvider (development/testing)
+- [ ] Implement: Hybrid provider (IRSProvider + TaxBitProvider)
+  - [ ] HybridTaxProvider: Delegates to IRS for W-2/1099, TaxBit for crypto
+  - [ ] get_tax_documents(): Merge results from both providers
+  - [ ] calculate_crypto_gains(): Use TaxBit (more accurate than IRS)
+  - [ ] calculate_tax_liability(): Use IRS AGI + TaxBit crypto gains
+- [ ] Tests: Integration tests with both providers
+  - [ ] test_hybrid_provider(): IRS + TaxBit working together
+  - [ ] test_provider_fallback(): IRS fails → fall back to mock
+  - [ ] test_easy_tax_auto_selection(): Env vars → correct provider
+- [ ] Verify: Production readiness checklist
+  - [ ] IRS provider works with real EFIN in production
+  - [ ] TaxBit provider works with paid subscription
+  - [ ] Certificate rotation automated (svc-infra.security)
+  - [ ] Rate limiting handled (svc-infra.cache + retry logic)
+  - [ ] Error monitoring (svc-infra.obs for alerts)
+  - [ ] 7-year retention policy enforced (svc-infra.data)
+- [ ] Docs: Migration guide from v1 (mock) to v2 (real)
+  - [ ] Add "Upgrading to Real Providers" section in docs/tax-data.md
+  - [ ] Document env variable changes (add IRS_EFIN, TAXBIT_CLIENT_ID)
+  - [ ] Document testing strategy (unit → acceptance → production)
+  - [ ] Document cost estimates (IRS $200-500/year, TaxBit $50-200/month + per-user)
+  - [ ] Add troubleshooting section (common IRS/TaxBit errors)
 
 ### 15. Transaction Categorization (ML-based, default: local model)
 - [ ] **Research (svc-infra check)**:
