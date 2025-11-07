@@ -1693,28 +1693,30 @@ Completed in follow-up iteration:
 #### V1 Phase: Pattern-Based Detection (Traditional ML)
 **Goal**: Detect recurring transactions (subscriptions, bills) using time-series pattern matching
 
-- [ ] **Research (svc-infra check)**:
-  - [ ] Check svc-infra for time-series pattern detection
-  - [ ] Review svc-infra.jobs for scheduled detection jobs
-  - [ ] Classification: Type A (financial-specific recurring payment detection)
-  - [ ] Justification: Subscription/bill detection (Netflix, rent, utilities) is financial domain
-  - [ ] Reuse plan: Use svc-infra.jobs for daily detection runs, svc-infra.cache for detected subscriptions, svc-infra.webhooks for subscription change alerts
-- [ ] Research: Recurring transaction patterns (monthly, bi-weekly, quarterly); amount variance tolerance.
-  - [ ] Pattern types: Fixed amount (Netflix $15.99), variable amount (utilities $45-65), irregular (annual subscriptions)
-  - [ ] Cadence detection: Monthly, bi-weekly, quarterly, annual
-  - [ ] Merchant normalization: Fuzzy matching (RapidFuzz) for "NETFLIX.COM" vs "Netflix Inc"
-- [ ] Research: Subscription detection heuristics (fixed amount ±5%, merchant name consistency, date clustering).
-  - [ ] Fixed amount: ±5% variance (handles minor price changes)
-  - [ ] Date clustering: 3+ transactions within ±7 days across months
-  - [ ] Merchant consistency: Levenshtein distance < 3 or 80%+ similarity
-  - [ ] False positive target: <5%
-- [ ] Design: RecurringTransaction, SubscriptionDetection, BillPrediction DTOs; detection algorithm. (ADR-0019)
-  - [ ] RecurringTransaction: merchant, amount_range, cadence, confidence, next_expected_date
-  - [ ] SubscriptionDetection: detected_at, pattern_type, historical_transactions
-  - [ ] BillPrediction: next_date, expected_amount, confidence
-- [ ] Design: Easy builder signature: `easy_recurring_detection(**config)` with sensitivity tuning
-  - [ ] `easy_recurring_detection(min_occurrences=3, amount_tolerance=0.05, date_tolerance_days=7, **config)`
-  - [ ] Returns configured RecurringDetector
+- [x] **Research (svc-infra check)**: **COMPLETE**
+  - [x] Check svc-infra for time-series pattern detection - **NOT FOUND** (no time-series analysis in svc-infra; grep for time.series|pattern.detect found only market data and payment recurring fields, no analysis tools)
+  - [x] Review svc-infra.jobs for scheduled detection jobs - **FOUND** (svc_infra.jobs.easy.easy_jobs() returns (queue, scheduler); InMemoryScheduler.add_task(name, interval_seconds, func) for periodic tasks; supports Redis backend via JOBS_DRIVER=redis)
+  - [x] Classification: Type A (financial-specific recurring payment detection) - **CONFIRMED**
+  - [x] Justification: Subscription/bill detection (Netflix, rent, utilities) is financial domain-specific; svc-infra provides job scheduling infrastructure but no pattern detection algorithms
+  - [x] Reuse plan: Use svc-infra.jobs for daily detection runs (scheduler.add_task for nightly batch processing), svc-infra.cache for detected subscriptions (cache_read/cache_write decorators, 24h-7d TTL), svc-infra.webhooks for subscription change alerts (add_webhooks for notification dispatch)
+- [x] Research: Recurring transaction patterns (monthly, bi-weekly, quarterly); amount variance tolerance. - **COMPLETE** (docs/research/recurring-transaction-detection.md - 15,000+ words comprehensive research)
+  - [x] Pattern types: Fixed amount 85% coverage (Netflix $15.99, ±2% or ±$0.50), variable amount 10% (utilities $45-65, ±10-30%), irregular 5% (annual subscriptions)
+  - [x] Cadence detection: Monthly (28-32 days), bi-weekly (13-15 days), quarterly (85-95 days), annual (360-370 days) with median-based algorithm + std dev confidence
+  - [x] Merchant normalization: Preprocessing pipeline (lowercase → remove special chars → remove store numbers → strip legal entities) + RapidFuzz fuzzy matching (80%+ similarity threshold)
+- [x] Research: Subscription detection heuristics (fixed amount ±5%, merchant name consistency, date clustering). - **COMPLETE**
+  - [x] Fixed amount: ±2% or ±$0.50 (whichever larger) variance, refined from ±5% after analysis (handles minor price changes, rounding)
+  - [x] Date clustering: 3+ transactions within ±7 days across months (catches 95% of recurring patterns, allows slight day-of-month variation)
+  - [x] Merchant consistency: RapidFuzz token_sort_ratio ≥80% OR Levenshtein distance ≤3 (handles "NETFLIX.COM" vs "Netflix Inc", "Starbucks #123" vs "Starbucks #456")
+  - [x] False positive target: <5% with prevention strategies (reject <3 occurrences, high variance, generic merchants like "ATM", "Payment")
+- [x] Design: RecurringTransaction, SubscriptionDetection, BillPrediction DTOs; detection algorithm. (ADR-0019) - **COMPLETE** (docs/adr/0019-recurring-transaction-detection.md - 400+ lines)
+  - [x] RecurringPattern: merchant_name, normalized_merchant, pattern_type (fixed/variable/irregular), cadence, amount/amount_range, occurrence_count, next_expected_date, confidence, reasoning
+  - [x] SubscriptionDetection: pattern (RecurringPattern), historical_transactions (IDs), detected_at, user_confirmed, user_id
+  - [x] BillPrediction: merchant_name, expected_date, expected_amount/expected_range, confidence, cadence
+  - [x] CadenceType enum: MONTHLY, BIWEEKLY, QUARTERLY, ANNUAL
+  - [x] PatternType enum: FIXED, VARIABLE, IRREGULAR
+- [x] Design: Easy builder signature: `easy_recurring_detection(**config)` with sensitivity tuning - **COMPLETE**
+  - [x] `easy_recurring_detection(min_occurrences=3, amount_tolerance=0.02, date_tolerance_days=7, enable_ml=False, **config)` (refined amount_tolerance from 0.05 to 0.02 based on research)
+  - [x] Returns configured RecurringDetector with 3-layer detection (fixed → variable → irregular)
 - [ ] Implement: recurring/detector.py (time-series pattern matching); subscription tracker.
   - [ ] PatternDetector class: Analyze transaction history for recurring patterns
   - [ ] 3-layer detection: Fixed amount → Variable amount → Irregular
