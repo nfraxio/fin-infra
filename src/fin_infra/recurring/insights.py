@@ -15,9 +15,15 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# Lazy import for optional dependency (ai-infra)
+try:
+    from ai_infra.llm import CoreLLM
+except ImportError:
+    CoreLLM = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -39,20 +45,13 @@ class SubscriptionInsights(BaseModel):
     )
     top_subscriptions: list[dict[str, Any]] = Field(
         ...,
-        max_items=5,
-        description=(
-            "Top 5 subscriptions by cost. "
-            "Each dict: {merchant: str, amount: float, cadence: str}"
-        ),
+        description="Top 5 subscriptions by cost",
+        max_length=5,
     )
     recommendations: list[str] = Field(
-        default_factory=list,
-        max_items=3,
-        description=(
-            "Up to 3 cost-saving recommendations. "
-            "Examples: 'Consider Disney+ bundle to save $30/month', "
-            "'Cancel Hulu - unused for 3 months'"
-        ),
+        ...,
+        description="Actionable recommendations (max 3)",
+        max_length=3,
     )
     total_monthly_cost: float = Field(
         ...,
@@ -189,11 +188,9 @@ class SubscriptionInsightsGenerator:
         self.max_cost_per_month = max_cost_per_month
 
         # Initialize CoreLLM
-        try:
-            from ai_infra.llm import CoreLLM
-        except ImportError as e:
+        if CoreLLM is None:
             raise ImportError(
-                f"ai-infra required for insights generation. Install: pip install ai-infra. Error: {e}"
+                "ai-infra required for insights generation. Install: pip install ai-infra"
             )
 
         self.llm = CoreLLM()

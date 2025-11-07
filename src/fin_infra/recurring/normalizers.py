@@ -16,9 +16,15 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# Lazy import for optional dependency (ai-infra)
+try:
+    from ai_infra.llm import CoreLLM
+except ImportError:
+    CoreLLM = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -167,11 +173,9 @@ class MerchantNormalizer:
         self.max_cost_per_month = max_cost_per_month
 
         # Initialize CoreLLM
-        try:
-            from ai_infra.llm import CoreLLM
-        except ImportError as e:
+        if CoreLLM is None:
             raise ImportError(
-                f"ai-infra required for LLM normalization. Install: pip install ai-infra. Error: {e}"
+                "ai-infra required for LLM normalization. Install: pip install ai-infra"
             )
 
         self.llm = CoreLLM()

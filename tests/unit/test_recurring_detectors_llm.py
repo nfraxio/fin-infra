@@ -24,14 +24,14 @@ class TestVariableRecurringPattern:
         result = VariableRecurringPattern(
             is_recurring=True,
             cadence="monthly",
-            expected_range="$45-$55",
+            expected_range=(45.0, 55.0),  # Tuple of floats, not string
             reasoning="Seasonal winter heating variation",
             confidence=0.88,
         )
 
         assert result.is_recurring is True
         assert result.cadence == "monthly"
-        assert result.expected_range == "$45-$55"
+        assert result.expected_range == (45.0, 55.0)
         assert result.reasoning == "Seasonal winter heating variation"
         assert result.confidence == 0.88
 
@@ -57,7 +57,7 @@ class TestVariableRecurringPattern:
         VariableRecurringPattern(
             is_recurring=True,
             cadence="monthly",
-            expected_range="$50",
+            expected_range=(50.0, 50.0),  # Tuple of floats
             reasoning="test",
             confidence=0.8,
         )
@@ -67,7 +67,7 @@ class TestVariableRecurringPattern:
             VariableRecurringPattern(
                 is_recurring=True,
                 cadence="monthly",
-                expected_range="$50",
+                expected_range=(50.0, 50.0),  # Tuple of floats
                 reasoning="test",
                 confidence=1.5,
             )
@@ -100,27 +100,23 @@ class TestVariableDetectorLLM:
         mock_response.structured = VariableRecurringPattern(
             is_recurring=True,
             cadence="monthly",
-            expected_range="$45-$55",
+            expected_range=(45.0, 55.0),  # Tuple of floats
             reasoning="Seasonal winter heating variation causes 20% fluctuation",
             confidence=0.88,
         )
         detector.llm.achat = AsyncMock(return_value=mock_response)
 
         # Transaction pattern
-        transactions = [
-            {"merchant": "City Electric", "amount": 45.50, "date": "2024-01-15"},
-            {"merchant": "City Electric", "amount": 52.30, "date": "2024-02-15"},
-            {"merchant": "City Electric", "amount": 48.75, "date": "2024-03-15"},
-            {"merchant": "City Electric", "amount": 54.20, "date": "2024-04-15"},
-        ]
+        amounts = [45.50, 52.30, 48.75, 54.20]
+        date_pattern = "Monthly (15th ±3 days)"
 
         # Detect pattern
-        result = await detector.detect("City Electric", transactions)
+        result = await detector.detect("City Electric", amounts, date_pattern)
 
         # Verify result
         assert result.is_recurring is True
         assert result.cadence == "monthly"
-        assert "$45-$55" in result.expected_range
+        assert result.expected_range == (45.0, 55.0)
         assert "seasonal" in result.reasoning.lower() or "winter" in result.reasoning.lower()
         assert result.confidence >= 0.85
 
@@ -139,7 +135,7 @@ class TestVariableDetectorLLM:
         assert messages[0]["content"] == VARIABLE_DETECTION_SYSTEM_PROMPT
         assert messages[1]["role"] == "user"
         assert "City Electric" in messages[1]["content"]
-        assert "$45" in messages[1]["content"] or "$52" in messages[1]["content"]
+        assert "45.5" in messages[1]["content"] or "52.3" in messages[1]["content"]  # Float amounts, not dollar strings
 
     @pytest.mark.asyncio
     async def test_detect_phone_overage_spikes(self, detector, mock_llm):
@@ -149,22 +145,18 @@ class TestVariableDetectorLLM:
         mock_response.structured = VariableRecurringPattern(
             is_recurring=True,
             cadence="monthly",
-            expected_range="$50-$55 (occasional $75-$80 spikes)",
+            expected_range=(50.0, 80.0),  # Tuple covering normal and spike range
             reasoning="Regular monthly bill with occasional overage charge spikes",
             confidence=0.86,
         )
         detector.llm.achat = AsyncMock(return_value=mock_response)
 
         # Transaction pattern with spike
-        transactions = [
-            {"merchant": "T-Mobile", "amount": 50.00, "date": "2024-01-15"},
-            {"merchant": "T-Mobile", "amount": 78.50, "date": "2024-02-15"},  # Spike
-            {"merchant": "T-Mobile", "amount": 50.00, "date": "2024-03-15"},
-            {"merchant": "T-Mobile", "amount": 50.00, "date": "2024-04-15"},
-        ]
+        amounts = [50.00, 78.50, 50.00, 50.00]
+        date_pattern = "Monthly (15th ±2 days)"
 
         # Detect pattern
-        result = await detector.detect("T-Mobile", transactions)
+        result = await detector.detect("T-Mobile", amounts, date_pattern)
 
         # Verify result
         assert result.is_recurring is True
@@ -186,15 +178,11 @@ class TestVariableDetectorLLM:
         detector.llm.achat = AsyncMock(return_value=mock_response)
 
         # Random transaction pattern
-        transactions = [
-            {"merchant": "Random Store", "amount": 25.00, "date": "2024-01-15"},
-            {"merchant": "Random Store", "amount": 150.00, "date": "2024-02-15"},
-            {"merchant": "Random Store", "amount": 40.00, "date": "2024-03-15"},
-            {"merchant": "Random Store", "amount": 200.00, "date": "2024-04-15"},
-        ]
+        amounts = [25.00, 150.00, 40.00, 200.00]
+        date_pattern = "Monthly (15th ±10 days)"
 
         # Detect pattern
-        result = await detector.detect("Random Store", transactions)
+        result = await detector.detect("Random Store", amounts, date_pattern)
 
         # Verify result
         assert result.is_recurring is False
@@ -210,22 +198,18 @@ class TestVariableDetectorLLM:
         mock_response.structured = VariableRecurringPattern(
             is_recurring=True,
             cadence="monthly",
-            expected_range="$45-$120 (seasonal)",
+            expected_range=(45.0, 120.0),  # Tuple covering seasonal range
             reasoning="Winter heating season doubles bill from summer baseline",
             confidence=0.90,
         )
         detector.llm.achat = AsyncMock(return_value=mock_response)
 
         # Seasonal pattern (winter spike)
-        transactions = [
-            {"merchant": "Gas Company", "amount": 45.00, "date": "2024-06-15"},  # Summer
-            {"merchant": "Gas Company", "amount": 120.00, "date": "2024-12-15"},  # Winter
-            {"merchant": "Gas Company", "amount": 115.00, "date": "2024-01-15"},  # Winter
-            {"merchant": "Gas Company", "amount": 50.00, "date": "2024-03-15"},  # Spring
-        ]
+        amounts = [45.00, 120.00, 115.00, 50.00]
+        date_pattern = "Monthly (15th ±5 days)"
 
         # Detect pattern
-        result = await detector.detect("Gas Company", transactions)
+        result = await detector.detect("Gas Company", amounts, date_pattern)
 
         # Verify result
         assert result.is_recurring is True
@@ -240,22 +224,18 @@ class TestVariableDetectorLLM:
         mock_response.structured = VariableRecurringPattern(
             is_recurring=True,
             cadence="monthly",
-            expected_range="$40 (occasional $0 for annual fee waiver)",
+            expected_range=(0.0, 40.0),  # Tuple covering waiver and regular fee
             reasoning="Regular membership with annual fee waived one month per year",
             confidence=0.87,
         )
         detector.llm.achat = AsyncMock(return_value=mock_response)
 
         # Pattern with one $0 month
-        transactions = [
-            {"merchant": "Gym Membership", "amount": 40.00, "date": "2024-01-15"},
-            {"merchant": "Gym Membership", "amount": 40.00, "date": "2024-02-15"},
-            {"merchant": "Gym Membership", "amount": 0.00, "date": "2024-03-15"},  # Waived
-            {"merchant": "Gym Membership", "amount": 40.00, "date": "2024-04-15"},
-        ]
+        amounts = [40.00, 40.00, 0.00, 40.00]
+        date_pattern = "Monthly (15th ±1 day)"
 
         # Detect pattern
-        result = await detector.detect("Gym Membership", transactions)
+        result = await detector.detect("Gym Membership", amounts, date_pattern)
 
         # Verify result
         assert result.is_recurring is True
@@ -269,7 +249,7 @@ class TestVariableDetectorLLM:
         mock_response.structured = VariableRecurringPattern(
             is_recurring=True,
             cadence="monthly",
-            expected_range="$50",
+            expected_range=(50.0, 50.0),  # Tuple of floats
             reasoning="test",
             confidence=0.85,
         )
@@ -280,15 +260,16 @@ class TestVariableDetectorLLM:
         assert detector._monthly_cost == 0.0
 
         # Call detect
-        transactions = [{"merchant": "Test", "amount": 50.00, "date": "2024-01-15"}]
-        await detector.detect("Test", transactions)
+        amounts = [50.00]
+        date_pattern = "Monthly (15th)"
+        await detector.detect("Test", amounts, date_pattern)
 
         # Verify budget increased
         assert detector._daily_cost == 0.0001  # Google Gemini cost per detection
         assert detector._monthly_cost == 0.0001
 
         # Call again
-        await detector.detect("Test2", transactions)
+        await detector.detect("Test2", amounts, date_pattern)
 
         # Verify budget doubled
         assert detector._daily_cost == 0.0002
@@ -301,8 +282,9 @@ class TestVariableDetectorLLM:
         detector._budget_exceeded = True
 
         # Try to detect
-        transactions = [{"merchant": "Test", "amount": 50.00, "date": "2024-01-15"}]
-        result = await detector.detect("Test", transactions)
+        amounts = [50.00]
+        date_pattern = "Monthly (15th)"
+        result = await detector.detect("Test", amounts, date_pattern)
 
         # Verify LLM was NOT called
         detector.llm.achat.assert_not_called()
@@ -315,8 +297,8 @@ class TestVariableDetectorLLM:
     @pytest.mark.asyncio
     async def test_budget_exceeded_when_daily_limit_hit(self, detector, mock_llm):
         """Test budget exceeded flag set when daily limit is hit."""
-        # Set daily cost near limit
-        detector._daily_cost = 0.09  # Just below $0.10 limit
+        # Set daily cost very close to limit (one call away)
+        detector._daily_cost = 0.09999  # Just below $0.10 limit (detect() adds $0.0001)
         detector.max_cost_per_day = 0.10
 
         # Mock LLM response
@@ -324,15 +306,16 @@ class TestVariableDetectorLLM:
         mock_response.structured = VariableRecurringPattern(
             is_recurring=True,
             cadence="monthly",
-            expected_range="$50",
+            expected_range=(50.0, 50.0),  # Tuple of floats
             reasoning="test",
             confidence=0.85,
         )
         detector.llm.achat = AsyncMock(return_value=mock_response)
 
-        # Make request that pushes over limit
-        transactions = [{"merchant": "Test", "amount": 50.00, "date": "2024-01-15"}]
-        await detector.detect("Test", transactions)
+        # Make request that pushes over limit (0.09999 + 0.0001 = 0.10009 > 0.10)
+        amounts = [50.00]
+        date_pattern = "Monthly (15th)"
+        await detector.detect("Test", amounts, date_pattern)
 
         # Verify budget exceeded flag is set
         assert detector._budget_exceeded is True
@@ -345,8 +328,9 @@ class TestVariableDetectorLLM:
         detector.llm.achat = AsyncMock(side_effect=Exception("LLM timeout"))
 
         # Try to detect
-        transactions = [{"merchant": "Test", "amount": 50.00, "date": "2024-01-15"}]
-        result = await detector.detect("Test", transactions)
+        amounts = [50.00]
+        date_pattern = "Monthly (15th)"
+        result = await detector.detect("Test", amounts, date_pattern)
 
         # Verify fallback result
         assert result.is_recurring is False
@@ -406,9 +390,9 @@ class TestVariableDetectorLLM:
 
     @pytest.mark.asyncio
     async def test_empty_transactions_raises_error(self, detector):
-        """Test that empty transactions list raises ValueError."""
-        with pytest.raises(ValueError, match="transactions cannot be empty"):
-            await detector.detect("Test", [])
+        """Test that empty amounts list raises ValueError."""
+        with pytest.raises(ValueError, match="amounts cannot be empty"):
+            await detector.detect("Test", [], "Monthly (15th)")
 
     @pytest.mark.asyncio
     async def test_user_prompt_formatting(self, detector, mock_llm):
@@ -418,20 +402,18 @@ class TestVariableDetectorLLM:
         mock_response.structured = VariableRecurringPattern(
             is_recurring=True,
             cadence="monthly",
-            expected_range="$50",
+            expected_range=(50.0, 55.0),  # Tuple of floats
             reasoning="test",
             confidence=0.85,
         )
         detector.llm.achat = AsyncMock(return_value=mock_response)
 
-        # Transactions
-        transactions = [
-            {"merchant": "Test Merchant", "amount": 50.00, "date": "2024-01-15"},
-            {"merchant": "Test Merchant", "amount": 55.00, "date": "2024-02-15"},
-        ]
+        # Amounts and date pattern
+        amounts = [50.00, 55.00]
+        date_pattern = "Monthly (15th ±2 days)"
 
         # Detect
-        await detector.detect("Test Merchant", transactions)
+        await detector.detect("Test Merchant", amounts, date_pattern)
 
         # Verify user prompt
         call_args = detector.llm.achat.call_args
@@ -440,10 +422,9 @@ class TestVariableDetectorLLM:
         # Should contain merchant name
         assert "Test Merchant" in user_message
         
-        # Should contain transaction amounts
-        assert "$50" in user_message or "50.00" in user_message
-        assert "$55" in user_message or "55.00" in user_message
+        # Should contain amounts (floats without trailing zeros: 50.0, 55.0)
+        assert "50.0" in user_message or "50.00" in user_message
+        assert "55.0" in user_message or "55.00" in user_message
         
-        # Should contain dates
-        assert "2024-01-15" in user_message or "Jan" in user_message
-        assert "2024-02-15" in user_message or "Feb" in user_message
+        # Should contain date pattern
+        assert "Monthly" in user_message
