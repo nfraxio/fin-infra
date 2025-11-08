@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 RMI ?= all
 
-.PHONY: help accept compose_up wait seed down pytest_accept unit unitv clean clean-pycache test lint type format
+.PHONY: help accept compose_up wait seed down pytest_accept unit unitv integration integrationv clean clean-pycache test lint type format
 
 DC_FILE := docker-compose.test.yml
 COMPOSE := docker compose -f $(DC_FILE)
@@ -12,8 +12,10 @@ help: ## Show available commands
 	@echo "Testing:"
 	@echo "  unit              Run unit tests (quiet)"
 	@echo "  unitv             Run unit tests (verbose)"
+	@echo "  integration       Run integration tests (quiet)"
+	@echo "  integrationv      Run integration tests (verbose)"
 	@echo "  accept            Run acceptance tests"
-	@echo "  test              Run all tests (unit + acceptance)"
+	@echo "  test              Run all tests (unit + integration + acceptance)"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  format            Format code with black and isort"
@@ -105,6 +107,25 @@ unitv:
 	poetry install --no-interaction --only main,dev >/dev/null 2>&1 || true; \
 	poetry run pytest -vv tests/unit
 
+# --- Integration tests ---
+integration:
+	@echo "[integration] Running integration tests (quiet)"
+	@if ! command -v poetry >/dev/null 2>&1; then \
+		echo "[integration] Poetry is not installed. Please install Poetry (https://python-poetry.org/docs/#installation)"; \
+		exit 2; \
+	fi; \
+	poetry install --no-interaction --only main,dev >/dev/null 2>&1 || true; \
+	poetry run pytest -q tests/integration
+
+integrationv:
+	@echo "[integration] Running integration tests (verbose)"
+	@if ! command -v poetry >/dev/null 2>&1; then \
+		echo "[integration] Poetry is not installed. Please install Poetry (https://python-poetry.org/docs/#installation)"; \
+		exit 2; \
+	fi; \
+	poetry install --no-interaction --only main,dev >/dev/null 2>&1 || true; \
+	poetry run pytest -vv tests/integration
+
 # --- Code Quality ---
 format:
 	@echo "[format] Formatting with black and isort"
@@ -146,9 +167,12 @@ clean-pycache:
 
 # --- Combined test target ---
 test:
-	@echo "[test] Running unit and acceptance tests"
+	@echo "[test] Running unit, integration, and acceptance tests"
 	@status=0; \
 	$(MAKE) unit || status=$$?; \
+	if [ $$status -eq 0 ]; then \
+		$(MAKE) integration || status=$$?; \
+	fi; \
 	if [ $$status -eq 0 ]; then \
 		$(MAKE) accept || status=$$?; \
 	fi; \
