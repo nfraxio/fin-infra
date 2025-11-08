@@ -543,8 +543,8 @@ def add_capability(
      - Use recurring detection for predictable income/expenses
      - Apply growth rates from assumptions
      - Generate monthly projections
-   - [x] Unit tests: `tests/unit/analytics/test_cash_flow.py` with mock transactions
-   - [ ] Integration tests: Real banking + categorization modules
+   - [x] Unit tests: `tests/unit/analytics/test_cash_flow.py` with mock transactions (19 tests passing)
+   - [x] Integration tests: `tests/integration/analytics/test_cash_flow_integration.py` (10 tests passing)
    - Verify in coverage analysis: Closes "Cash Flow Analysis" gap (currently 0% coverage)
 
 4. [x] **Implement savings rate calculation** (NEW FILE: `src/fin_infra/analytics/savings.py`)
@@ -557,7 +557,7 @@ def add_capability(
      - Track over time (historical savings rates)
      - Calculate trends (improving, declining, stable)
    - [x] Unit tests: `tests/unit/analytics/test_savings.py` with various scenarios (24 tests passing)
-   - [ ] Integration tests: With cash flow module
+   - [x] Integration tests: `tests/integration/analytics/test_savings_integration.py` (20 tests passing)
    - Verify in coverage analysis: Closes "Savings Rate Calculation" gap (currently 0% coverage)
 
 5. [ ] **Implement spending insights** (NEW FILE: `src/fin_infra/analytics/spending.py`)
