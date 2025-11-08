@@ -582,19 +582,20 @@ def add_capability(
    - **Total spending tests: 99 tests (46+24+17+12) all passing in 0.37s**
    - Verify in coverage analysis: Closes "Spending Insights" gap (currently 0% coverage)
 
-6. [ ] **Implement portfolio analytics** (NEW FILE: `src/fin_infra/analytics/portfolio.py`)
-   - [ ] Function: `calculate_portfolio_metrics(user_id, accounts=None) -> PortfolioMetrics`
+6. [x] **Implement portfolio analytics** (NEW FILE: `src/fin_infra/analytics/portfolio.py`) ✅ COMPLETE
+   - [x] Function: `calculate_portfolio_metrics(user_id, accounts=None) -> PortfolioMetrics`
      - Total portfolio value across all brokerage accounts
      - Total return (dollar amount and percentage)
      - YTD, MTD, 1Y, 3Y, 5Y returns
      - Day change (dollar and percentage)
      - Asset allocation by asset class (stocks, bonds, cash, crypto, real estate, other)
-   - [ ] Function: `compare_to_benchmark(user_id, benchmark="SPY", period="1y") -> BenchmarkComparison`
+   - [x] Function: `compare_to_benchmark(user_id, benchmark="SPY", period="1y") -> BenchmarkComparison`
      - Portfolio return vs benchmark return
      - Calculate alpha (excess return) and beta (volatility)
      - Sharpe ratio (risk-adjusted return)
-   - [ ] Unit tests: `tests/unit/analytics/test_portfolio.py` with mock portfolio data
-   - [ ] Integration tests: With brokerage module
+   - [x] Unit tests: `tests/unit/analytics/test_portfolio.py` with mock portfolio data (39 tests passing)
+   - [x] Integration tests: `tests/integration/analytics/test_portfolio_integration.py` (18 tests passing)
+   - **Total portfolio tests: 57 tests (39+18) all passing in 0.07s**
    - Verify in coverage analysis: Improves "Portfolio Analytics" from 22% to 100% coverage
 
 7. [ ] **Implement growth projections** (NEW FILE: `src/fin_infra/analytics/projections.py`)
