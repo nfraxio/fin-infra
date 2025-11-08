@@ -515,21 +515,21 @@ def add_capability(
 
 **Tasks**:
 
-1. [ ] **Create analytics module structure**
+1. [x] **Create analytics module structure**
    - Create `src/fin_infra/analytics/__init__.py`
    - Create `src/fin_infra/analytics/models.py`
    - Create `src/fin_infra/analytics/ease.py`
    - Create `src/fin_infra/analytics/add.py`
    - Verify in coverage analysis: Addresses "Analytics Module (New Domain)" recommendation
 
-2. [ ] **Define Pydantic models** (`src/fin_infra/analytics/models.py`)
-   - [ ] `CashFlowAnalysis` model (income_total, expense_total, net_cash_flow, income_by_source, expenses_by_category)
-   - [ ] `SavingsRateData` model (savings_rate, savings_amount, income, expenses, period)
-   - [ ] `SpendingInsight` model (top_merchants, category_breakdown, spending_trends, anomalies)
-   - [ ] `PortfolioMetrics` model (total_value, total_return, ytd_return, mtd_return, day_change, allocation_by_asset_class)
-   - [ ] `BenchmarkComparison` model (portfolio_return, benchmark_return, benchmark_symbol, alpha, beta)
-   - [ ] `GrowthProjection` model (projected_values, assumptions, scenarios, confidence_intervals)
-   - All models must use keyword-only args for cache key stability
+2. [x] **Define Pydantic models** (`src/fin_infra/analytics/models.py`)
+   - [x] `CashFlowAnalysis` model (income_total, expense_total, net_cash_flow, income_by_source, expenses_by_category)
+   - [x] `SavingsRateData` model (savings_rate, savings_amount, income, expenses, period)
+   - [x] `SpendingInsight` model (top_merchants, category_breakdown, spending_trends, anomalies)
+   - [x] `PortfolioMetrics` model (total_value, total_return, ytd_return, mtd_return, day_change, allocation_by_asset_class)
+   - [x] `BenchmarkComparison` model (portfolio_return, benchmark_return, benchmark_symbol, alpha, beta)
+   - [x] `GrowthProjection` model (projected_values, assumptions, scenarios, confidence_intervals)
+   - [x] All models use keyword-only args for cache key stability
 
 3. [ ] **Implement cash flow analysis** (NEW FILE: `src/fin_infra/analytics/cash_flow.py`)
    - [ ] Function: `calculate_cash_flow(user_id, start_date, end_date, accounts=None) -> CashFlowAnalysis`
