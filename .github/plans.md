@@ -1345,32 +1345,49 @@ overspending = detect_overspending(budget.categories, actual_spending)
       - Added trailing commas to all method signatures using tenant_arg_type_comma
     - Reference: Phase 6 in presistence-strategy.md (Task 8 completed in ~2 hours with template fixes)
 
-9. [ ] **Implement net-worth scaffold function** (FILE: `src/fin_infra/scaffold/net_worth.py`)
-    - [ ] Function: `scaffold_net_worth_core(dest_dir, include_tenant, include_soft_delete, with_repository, overwrite, models_filename, schemas_filename, repository_filename) -> Dict[str, Any]`
-    - [ ] Template variable generation:
+9. [x] **Implement net-worth scaffold function** (FILE: `src/fin_infra/scaffold/net_worth.py`) ✅ COMPLETE
+    - [x] Function: `scaffold_net_worth_core(dest_dir, include_tenant, include_soft_delete, with_repository, overwrite, models_filename, schemas_filename, repository_filename) -> Dict[str, Any]`
+    - [x] Template variable generation:
       ```python
       subs = {
           "Entity": "NetWorthSnapshot",
           "entity": "net_worth_snapshot",
           "table_name": "net_worth_snapshots",
-          "tenant_field": _tenant_field() if include_tenant else "",
-          "soft_delete_field": _soft_delete_field() if include_soft_delete else "",
+          # 17+ variables total including tenant and soft_delete patterns
       }
       ```
-    - [ ] Template loading: `render_template("fin_infra.net_worth.templates", "models.py.tmpl", subs)`
-    - [ ] File writing: models, schemas, repository (optional), __init__.py
-    - [ ] Default filenames: net_worth_snapshot.py, net_worth_snapshot_schemas.py, net_worth_snapshot_repository.py
-    - [ ] Return dict: `{"files": [{"path": str, "action": "wrote|skipped"}]}`
-    - [ ] Unit tests: `tests/unit/scaffold/test_net_worth_scaffold.py` (20+ tests)
-      - Test basic scaffold
-      - Test with tenant_id flag
-      - Test with soft_delete flag
-      - Test without repository
-      - Test custom filenames
-      - Test overwrite protection
-      - Test immutable snapshot pattern (no Update schema)
-    - [ ] Quality checks: mypy passes, ruff passes, all tests pass
-    - Reference: Phase 6 in presistence-strategy.md (1-2 hours estimated)
+    - [x] Template loading: `render_template("fin_infra.net_worth.scaffold_templates", "models.py.tmpl", subs)` (NOTE: Fixed package name)
+    - [x] File writing: models, schemas, repository (optional), README, __init__.py (5 files total)
+    - [x] Default filenames: net_worth_snapshot.py, net_worth_snapshot_schemas.py, net_worth_snapshot_repository.py
+    - [x] Return dict: `{"files": [{"path": str, "action": "wrote|skipped"}]}`
+    - [x] Unit tests: `tests/unit/scaffold/test_net_worth_scaffold.py` (25 tests - exceeds 20 target)
+      - Test basic scaffold ✓
+      - Test with tenant_id flag ✓
+      - Test with soft_delete flag ✓
+      - Test combined flags ✓
+      - Test without repository ✓
+      - Test custom filenames ✓
+      - Test overwrite protection ✓
+      - Test overwrite enabled ✓
+      - Test immutable snapshot pattern (no Update schema) ✓
+      - Test models/schemas/repository content structure ✓
+      - Test __init__.py generation ✓
+      - Test path object and string input ✓
+    - [x] Quality checks: mypy passes ✓, ruff passes ✓, all 25/25 tests pass ✓
+    - [x] Template bug fixes applied (from Task 8 learnings):
+      - Fixed `tenant_dict_assign` usage in create() method (line 62)
+      - Added trailing commas to all method signatures with tenant_arg_type_comma
+      - Reordered parameters in list() and get_trend() to put tenant_id before optional params
+      - Fixed all 9 method signatures: create, get, list, delete, get_latest, get_by_date, get_by_date_range, get_trend, calculate_growth
+    - [x] Validation: All 5 flag combinations generate syntactically valid Python code ✓
+    - **Completion notes**:
+      - Implementation time: ~90 minutes (faster than Task 8 due to established pattern)
+      - Applied all Task 8 template fixes proactively
+      - Discovered same parameter ordering issues in list() and get_trend()
+      - 25 tests cover all edge cases and domain-specific immutability requirements
+      - Code: 271 lines (net_worth.py), 577 lines (test_net_worth_scaffold.py)
+      - All quality gates passing: 25/25 tests, mypy clean, ruff clean, all flag combos valid
+    - Reference: Phase 6 in presistence-strategy.md (Task 9 completed in ~1.5 hours)
 
 10. [ ] **Update CLI to support all domains** (FILE: `src/fin_infra/cli/cmds/scaffold_cmds.py`)
     - [ ] Update `cmd_scaffold()` to dispatch to all three scaffold functions:
