@@ -757,16 +757,34 @@ def add_capability(
     - [x] All tests passing (15/15)
     - Note: Webhook integration marked with example for Task 17 implementation
 
-15. [ ] **Implement budget templates** (FILE: `src/fin_infra/budgets/templates.py`)
-    - [ ] Pre-built templates:
+15. [x] **Implement budget templates** (FILE: `src/fin_infra/budgets/templates.py`)
+    - [x] Pre-built templates:
       - `50/30/20` (50% needs, 30% wants, 20% savings) for personal finance
       - `Zero-based` (every dollar allocated) for detailed budgeting
       - `Envelope system` (cash-like category limits) for spending control
       - `Business` (common business expense categories) for small business
       - `Project` (project-specific budget) for project management
-    - [ ] Function: `apply_template(user_id, template_name, total_income) -> Budget`
-    - [ ] Support custom templates (users can save custom templates)
-    - [ ] Unit tests: `tests/unit/budgets/test_templates.py`
+    - [x] Function: `apply_template(user_id, template_name, total_income, tracker, ...) -> Budget`
+      - Calculates category amounts from percentages (e.g., 25% of $5000 = $1250)
+      - Supports custom templates via `custom_template` parameter
+      - Optional `budget_name` and `start_date` parameters
+      - Validates income > 0 and template exists
+      - Rounds all amounts to 2 decimal places
+    - [x] Helper classes: `BudgetTemplate` with validation (percentages must sum to 100%)
+    - [x] Helper functions:
+      - `list_templates()`: Returns all built-in templates with metadata
+      - `save_custom_template()`: Placeholder for Task 17 (DB storage)
+      - `get_custom_templates()`: Placeholder for Task 17 (DB retrieval)
+    - [x] Unit tests: `tests/unit/budgets/test_templates.py` (24 tests)
+      - TestBudgetTemplate: 4 tests (init, validation, tolerance, empty)
+      - TestBuiltInTemplates: 6 tests (5 templates + metadata)
+      - TestApplyTemplate: 10 tests (all templates, validation, custom, rounding)
+      - TestListTemplates: 2 tests (listing, structure)
+      - TestCustomTemplates: 2 tests (NotImplementedError until Task 17)
+      - TestTemplatesIntegration: 1 test (full workflow)
+    - [x] All tests passing (24/24)
+    - [x] Quality checks: mypy clean, ruff clean
+    - Note: Custom template save/get require DB wiring in Task 17
 
 16. [ ] **Create easy_budgets() builder** (FILE: `src/fin_infra/budgets/ease.py`)
     - [ ] Function: `easy_budgets() -> BudgetTracker`
