@@ -531,19 +531,19 @@ def add_capability(
    - [x] `GrowthProjection` model (projected_values, assumptions, scenarios, confidence_intervals)
    - [x] All models use keyword-only args for cache key stability
 
-3. [ ] **Implement cash flow analysis** (NEW FILE: `src/fin_infra/analytics/cash_flow.py`)
-   - [ ] Function: `calculate_cash_flow(user_id, start_date, end_date, accounts=None) -> CashFlowAnalysis`
+3. [x] **Implement cash flow analysis** (NEW FILE: `src/fin_infra/analytics/cash_flow.py`)
+   - [x] Function: `calculate_cash_flow(user_id, start_date, end_date, accounts=None) -> CashFlowAnalysis`
      - Aggregate transactions from banking module
      - Separate income (positive) vs expenses (negative)
      - Group income by source (paycheck, investment, side hustle, other)
      - Group expenses by category (use categorization module)
      - Calculate net cash flow
      - Support account filtering (all, specific, groups)
-   - [ ] Function: `forecast_cash_flow(user_id, months=6, assumptions={}) -> List[CashFlowAnalysis]`
+   - [x] Function: `forecast_cash_flow(user_id, months=6, assumptions={}) -> List[CashFlowAnalysis]`
      - Use recurring detection for predictable income/expenses
      - Apply growth rates from assumptions
      - Generate monthly projections
-   - [ ] Unit tests: `tests/unit/analytics/test_cash_flow.py` with mock transactions
+   - [x] Unit tests: `tests/unit/analytics/test_cash_flow.py` with mock transactions
    - [ ] Integration tests: Real banking + categorization modules
    - Verify in coverage analysis: Closes "Cash Flow Analysis" gap (currently 0% coverage)
 
