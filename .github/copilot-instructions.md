@@ -27,7 +27,9 @@
 
 **fin-infra-web** is a comprehensive reference implementation showing most capabilities, but other teams will build different UIs and workflows using the same fin-infra primitives.
 
-## Critical Boundary: fin-infra vs svc-infra
+## Critical Boundaries: fin-infra vs svc-infra vs ai-infra
+
+**Golden Rule**: ALWAYS check svc-infra AND ai-infra FIRST before implementing any feature.
 
 ### fin-infra scope (ONLY financial integrations)
 - ✅ Banking provider adapters (Plaid, Teller, MX)
@@ -38,13 +40,15 @@
 - ✅ Financial calculations (NPV, IRR, PMT, FV, PV, loan amortization, portfolio analytics)
 - ✅ Financial data models (accounts, transactions, quotes, holdings, credit reports, goals, budgets)
 - ✅ Provider normalization (symbol resolution, currency conversion, institution mapping)
-- ✅ Transaction categorization (rule-based + ML models)
+- ✅ Transaction categorization (rule-based + ML models with financial context)
 - ✅ Recurring detection (subscription identification, bill tracking)
-- ✅ Net worth tracking (multi-account aggregation, snapshots, insights)
+- ✅ Net worth tracking (multi-account aggregation, snapshots, financial insights)
 - ✅ Budget management (budget CRUD, tracking, overspending alerts)
 - ✅ Cash flow analysis (income vs expenses, forecasting, projections)
 - ✅ Portfolio analytics (returns, allocation, benchmarking, rebalancing)
 - ✅ Goal management (goal CRUD, progress tracking, validation, recommendations)
+- ✅ **Financial-specific LLM prompts** (few-shot examples with merchant names, financial advice, budget recommendations)
+- ✅ **Financial domain logic** (FIFO/LIFO calculations, compound interest, amortization schedules)
 
 ### svc-infra scope (USE, don't duplicate)
 - ✅ API framework (FastAPI scaffolding, routing, middleware, dual routers)
@@ -57,9 +61,36 @@
 - ✅ Rate limiting (middleware, decorators, distributed limiting)
 - ✅ Billing & payments (Stripe/Adyen integration, subscriptions, invoices)
 - ✅ HTTP utilities (retry logic with tenacity, timeout management)
-  - `easy_brokerage()` returns a brokerage client for paper/live trading.
-  - `easy_credit()` returns a credit score provider.
-  - Cashflow functions: `npv()`, `irr()`, `xnpv()`, `xirr()`.
+
+### ai-infra scope (USE, don't duplicate)
+- ✅ **LLM inference** (CoreLLM with multi-provider support: OpenAI, Anthropic, Google, etc.)
+- ✅ **Structured output** (Pydantic schema validation, with_structured_output, output_schema parameter)
+- ✅ **Conversation management** (FinancialPlanningConversation for multi-turn Q&A)
+- ✅ **Context management** (conversation history, session storage, context windows)
+- ✅ **LLM utilities** (token counting, cost tracking, retry logic, rate limiting)
+- ✅ **Provider abstraction** (unified interface for OpenAI/Anthropic/Google/etc.)
+- ✅ **Agent framework** (LangGraph integration, tool calling, multi-step reasoning)
+
+### Integration Pattern (fin-infra + svc-infra + ai-infra)
+
+```python
+# Backend infrastructure from svc-infra
+from svc_infra.api.fastapi.dual.public import public_router
+from svc_infra.cache import cache_read, cache_write
+from svc_infra.jobs import easy_jobs
+
+# AI infrastructure from ai-infra
+from ai_infra.llm import CoreLLM
+from ai_infra.conversation import FinancialPlanningConversation
+
+# Financial logic from fin-infra
+from fin_infra.banking import easy_banking
+from fin_infra.categorization import easy_categorization
+
+# fin-infra provides ONLY financial domain logic and prompts
+# All LLM calls go through ai-infra.llm.CoreLLM
+# All backend features use svc-infra
+```
 
 ## Dev setup and checks
 - Install with Poetry: `poetry install`. Activate via `poetry shell` or prefix `poetry run`.
@@ -230,21 +261,109 @@ Each capability must have:
 4. **ADR** if architectural decisions were made (e.g., `docs/adr/0003-banking-integration.md`)
 5. **Integration examples** showing fin-infra + svc-infra usage
 
+## AI/LLM Integration Standards (MANDATORY)
+
+**CRITICAL**: fin-infra must NEVER duplicate AI infrastructure from ai-infra.
+
+### What fin-infra Provides (Financial Domain Logic)
+- ✅ **Financial prompts**: Few-shot examples with merchant names, tax rules, investment advice
+- ✅ **Financial schemas**: Pydantic models for financial outputs (CategoryPrediction, CryptoTaxReport, etc.)
+- ✅ **Financial context**: Account balances, transaction history, market data for LLM inputs
+- ✅ **Financial validation**: Local calculations (compound interest, FIFO/LIFO) to validate LLM outputs
+
+### What ai-infra Provides (AI Infrastructure - REUSE ONLY)
+- ✅ **LLM clients**: CoreLLM with multi-provider support (OpenAI, Anthropic, Google, etc.)
+- ✅ **Structured output**: Pydantic schema validation, output_schema parameter
+- ✅ **Conversation**: FinancialPlanningConversation for multi-turn Q&A with context management
+- ✅ **Cost tracking**: Token counting, budget enforcement, daily/monthly caps
+- ✅ **Retry logic**: Exponential backoff, rate limit handling, graceful degradation
+
+### Correct LLM Usage Patterns
+
+✅ **DO**: Use ai-infra for ALL LLM infrastructure
+```python
+from ai_infra.llm import CoreLLM
+from ai_infra.conversation import FinancialPlanningConversation
+
+# Single-shot inference with structured output
+llm = CoreLLM(provider="google_genai", model="gemini-2.0-flash-exp")
+result = await llm.achat(
+    messages=[{"role": "user", "content": financial_prompt}],
+    output_schema=CategoryPrediction,  # fin-infra Pydantic model
+    output_method="prompt",
+)
+
+# Multi-turn conversation
+conversation = FinancialPlanningConversation(llm=llm)
+response = await conversation.ask(
+    user_id="user123",
+    question="How can I save more money?",
+    net_worth=net_worth_data,  # fin-infra provides financial context
+    goals=goals_data,
+)
+```
+
+❌ **DON'T**: Build custom LLM clients or conversation managers
+```python
+# WRONG: Custom LLM client (ai-infra provides CoreLLM)
+import openai
+client = openai.Client(api_key="...")
+
+# WRONG: Custom conversation manager (ai-infra provides FinancialPlanningConversation)
+class ChatHistory:
+    def __init__(self):
+        self.messages = []
+    def add_message(self, role, content): ...
+
+# WRONG: Custom structured output (ai-infra provides with_structured_output)
+def parse_llm_json(response_text):
+    return json.loads(response_text)
+```
+
+### Decision Tree: When to Use Structured Output vs Natural Dialogue
+
+**Use `output_schema` (structured)** for:
+- ✅ Single-shot inference (categorization, insights, normalization)
+- ✅ Data extraction (parse tax forms, extract transaction details)
+- ✅ Classification (assign category, detect recurring pattern)
+- ✅ Validation (check goal feasibility, verify budget allocation)
+
+**Use natural dialogue (NO output_schema)** for:
+- ✅ Multi-turn conversation (financial planning Q&A)
+- ✅ Explanations (why did this transaction categorize as X?)
+- ✅ Recommendations (what should I do to reach my goal?)
+- ✅ Follow-up questions (user asks for clarification)
+
+### Cost Management (MANDATORY for all LLM features)
+- [ ] Track daily/monthly spend per user
+- [ ] Enforce budget caps ($0.10/day, $2/month default)
+- [ ] Use svc-infra cache for expensive operations (24h TTL for insights, 7d for normalizations)
+- [ ] Target: <$0.10/user/month with caching
+- [ ] Graceful degradation when budget exceeded (fall back to rule-based logic)
+
+### Safety & Disclaimers (MANDATORY)
+- [ ] Add "Not a substitute for certified financial advisor" in all financial advice prompts
+- [ ] Filter sensitive questions (SSN, passwords, account numbers) before sending to LLM
+- [ ] Log all LLM calls for compliance (use svc-infra logging)
+- [ ] Never send PII to LLM without user consent
+
 ## Contribution expectations
-- **MANDATORY: Check svc-infra first**: Before adding any feature, verify svc-infra doesn't already provide it.
+- **MANDATORY: Check svc-infra AND ai-infra first**: Before adding ANY feature, verify neither svc-infra nor ai-infra already provide it.
 - **MANDATORY: Use dual routers**: All FastAPI routers must use svc-infra dual routers (public_router, user_router, etc.)
-- **Document reuse**: Always document which svc-infra modules are used and why.
-- **Financial-only**: Keep adapters focused on financial data; delegate all backend concerns to svc-infra.
+- **MANDATORY: Use ai-infra for LLM**: All LLM calls must go through ai-infra.llm.CoreLLM (never custom LLM clients)
+- **Document reuse**: Always document which svc-infra and ai-infra modules are used and why.
+- **Financial-only**: Keep adapters focused on financial data; delegate backend to svc-infra, AI to ai-infra.
 - **Type safety**: All provider methods must have full type hints and Pydantic models.
 - **Documentation cards**: Each capability needs README card, dedicated doc, and OpenAPI visibility.
-- **Testing**: Add unit tests for logic; acceptance tests for provider integrations.
+- **Testing**: Add unit tests for logic; acceptance tests for provider integrations; mock LLM calls in unit tests.
 - **Quality gates**: Run format, lint, type, test before submitting PRs.
 
 ## Agent workflow expectations
-- **Hard gate: Research svc-infra FIRST**: Before implementing ANY feature, check if svc-infra provides it.
+- **Hard gate: Research svc-infra AND ai-infra FIRST**: Before implementing ANY feature, check if svc-infra OR ai-infra provides it.
 - **Hard gate: Use dual routers**: Never use generic APIRouter; always use svc-infra dual routers.
+- **Hard gate: Use ai-infra LLM**: Never build custom LLM clients; always use ai-infra.llm.CoreLLM.
 - **Stage gates**: Research → Design → Implement → Tests → Verify → Docs (no skipping).
-- **Reuse documentation**: Document all svc-infra imports and why they're used.
+- **Reuse documentation**: Document all svc-infra and ai-infra imports and why they're used.
 - **Documentation complete**: Ensure README card, dedicated doc file, and OpenAPI visibility for each capability.
-- **Examples**: Show fin-infra + svc-infra integration patterns in docs.
+- **Examples**: Show fin-infra + svc-infra + ai-infra integration patterns in docs.
 - **Quality report**: Run all checks (format, lint, type, test) and report results before finishing.

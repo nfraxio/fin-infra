@@ -16,17 +16,431 @@
 ## Legend
 - [ ] Pending
 - [x] Completed  
-- [~] Skipped (exists in svc-infra / out of scope)
+- [~] Skipped (exists in svc-infra/ai-infra / out of scope)
 - (note) Commentary or reference
 
 ---
 
 ## Table of Contents
+0. [⚠️ MANDATORY: Standards & Requirements](#standards-and-requirements) ← **READ FIRST**
 1. [🔴 CRITICAL: Web Application API Coverage](#critical-web-api-coverage) ← **START HERE**
 2. [📋 Repository Boundaries & Standards](#repository-boundaries)
 3. [🚀 Nice-to-Have Features](#nice-to-have-features)
 
 ---
+
+<a name="standards-and-requirements"></a>
+## ⚠️ Part 0: MANDATORY Standards & Requirements
+
+**PURPOSE**: This section defines mandatory standards that ALL fin-infra implementations must follow. Read this BEFORE implementing any feature.
+
+---
+
+### CRITICAL: Repository Boundaries & Reuse Policy
+
+**Golden Rule**: ALWAYS check svc-infra AND ai-infra FIRST before implementing any feature.
+
+#### Type Classification System
+
+Every new feature MUST be classified as one of these types:
+
+- **Type A (Financial-specific)**: Belongs in fin-infra
+  - Examples: Banking provider adapters, market data APIs, transaction categorization, recurring detection
+  - Criteria: Financial domain knowledge required, no equivalent in svc-infra or ai-infra
+  
+- **Type B (Backend infrastructure)**: Belongs in svc-infra
+  - Examples: Auth, cache, DB migrations, jobs, webhooks, logging, observability, rate limiting
+  - Criteria: Generic backend concern, not financial-specific
+  
+- **Type C (AI/LLM infrastructure)**: Belongs in ai-infra
+  - Examples: LLM inference, structured output, multi-provider LLM support, conversation management
+  - Criteria: Generic AI concern, not financial-specific
+
+#### Mandatory Research Protocol
+
+Before implementing ANY new feature:
+
+1. **Search svc-infra codebase**: `grep -r "feature_name" svc-infra/src/`
+2. **Search ai-infra codebase**: `grep -r "feature_name" ai-infra/src/`
+3. **Document findings**: Create research section in plans.md with:
+   - Classification (Type A/B/C)
+   - Justification (why fin-infra vs svc-infra vs ai-infra)
+   - Reuse plan (which svc-infra/ai-infra modules to use)
+   - Evidence (file paths, function names)
+
+#### Examples: Correct Reuse
+
+✅ **DO**: Use existing infrastructure
+```python
+# Backend infrastructure from svc-infra
+from svc_infra.api.fastapi.dual.public import public_router
+from svc_infra.cache import cache_read, cache_write
+from svc_infra.jobs import easy_jobs
+
+# AI infrastructure from ai-infra  
+from ai_infra.llm import CoreLLM
+from ai_infra.llm.utils.structured import with_structured_output
+
+# Financial logic in fin-infra
+from fin_infra.banking import easy_banking
+from fin_infra.market import easy_market
+```
+
+❌ **DON'T**: Duplicate infrastructure
+```python
+# WRONG: Custom router (svc-infra provides dual routers)
+from fastapi import APIRouter
+router = APIRouter()
+
+# WRONG: Custom cache (svc-infra provides caching)
+_cache = {}
+
+# WRONG: Custom LLM client (ai-infra provides CoreLLM)
+import openai
+client = openai.Client()
+
+# WRONG: Custom conversation manager (ai-infra provides conversation)
+class ChatHistory: ...
+```
+
+---
+
+### Router & API Standards (MANDATORY FOR ALL CAPABILITIES)
+
+#### Rule 1: NEVER Use Generic FastAPI Router
+
+❌ **FORBIDDEN**:
+```python
+from fastapi import APIRouter
+router = APIRouter(prefix="/banking")  # WRONG
+```
+
+✅ **REQUIRED**:
+```python
+from svc_infra.api.fastapi.dual.public import public_router
+router = public_router(prefix="/banking", tags=["Banking"])
+```
+
+#### Router Selection Guide
+
+| Route Type | Router | Auth | Use Case |
+|------------|--------|------|----------|
+| Public data (market quotes, public tax forms) | `public_router()` | None | No authentication needed |
+| Provider-specific tokens (banking with Plaid/Teller tokens) | `public_router()` | Custom token validation | Provider handles auth |
+| User-authenticated (brokerage trades, credit reports) | `user_router()` | RequireUser | User owns data |
+| Service-only (provider webhooks, admin) | `service_router()` | RequireService | Internal only |
+
+#### Implementation Pattern (MANDATORY)
+
+Every fin-infra capability with an `add_*()` helper MUST:
+
+```python
+def add_capability(app: FastAPI, provider=None, prefix="/capability") -> Provider:
+    """
+    Add capability to FastAPI app.
+    
+    Args:
+        app: FastAPI application
+        provider: Provider instance or name (default auto-detect)
+        prefix: URL prefix (default "/capability")
+        
+    Returns:
+        Configured provider instance
+    """
+    from svc_infra.api.fastapi.dual.public import public_router  # or user_router
+    from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
+    
+    # 1. Initialize provider
+    capability = easy_capability(provider=provider)
+    
+    # 2. Create router with dual routes
+    router = public_router(prefix=prefix, tags=["Capability"])
+    
+    # 3. Define routes
+    @router.get("/endpoint")
+    async def get_data():
+        return capability.get_data()
+    
+    # 4. Mount router
+    app.include_router(router, include_in_schema=True)
+    
+    # 5. Register scoped docs (REQUIRED for landing page card)
+    add_prefixed_docs(
+        app,
+        prefix=prefix,
+        title="Capability Name",
+        auto_exclude_from_root=True,
+        visible_envs=None,  # Show in all environments
+    )
+    
+    # 6. Store provider on app.state
+    app.state.capability_provider = capability
+    
+    # 7. Return provider instance
+    return capability
+```
+
+#### Why `add_prefixed_docs()` is Required
+
+Creates separate documentation card on landing page:
+- Generates scoped OpenAPI schema at `{prefix}/openapi.json`
+- Provides dedicated Swagger UI at `{prefix}/docs`
+- Provides dedicated ReDoc at `{prefix}/redoc`
+- Excludes capability routes from root docs (keeps root clean)
+- **Without this call, routes work but don't appear as cards on landing page**
+
+---
+
+### Universal Capability Requirements (APPLY TO ALL SECTIONS)
+
+Every new fin-infra capability MUST implement ALL of the following:
+
+#### 1. Router Implementation (MANDATORY)
+
+- [ ] Use svc-infra dual router (`public_router`, `user_router`, or `service_router`)
+- [ ] NEVER use generic `from fastapi import APIRouter`
+- [ ] Select appropriate router type (see Router Selection Guide above)
+- [ ] Mount with `include_in_schema=True` for OpenAPI visibility
+- [ ] Use descriptive tags for doc organization
+- [ ] Store provider on `app.state.{capability}_provider`
+- [ ] Return provider instance from `add_*()` helper
+- [ ] Accept provider instance OR name parameter
+
+#### 2. Documentation Cards (MANDATORY)
+
+Every capability needs:
+
+- [ ] **README card** (overview, quick start, use cases, links)
+  - Add to main README.md under appropriate section
+  - 3-5 sentences describing capability
+  - Links to detailed docs and examples
+  
+- [ ] **Dedicated doc file** (`src/fin_infra/docs/{capability}.md`)
+  - Comprehensive guide (500+ lines)
+  - Quick start (3 code examples: programmatic, FastAPI, cURL)
+  - API reference (all endpoints with examples)
+  - Configuration options
+  - Integration with svc-infra/ai-infra
+  - Use cases (personal finance, wealth management, banking, etc.)
+  - Troubleshooting section
+  
+- [ ] **OpenAPI visibility** (verify in `/docs`)
+  - Routes appear with proper tags
+  - Security annotations (lock icons for protected routes)
+  - Request/response examples
+  
+- [ ] **ADR** (when applicable - architectural decisions)
+  - `src/fin_infra/docs/adr/{number}-{capability}.md`
+  - Design decisions and rationale
+  - Alternative approaches considered
+  - Reuse strategy (svc-infra/ai-infra modules)
+  
+- [ ] **Integration examples**
+  - Production app (fin-infra + svc-infra + ai-infra)
+  - Minimal setup (one-liner)
+  - Programmatic usage (no FastAPI)
+  - Background jobs (svc-infra jobs)
+
+#### 3. AI/LLM Integration Standards (MANDATORY when using AI)
+
+If your capability uses LLM/AI features:
+
+- [ ] **ALWAYS use ai-infra CoreLLM** (never custom LLM clients)
+  ```python
+  from ai_infra.llm import CoreLLM
+  
+  llm = CoreLLM(
+      provider="google_genai",
+      model="gemini-2.0-flash-exp",
+  )
+  ```
+
+- [ ] **Use structured output for single-shot inference**
+  ```python
+  from ai_infra.llm.utils.structured import with_structured_output
+  
+  result = await llm.achat(
+      messages=[{"role": "user", "content": prompt}],
+      output_schema=PydanticModel,
+      output_method="prompt",  # or "tool"
+  )
+  ```
+
+- [ ] **Use natural dialogue for conversations**
+  ```python
+  # For multi-turn conversations, DON'T force structured output
+  response = await llm.achat(
+      messages=conversation_history,
+      # NO output_schema for natural conversation
+  )
+  ```
+
+- [ ] **Cost management**
+  - Track daily/monthly spend with budget caps
+  - Use svc-infra cache for expensive operations (24h TTL for insights, 7d for normalizations)
+  - Target: <$0.10/user/month with caching
+  
+- [ ] **Graceful degradation**
+  - LLM unavailable → fall back to rule-based logic
+  - Budget exceeded → return basic results without LLM
+  - Never crash on LLM errors
+
+- [ ] **Safety & disclaimers**
+  - Add "Not a substitute for certified financial advisor" in prompts
+  - Filter sensitive questions (SSN, passwords, account numbers)
+  - Log all LLM calls for compliance
+
+#### 4. Testing Requirements (MANDATORY)
+
+- [ ] **Unit tests** (mock all external dependencies)
+  - Test core logic with mocked providers
+  - Test error handling and edge cases
+  - Test configuration and validation
+  - Minimum: 80% code coverage
+  
+- [ ] **Integration tests** (mock HTTP/API calls)
+  - Test FastAPI endpoints with TestClient
+  - Test provider integration with mocked responses
+  - Test svc-infra integration (cache, DB, jobs)
+  - Test ai-infra integration (mocked LLM responses)
+  
+- [ ] **Acceptance tests** (real API calls, `@pytest.mark.acceptance`)
+  - Test with sandbox/test credentials
+  - Skip if credentials not available
+  - Verify real provider responses
+  - Document required environment variables
+  
+- [ ] **Router tests** (verify dual router usage)
+  - Test routes mounted correctly
+  - Test trailing slash handling (no 307 redirects)
+  - Test authentication (401/403 as appropriate)
+  
+- [ ] **OpenAPI tests** (verify documentation)
+  - Test `/docs` shows capability card
+  - Test `{prefix}/openapi.json` exists
+  - Test security annotations present
+
+#### 5. Verification Checklist (Before Marking Section Complete)
+
+Run ALL of these checks:
+
+- [ ] `ruff format` passes (code formatting)
+- [ ] `ruff check` passes (linting, no errors)
+- [ ] `mypy src/fin_infra` passes (type checking)
+- [ ] `pytest tests/unit/{capability}/` passes (unit tests)
+- [ ] `pytest tests/integration/{capability}/` passes (integration tests)
+- [ ] `pytest tests/acceptance/{capability}/ -m acceptance` passes (acceptance tests, may skip)
+- [ ] `grep -r "from fastapi import APIRouter" src/fin_infra/{capability}/` returns NO results
+- [ ] Visit `http://localhost:8000/docs` → capability card visible on landing page
+- [ ] Visit `http://localhost:8000/{prefix}/docs` → scoped docs work
+- [ ] Visit `http://localhost:8000/{prefix}/openapi.json` → scoped OpenAPI schema exists
+- [ ] README has capability card with links
+- [ ] Dedicated doc file exists at `src/fin_infra/docs/{capability}.md`
+- [ ] If using LLM: all LLM calls use `ai_infra.llm.CoreLLM` (grep confirms)
+- [ ] If using conversation: reuses `ai_infra` conversation (no duplicate chat managers)
+
+#### 6. Common Mistakes to Avoid
+
+❌ **DON'T**:
+- Use generic `APIRouter()` instead of svc-infra dual routers
+- Duplicate svc-infra features (auth, cache, DB, jobs, webhooks, logging)
+- Duplicate ai-infra features (LLM clients, structured output, conversation)
+- Skip `add_prefixed_docs()` call (routes won't appear on landing page)
+- Forget to store provider on `app.state`
+- Skip acceptance tests (mark with `@pytest.mark.acceptance` and skip if no credentials)
+- Write tests that require real API calls without `@pytest.mark.acceptance`
+- Hardcode credentials in tests (use environment variables)
+- Forget error handling and graceful degradation
+- Skip documentation (README card, dedicated doc, ADR if applicable)
+- Mix financial logic with infrastructure (keep in separate modules)
+- Build custom LLM clients instead of using ai-infra
+- Implement conversation/chat management instead of reusing ai-infra
+
+---
+
+### Easy Setup Functions (One-Call Integration)
+
+Every fin-infra domain should provide TWO functions:
+
+#### 1. `easy_*()` Builder (Provider Initialization)
+
+Returns configured provider instance:
+
+```python
+def easy_capability(
+    provider: str | Provider = "default",
+    **config
+) -> Provider:
+    """
+    Create configured provider instance.
+    
+    Args:
+        provider: Provider name or instance
+            - "default": Use recommended provider
+            - "alternate": Use alternate provider
+            - Provider instance: Pass through
+        **config: Override configuration
+        
+    Returns:
+        Configured provider instance
+        
+    Examples:
+        >>> # Zero-config (uses env vars)
+        >>> provider = easy_capability()
+        
+        >>> # Explicit provider
+        >>> provider = easy_capability(provider="alternate")
+        
+        >>> # Custom config
+        >>> provider = easy_capability(api_key="...", timeout=30)
+    """
+    # Auto-detect from environment
+    # Initialize provider
+    # Return configured instance
+```
+
+#### 2. `add_*()` FastAPI Helper (Route Mounting)
+
+Mounts routes to FastAPI app:
+
+```python
+def add_capability(
+    app: FastAPI,
+    provider: str | Provider | None = None,
+    prefix: str = "/capability",
+    **config
+) -> Provider:
+    """
+    Add capability routes to FastAPI app.
+    
+    Args:
+        app: FastAPI application
+        provider: Provider instance/name (default: auto-detect)
+        prefix: URL prefix (default: "/capability")
+        **config: Override configuration
+        
+    Returns:
+        Configured provider instance
+        
+    Examples:
+        >>> app = FastAPI()
+        >>> provider = add_capability(app)
+        >>> # Routes mounted at /capability/*
+        
+        >>> # Custom prefix
+        >>> provider = add_capability(app, prefix="/api/v1/capability")
+    """
+    # Initialize provider via easy_*()
+    # Create dual router
+    # Mount routes
+    # Register scoped docs
+    # Store on app.state
+    # Return provider
+```
+
+---
+
+<a name="critical-web-api-coverage"></a>
 
 <a name="critical-web-api-coverage"></a>
 ## 🔴 CRITICAL: Web Application API Coverage (Priority: HIGHEST)
