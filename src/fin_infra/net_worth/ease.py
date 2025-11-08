@@ -159,12 +159,12 @@ class NetWorthTracker:
         # Calculate current net worth
         snapshot = await self.calculate_net_worth(user_id, access_token)
         
-        # TODO: Implement database storage with svc-infra.db
-        # - Fetch previous snapshot
-        # - Calculate change
-        # - Store new snapshot
-        # - Check for significant change
-        # - Emit webhook event if significant
+        # Persistence: Applications store snapshots via scaffolded repository.
+        # Generate with: fin-infra scaffold net_worth --dest-dir app/models/
+        # NetWorthSnapshot is immutable (no updates, only create/read/delete).
+        # Time-series queries: get_latest(), get_by_date(), get_trend(), calculate_growth()
+        # See docs/persistence.md for snapshot storage patterns.
+        # In-memory storage used here for testing/examples.
         
         return snapshot
     
@@ -185,10 +185,11 @@ class NetWorthTracker:
         Returns:
             List of NetWorthSnapshot
         """
-        # TODO: Implement database retrieval with svc-infra.db
-        # - Query snapshots table
-        # - Filter by date range
-        # - Apply granularity (aggregate if needed)
+        # Persistence: Applications query via scaffolded repository time-series methods.
+        # Generate with: fin-infra scaffold net_worth --dest-dir app/models/
+        # Available queries: get_by_date_range(), get_trend(months=12), calculate_growth()
+        # See docs/persistence.md for time-series query patterns.
+        # In-memory storage used here for testing/examples.
         
         return []
 

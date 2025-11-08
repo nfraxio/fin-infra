@@ -347,7 +347,11 @@ Return JSON with category, confidence, and reasoning."""
         self.daily_cost += cost_per_request
         self.monthly_cost += cost_per_request
         
-        # TODO: Store in Redis with daily/monthly expiry (svc-infra.cache)
+        # Cost tracking: Use svc-infra.cache (Redis), not database persistence.
+        # from svc_infra.cache import cache_write
+        # await cache_write(f"llm_cost:daily:{user_id}", self.daily_cost, ttl=86400)
+        # await cache_write(f"llm_cost:monthly:{user_id}", self.monthly_cost, ttl=2592000)
+        # See docs/persistence.md for LLM cost tracking patterns.
         logger.debug(
             f"Cost tracked: +${cost_per_request:.5f} "
             f"(daily=${self.daily_cost:.5f}, monthly=${self.monthly_cost:.5f})"

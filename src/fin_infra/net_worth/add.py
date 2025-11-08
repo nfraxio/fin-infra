@@ -193,7 +193,9 @@ def add_net_worth_tracking(
             )
             
             # Get asset details from snapshot (stored in aggregator)
-            # For now, create empty lists (TODO: store in snapshot)
+            # Persistence: Asset/liability details stored in snapshot JSON fields or separate tables.
+            # Generate with: fin-infra scaffold net_worth --dest-dir app/models/
+            # For now, create empty lists for testing/examples.
             asset_details = []
             liability_details = []
             
@@ -668,8 +670,10 @@ def add_net_worth_tracking(
             # Get historical snapshots for progress tracking
             snapshots = await tracker.get_snapshots(user_id=user_id, days=90)
             
-            # TODO: Implement goal retrieval from database
-            # For now, return mock data
+            # Persistence: Goal retrieval via scaffolded goals repository.
+            # Generate with: fin-infra scaffold goals --dest-dir app/models/
+            # See docs/persistence.md for goal tracking patterns.
+            # For now, return mock data.
             raise HTTPException(
                 status_code=501,
                 detail="Goal progress tracking not fully implemented. Need goal persistence layer.",

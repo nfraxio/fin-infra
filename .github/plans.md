@@ -1389,8 +1389,8 @@ overspending = detect_overspending(budget.categories, actual_spending)
       - All quality gates passing: 25/25 tests, mypy clean, ruff clean, all flag combos valid
     - Reference: Phase 6 in presistence-strategy.md (Task 9 completed in ~1.5 hours)
 
-10. [ ] **Update CLI to support all domains** (FILE: `src/fin_infra/cli/cmds/scaffold_cmds.py`)
-    - [ ] Update `cmd_scaffold()` to dispatch to all three scaffold functions:
+10. [x] **Update CLI to support all domains** (FILE: `src/fin_infra/cli/cmds/scaffold_cmds.py`) ✅ COMPLETE
+    - [x] Update `cmd_scaffold()` to dispatch to all three scaffold functions:
       ```python
       if domain == "budgets":
           from fin_infra.scaffold.budgets import scaffold_budgets_core
@@ -1405,62 +1405,72 @@ overspending = detect_overspending(budget.categories, actual_spending)
           typer.echo(f"Unknown domain: {domain}")
           raise typer.Exit(1)
       ```
-    - [ ] Add help text with `add_sql_resources()` example:
-      ```python
-      typer.echo("\n✅ Scaffold complete! Next steps:")
-      typer.echo("1. Customize generated models (optional)")
-      typer.echo("2. Run migrations: svc-infra revision -m 'add {domain} table'")
-      typer.echo("3. Wire CRUD with svc-infra:")
-      typer.echo("   from svc_infra.api.fastapi.db.sql import add_sql_resources")
-      typer.echo("   add_sql_resources(app, [SqlResource(model=Budget, prefix='/budgets', ...)])")
-      typer.echo("\nSee generated README.md for full integration guide.")
-      ```
-    - [ ] Test all domains via CLI:
+    - [x] Add help text with `add_sql_resources()` example:
+      - Entity name mapping: Budget, Goal, NetWorthSnapshot
+      - Route prefix mapping: /budgets, /goals, /net-worth
+      - Complete integration example with SqlResource
+    - [x] Test all domains via CLI:
       ```bash
-      fin-infra scaffold budgets --dest-dir /tmp/test-budgets
-      fin-infra scaffold goals --dest-dir /tmp/test-goals
-      fin-infra scaffold net-worth --dest-dir /tmp/test-networth
+      python -m fin_infra budgets --dest-dir /tmp/test-budgets ✓
+      python -m fin_infra goals --dest-dir /tmp/test-goals ✓
+      python -m fin_infra net_worth --dest-dir /tmp/test-networth ✓
       ```
-    - [ ] Verify generated files for all domains:
-      - Budgets: budget.py, budget_schemas.py, budget_repository.py, __init__.py
-      - Goals: goal.py, goal_schemas.py, goal_repository.py, __init__.py
-      - Net Worth: net_worth_snapshot.py, net_worth_snapshot_schemas.py, net_worth_snapshot_repository.py, __init__.py
-    - [ ] Quality checks: All domains generate valid Python, pass mypy, no syntax errors
-    - Reference: Phase 6 in presistence-strategy.md (included in Tasks 8-9)
+    - [x] Verify generated files for all domains:
+      - Budgets: budget.py ✓, budget_schemas.py ✓, budget_repository.py ✓, __init__.py ✓
+      - Goals: goal.py ✓, goal_schemas.py ✓, goal_repository.py ✓, README.md ✓, __init__.py ✓
+      - Net Worth: net_worth_snapshot.py ✓, net_worth_snapshot_schemas.py ✓, net_worth_snapshot_repository.py ✓, README.md ✓, __init__.py ✓
+    - [x] Quality checks: All domains generate valid Python ✓, pass mypy ✓, no syntax errors ✓
+    - [x] Test all flag combinations:
+      - `--include-tenant` flag verified ✓
+      - `--include-soft-delete` flag verified ✓
+      - `--no-with-repository` flag verified ✓
+      - Combined flags (tenant + soft_delete) verified ✓
+    - **Completion notes**:
+      - Implementation time: ~30 minutes
+      - Replaced "not yet implemented" stubs for goals and net_worth with actual function calls
+      - Added default filenames for each domain (or use custom via CLI options)
+      - Enhanced help text with entity name mapping and route prefix mapping
+      - Fixed ruff lint error (removed unnecessary f-string)
+      - All 3 domains tested via CLI: budgets, goals, net_worth
+      - All flag combinations tested and generate valid Python
+      - CLI properly registered via `scaffold_cmds.register(app)` in `__init__.py`
+      - Command syntax: `python -m fin_infra <domain> --dest-dir <path> [--flags]`
+    - Reference: Phase 6 in presistence-strategy.md (Task 10 completed in ~30 minutes)
 
-11. [ ] **Update TODO comments** (FILES: Multiple)
-    - [ ] **Budgets**: `src/fin_infra/budgets/tracker.py` (6 TODOs)
-      ```python
-      # OLD: # TODO: Store in SQL database
-      # NEW:
-      # Persistence: Applications own database schema (fin-infra is a stateless library).
-      # Generate models/schemas/repository: fin-infra scaffold budgets --dest-dir app/models/
-      # See docs/persistence.md for full guide.
-      # In-memory storage used for testing/examples.
-      ```
-    - [ ] **Net Worth**: `src/fin_infra/net_worth/ease.py` (2 TODOs)
-      ```python
-      # Persistence: fin-infra scaffold net-worth --dest-dir app/models/
-      # See docs/persistence.md for snapshot storage patterns.
-      ```
-    - [ ] **Goals**: `src/fin_infra/goals/add.py` (1 TODO)
-      ```python
-      # Persistence: fin-infra scaffold goals --dest-dir app/models/
-      ```
-    - [ ] **Categorization**: `src/fin_infra/categorization/llm_layer.py` (1 TODO)
-      ```python
-      # Cost tracking: Use svc-infra.cache (Redis), not database persistence.
-      # from svc_infra.cache import cache_write
-      # See docs/persistence.md for LLM cost tracking patterns.
-      ```
-    - [ ] **Recurring**: `src/fin_infra/recurring/add.py` (1 TODO)
-      ```python
-      # Persistence: Applications own transaction storage.
-      # Use fin-infra scaffold to generate models if needed.
-      ```
-    - [ ] Verify: `grep -r "TODO.*[Ss]tore.*SQL" src/fin_infra/` returns no results
-    - [ ] Verify: `grep -r "TODO.*[Dd]atabase" src/fin_infra/` returns only clarified comments
-    - Reference: Phase 7 in presistence-strategy.md (1-2 hours estimated)
+11. [x] **Update TODO comments** (FILES: Multiple) ✅ COMPLETE
+    - [x] **Budgets**: `src/fin_infra/budgets/tracker.py` (5 TODOs updated)
+      - create(): "Applications own database schema (fin-infra is a stateless library)"
+      - get_budgets(): "Applications query via scaffolded repository or svc-infra SqlResource"
+      - get_budget(): "Applications query via scaffolded repository.get(budget_id)"
+      - update_budget(): "Applications update via scaffolded repository.update(budget_id, updates)"
+      - delete_budget(): "Supports soft delete if --include-soft-delete flag used"
+    - [x] **Net Worth**: `src/fin_infra/net_worth/ease.py` (2 TODOs updated)
+      - save_snapshot(): "NetWorthSnapshot is immutable (no updates, only create/read/delete)"
+      - get_snapshots(): "Time-series queries: get_by_date_range(), get_trend(), calculate_growth()"
+    - [x] **Net Worth**: `src/fin_infra/net_worth/add.py` (2 TODOs updated)
+      - Asset/liability details: "Stored in snapshot JSON fields or separate tables"
+      - Goal retrieval: "Generate with: fin-infra scaffold goals --dest-dir app/models/"
+    - [x] **Categorization**: `src/fin_infra/categorization/llm_layer.py` (1 TODO updated)
+      - Cost tracking: "Use svc-infra.cache (Redis) with TTL, not database persistence"
+      - Example code: cache_write(f"llm_cost:daily:{user_id}", cost, ttl=86400)
+    - [x] **Recurring**: `src/fin_infra/recurring/add.py` (1 TODO updated)
+      - Transaction query: "Applications own transaction storage (from Plaid/Teller/etc)"
+      - Guide: "Use fin-infra scaffold to generate transaction models if needed"
+    - [x] Verify: `grep -r "TODO.*[Ss]tore.*SQL" src/fin_infra/` returns no results ✓
+    - [x] Verify: `grep -r "TODO.*[Dd]atabase" src/fin_infra/` returns 0 results (all clarified) ✓
+    - **Completion notes**:
+      - Implementation time: ~25 minutes
+      - Total 11 TODO comments clarified across 5 files
+      - All comments now explain:
+        1. fin-infra is stateless (applications own persistence)
+        2. How to scaffold models: `fin-infra scaffold <domain> --dest-dir app/models/`
+        3. How to wire CRUD: `add_sql_resources(app, [SqlResource(...)])`
+        4. Reference to docs/persistence.md for patterns
+        5. In-memory storage used for testing/examples
+      - All files compile successfully (no syntax errors)
+      - Pre-existing mypy/ruff errors unaffected (not caused by comment changes)
+      - Goals domain: No add.py file exists yet (scaffold templates only)
+    - Reference: Phase 7 in presistence-strategy.md (Task 11 completed in ~25 minutes)
 
 12. [ ] **Create persistence documentation** (FILE: `src/fin_infra/docs/persistence.md`)
     - [ ] Section: Why fin-infra is stateless

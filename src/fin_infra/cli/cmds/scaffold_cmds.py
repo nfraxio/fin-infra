@@ -106,24 +106,36 @@ def cmd_scaffold(
             include_soft_delete=include_soft_delete,
             with_repository=with_repository,
             overwrite=overwrite,
-            models_filename=models_filename,
-            schemas_filename=schemas_filename,
-            repository_filename=repository_filename,
+            models_filename=models_filename or "budget.py",
+            schemas_filename=schemas_filename or "budget_schemas.py",
+            repository_filename=repository_filename or "budget_repository.py",
         )
     elif domain == "goals":
-        typer.secho(
-            "❌ Goals scaffold not yet implemented. Coming soon!",
-            fg=typer.colors.RED,
-            err=True,
+        from fin_infra.scaffold.goals import scaffold_goals_core
+        
+        result = scaffold_goals_core(
+            dest_dir=dest_dir,
+            include_tenant=include_tenant,
+            include_soft_delete=include_soft_delete,
+            with_repository=with_repository,
+            overwrite=overwrite,
+            models_filename=models_filename or "goal.py",
+            schemas_filename=schemas_filename or "goal_schemas.py",
+            repository_filename=repository_filename or "goal_repository.py",
         )
-        raise typer.Exit(1)
     elif domain == "net_worth":
-        typer.secho(
-            "❌ Net worth scaffold not yet implemented. Coming soon!",
-            fg=typer.colors.RED,
-            err=True,
+        from fin_infra.scaffold.net_worth import scaffold_net_worth_core
+        
+        result = scaffold_net_worth_core(
+            dest_dir=dest_dir,
+            include_tenant=include_tenant,
+            include_soft_delete=include_soft_delete,
+            with_repository=with_repository,
+            overwrite=overwrite,
+            models_filename=models_filename or "net_worth_snapshot.py",
+            schemas_filename=schemas_filename or "net_worth_snapshot_schemas.py",
+            repository_filename=repository_filename or "net_worth_snapshot_repository.py",
         )
-        raise typer.Exit(1)
     else:
         typer.secho(
             f"❌ Unknown domain: {domain}. Must be one of: budgets, goals, net_worth",
@@ -162,15 +174,33 @@ def cmd_scaffold(
     
     # Next steps
     if wrote_count > 0:
+        # Map domain to entity name for help text
+        entity_map = {
+            "budgets": "Budget",
+            "goals": "Goal",
+            "net_worth": "NetWorthSnapshot",
+        }
+        entity_name = entity_map.get(domain, domain.capitalize())
+        
+        # Map domain to route prefix
+        prefix_map = {
+            "budgets": "/budgets",
+            "goals": "/goals",
+            "net_worth": "/net-worth",
+        }
+        route_prefix = prefix_map.get(domain, f"/{domain}")
+        
         typer.secho("📝 Next Steps:", bold=True)
         typer.echo("")
         typer.echo("  1. Review generated files and customize as needed")
         typer.echo("  2. Run migrations:")
         typer.echo(f"     svc-infra revision -m 'add {domain}' --autogenerate")
         typer.echo("     svc-infra upgrade head")
-        typer.echo("  3. Wire automatic CRUD in your app:")
-        typer.echo("     from svc_infra.api.fastapi.db.sql import add_sql_resources")
-        typer.echo(f"     add_sql_resources(app, [SqlResource(model={domain.capitalize()}, ...)])")
+        typer.echo("  3. Wire automatic CRUD with svc-infra:")
+        typer.echo("     from svc_infra.api.fastapi.db.sql import add_sql_resources, SqlResource")
+        typer.echo("     add_sql_resources(app, [")
+        typer.echo(f"         SqlResource(model={entity_name}, prefix='{route_prefix}', search_fields=['name'])")
+        typer.echo("     ])")
         typer.echo("")
         typer.echo("  See generated README.md for detailed integration guide.")
         typer.echo("")

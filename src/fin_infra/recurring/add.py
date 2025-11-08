@@ -129,8 +129,11 @@ def add_recurring_detection(
         """
         start_time = time.time()
 
-        # TODO: Get transactions from database (user-specific)
-        # For now, return empty result with structure
+        # Persistence: Applications own transaction storage.
+        # Transactions typically come from banking providers (Plaid, Teller, etc).
+        # Use fin-infra scaffold to generate transaction models if needed.
+        # See docs/persistence.md for transaction storage patterns.
+        # For now, return empty result with structure.
         # In production: transactions = get_user_transactions(user.id, days=request.days)
 
         transactions = []  # Placeholder
