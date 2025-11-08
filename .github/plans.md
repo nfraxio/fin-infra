@@ -1321,31 +1321,29 @@ overspending = detect_overspending(budget.categories, actual_spending)
     - [x] Quality check: All template variables substituted correctly ✅
     - Reference: Phase 6 in presistence-strategy.md (Task 7 completed in ~30 minutes)
 
-8. [ ] **Implement goals scaffold function** (FILE: `src/fin_infra/scaffold/goals.py`)
-    - [ ] Function: `scaffold_goals_core(dest_dir, include_tenant, include_soft_delete, with_repository, overwrite, models_filename, schemas_filename, repository_filename) -> Dict[str, Any]`
-    - [ ] Template variable generation:
-      ```python
-      subs = {
-          "Entity": "Goal",
-          "entity": "goal",
-          "table_name": "goals",
-          "tenant_field": _tenant_field() if include_tenant else "",
-          "soft_delete_field": _soft_delete_field() if include_soft_delete else "",
-      }
-      ```
-    - [ ] Template loading: `render_template("fin_infra.goals.templates", "models.py.tmpl", subs)`
-    - [ ] File writing: models, schemas, repository (optional), __init__.py
-    - [ ] Default filenames: goal.py, goal_schemas.py, goal_repository.py
-    - [ ] Return dict: `{"files": [{"path": str, "action": "wrote|skipped"}]}`
-    - [ ] Unit tests: `tests/unit/scaffold/test_goals_scaffold.py` (20+ tests)
-      - Test basic scaffold
-      - Test with tenant_id flag
-      - Test with soft_delete flag
-      - Test without repository
-      - Test custom filenames
-      - Test overwrite protection
-    - [ ] Quality checks: mypy passes, ruff passes, all tests pass
-    - Reference: Phase 6 in presistence-strategy.md (1-2 hours estimated)
+8. [x] **Implement goals scaffold function** (FILE: `src/fin_infra/scaffold/goals.py`) ✅
+    - [x] Function: `scaffold_goals_core(dest_dir, include_tenant, include_soft_delete, with_repository, overwrite, models_filename, schemas_filename, repository_filename) -> Dict[str, Any]` ✅
+    - [x] Template variable generation: 10 tenant variables + 4 soft delete variables ✅
+    - [x] Template loading: `render_template("fin_infra.goals.scaffold_templates", "models.py.tmpl", subs)` ✅
+    - [x] File writing: models, schemas, repository (optional), README, __init__.py ✅
+    - [x] Default filenames: goal.py, goal_schemas.py, goal_repository.py ✅
+    - [x] Return dict: `{"files": [{"path": str, "action": "wrote|skipped"}]}` ✅
+    - [x] Unit tests: `tests/unit/scaffold/test_goals_scaffold.py` (21 tests, all passing) ✅
+      - Test basic scaffold ✅
+      - Test with tenant_id flag ✅
+      - Test with soft_delete flag ✅
+      - Test without repository ✅
+      - Test custom filenames ✅
+      - Test overwrite protection ✅
+    - [x] Quality checks: mypy passes, ruff passes, all tests pass ✅
+    - [x] Manual validation: All flag combinations generate valid Python code ✅
+    - [x] Bug fixes applied:
+      - Fixed tenant_arg_type_comma to use leading comma with newline `,\n        tenant_id: str`
+      - Added tenant_dict_assign for dict assignment in create() method
+      - Changed soft_delete_default from Pydantic schema pattern to boolean (True/False)
+      - Reordered parameters in list() and get_by_priority() to put tenant_id before optional params
+      - Added trailing commas to all method signatures using tenant_arg_type_comma
+    - Reference: Phase 6 in presistence-strategy.md (Task 8 completed in ~2 hours with template fixes)
 
 9. [ ] **Implement net-worth scaffold function** (FILE: `src/fin_infra/scaffold/net_worth.py`)
     - [ ] Function: `scaffold_net_worth_core(dest_dir, include_tenant, include_soft_delete, with_repository, overwrite, models_filename, schemas_filename, repository_filename) -> Dict[str, Any]`
