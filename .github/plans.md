@@ -911,7 +911,7 @@ def add_capability(
 
 | Domain | TODOs | Templates | Scaffold Function | Template Location |
 |--------|-------|-----------|-------------------|-------------------|
-| **Budgets** | 5 in `budgets/tracker.py` | models.py.tmpl, schemas.py.tmpl, repository.py.tmpl, README.md | `scaffold_budgets_core()` | `src/fin_infra/budgets/templates/` |
+| **Budgets** | 5 in `budgets/tracker.py` | models.py.tmpl, schemas.py.tmpl, repository.py.tmpl, README.md | `scaffold_budgets_core()` | `src/fin_infra/budgets/scaffold_templates/` |
 | **Goals** | 1 in `net_worth/add.py` | models.py.tmpl, schemas.py.tmpl, repository.py.tmpl, README.md | `scaffold_goals_core()` | `src/fin_infra/goals/templates/` |
 | **Net Worth** | 3 in `net_worth/ease.py` (2), `net_worth/add.py` (1) | models.py.tmpl, schemas.py.tmpl, repository.py.tmpl, README.md | `scaffold_net_worth_core()` | `src/fin_infra/net_worth/templates/` |
 | **Recurring** | 1 in `recurring/add.py` | *(No scaffold - transactions owned by app)* | N/A | N/A |
@@ -975,40 +975,29 @@ overspending = detect_overspending(budget.categories, actual_spending)
 
 **Tasks**:
 
-1. [x] **Create scaffold utilities** (FILE: `src/fin_infra/utils/scaffold.py`) ✅ COMPLETE
-    - [x] Function: `render_template(tmpl_dir: str, name: str, subs: dict) -> str`
-      - Uses `importlib.resources.files()` to load `.tmpl` files from package
-      - Uses `string.Template.safe_substitute()` for variable substitution
-      - Variables: `${Entity}`, `${table_name}`, `${tenant_field}`, `${soft_delete_field}`, etc.
-      - Example: `render_template("fin_infra.budgets.templates", "models.py.tmpl", {"Entity": "Budget"})`
-    - [x] Function: `write(dest: Path, content: str, overwrite: bool = False) -> Dict[str, Any]`
-      - Creates parent directories automatically with `dest.parent.mkdir(parents=True, exist_ok=True)`
-      - Checks if file exists, returns `{"action": "skipped", "reason": "exists"}` if `overwrite=False`
-      - Writes file, returns `{"path": str(dest), "action": "wrote"}`
-      - Used by scaffold functions to write generated code
-    - [x] Function: `ensure_init_py(dir_path: Path, content: str, overwrite: bool) -> Dict[str, Any]`
-      - Wrapper around `write()` for creating `__init__.py` files
-      - Generates re-exports for models, schemas, repository classes
-      - Example content: `from .budget import BudgetModel; __all__ = ["BudgetModel"]`
-    - [x] Comprehensive docstrings with examples for all functions
-    - [x] Full type annotations (no mypy errors)
-    - [x] Unit tests: `tests/unit/test_utils.py` (21 tests - exceeded estimate!)
-      - Test template loading from package resources (6 tests)
-      - Test variable substitution (simple + complex)
-      - Test missing variables (safe_substitute behavior)
-      - Test file writing (success, skip existing, overwrite) (7 tests)
-      - Test parent directory creation
-      - Test __init__.py generation (6 tests)
-      - Test integration scenarios (2 tests)
-    - [x] Quality checks: `mypy src/fin_infra/utils/scaffold.py` passes ✓, `ruff check` passes ✓
-    - [x] Implementation: Created utils/scaffold.py (utils is a package directory)
-    - [x] Export: Updated utils/__init__.py with scaffold function exports
-    - Reference: Phase 2 in presistence-strategy.md (Completed in ~2 hours)
+1. [x] **Use svc-infra scaffold utilities** (REUSE: `svc_infra.utils`) ✅ COMPLETE
+    - [x] **CRITICAL DECISION**: Removed duplicate scaffold utilities from fin-infra
+    - [x] **MANDATORY REUSE**: Import from svc-infra instead of reimplementing:
+      ```python
+      from svc_infra.utils import render_template, write, ensure_init_py
+      ```
+    - [x] Available svc-infra utilities:
+      - `render_template(tmpl_dir: str, name: str, subs: dict) -> str` - Load .tmpl files, substitute variables
+      - `write(dest: Path, content: str, overwrite: bool) -> Dict[str, Any]` - Write files with overwrite protection
+      - `ensure_init_py(dir_path: Path, overwrite: bool, paired: bool, content: str) -> Dict[str, Any]` - Create __init__.py
+    - [x] Updated `src/fin_infra/utils/__init__.py` to reference svc-infra
+    - [x] Deleted duplicate `src/fin_infra/utils/scaffold.py` (was 130 lines)
+    - [x] Deleted duplicate tests `tests/unit/test_utils.py` (was 21 tests)
+    - [x] Updated `src/fin_infra/scaffold/budgets.py` to import from svc-infra
+    - [x] All tests still passing (29/29 in test_budgets_scaffold.py)
+    - **Why this matters**: Avoids duplication, ensures consistency, reduces maintenance burden
+    - **Lesson learned**: ALWAYS check svc-infra FIRST before implementing utilities
+    - Reference: Task 1 originally implemented scaffold.py, then corrected to reuse svc-infra
 
-2. [x] **Create budgets scaffold templates** (DIRECTORY: `src/fin_infra/budgets/templates/`) ✅ COMPLETE
+2. [x] **Create budgets scaffold templates** (DIRECTORY: `src/fin_infra/budgets/scaffold_templates/`) ✅ COMPLETE
     - [x] Create directory structure:
       ```
-      src/fin_infra/budgets/templates/
+      src/fin_infra/budgets/scaffold_templates/
       ├── models.py.tmpl           # SQLAlchemy model
       ├── schemas.py.tmpl          # Pydantic schemas
       ├── repository.py.tmpl       # Repository pattern
@@ -1070,10 +1059,10 @@ overspending = detect_overspending(budget.categories, actual_spending)
     - [x] Tested with both minimal and full variable sets
     - Reference: Phase 3 in presistence-strategy.md (Completed in ~3 hours)
 
-3. [ ] **Implement budgets scaffold function** (FILE: `src/fin_infra/scaffold/budgets.py`)
-    - [ ] Create `src/fin_infra/scaffold/__init__.py` package marker
-    - [ ] Function: `scaffold_budgets_core(dest_dir, include_tenant, include_soft_delete, with_repository, overwrite, models_filename, schemas_filename, repository_filename) -> Dict[str, Any]`
-    - [ ] Template variable generation:
+3. [x] **Implement budgets scaffold function** (FILE: `src/fin_infra/scaffold/budgets.py`) ✅ COMPLETE
+    - [x] Create `src/fin_infra/scaffold/__init__.py` package marker
+    - [x] Function: `scaffold_budgets_core(dest_dir, include_tenant, include_soft_delete, with_repository, overwrite, models_filename, schemas_filename, repository_filename) -> Dict[str, Any]`
+    - [x] Template variable generation:
       ```python
       subs = {
           "Entity": "Budget",
@@ -1085,18 +1074,18 @@ overspending = detect_overspending(budget.categories, actual_spending)
           "tenant_default": ", tenant_id=None" if include_tenant else "",
       }
       ```
-    - [ ] Template loading: `render_template("fin_infra.budgets.templates", "models.py.tmpl", subs)`
-    - [ ] File writing sequence:
+    - [x] Template loading: `render_template("fin_infra.budgets.scaffold_templates", "models.py.tmpl", subs)`
+    - [x] File writing sequence:
       1. Models: `write(dest_dir / models_filename, models_content, overwrite)`
       2. Schemas: `write(dest_dir / schemas_filename, schemas_content, overwrite)`
       3. Repository (optional): `write(dest_dir / repository_filename, repo_content, overwrite)` if `with_repository=True`
       4. __init__.py: `ensure_init_py(dest_dir, init_content, overwrite)` with re-exports
-    - [ ] Default filenames: budget.py, budget_schemas.py, budget_repository.py
-    - [ ] Return dict: `{"files": [{"path": str, "action": "wrote|skipped", "reason": str}]}`
-    - [ ] Helper: `_tenant_field() -> str` returns field definition or empty string
-    - [ ] Helper: `_soft_delete_field() -> str` returns field definition or empty string
-    - [ ] Helper: `_generate_init_content(models_file, schemas_file, repo_file) -> str` generates __init__.py with re-exports
-    - [ ] Unit tests: `tests/unit/scaffold/test_budgets_scaffold.py` (20+ tests)
+    - [x] Default filenames: budget.py, budget_schemas.py, budget_repository.py
+    - [x] Return dict: `{"files": [{"path": str, "action": "wrote|skipped", "reason": str}]}`
+    - [x] Helper: `_tenant_field() -> str` returns field definition or empty string
+    - [x] Helper: `_soft_delete_field() -> str` returns field definition or empty string
+    - [x] Helper: `_generate_init_content(models_file, schemas_file, repo_file) -> str` generates __init__.py with re-exports
+    - [x] Unit tests: `tests/unit/scaffold/test_budgets_scaffold.py` (29 tests - exceeded estimate!)
       - Test basic scaffold (no flags)
       - Test with tenant_id flag
       - Test with soft_delete flag
@@ -1107,8 +1096,8 @@ overspending = detect_overspending(budget.categories, actual_spending)
       - Test overwrite=True (should replace existing files)
       - Test __init__.py generation
       - Test return dict structure
-    - [ ] Quality checks: mypy passes, ruff passes, all tests pass
-    - Reference: Phase 4 in presistence-strategy.md (2-3 hours estimated)
+    - [x] Quality checks: mypy passes ✓, ruff passes ✓, all 29 tests pass ✓
+    - Reference: Phase 4 in presistence-strategy.md (Completed in ~2 hours)
 
 4. [ ] **Create scaffold CLI commands** (FILE: `src/fin_infra/cli/cmds/scaffold_cmds.py`)
     - [ ] Import Typer and click: `import typer; import click`
