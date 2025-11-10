@@ -2253,21 +2253,61 @@ overspending = detect_overspending(budget.categories, actual_spending)
 
 **Purpose**: Generic document management with upload, storage, OCR, and AI analysis. Serves tax apps, banking (statements), investment (trade confirmations), insurance (policies).
 
-36. [ ] **Create documents module structure**
-    - Create `src/fin_infra/documents/__init__.py`
-    - Create `src/fin_infra/documents/models.py`
-    - Create `src/fin_infra/documents/storage.py`
-    - Create `src/fin_infra/documents/ocr.py`
-    - Create `src/fin_infra/documents/analysis.py`
-    - Create `src/fin_infra/documents/ease.py`
-    - Create `src/fin_infra/documents/add.py`
+36. [x] **Create documents module structure** ✅ 2025-01-27
+    - [x] Create `src/fin_infra/documents/__init__.py` (68 lines)
+      - Module docstring with Quick Start and FastAPI integration examples
+      - Imports: add_documents, easy_documents, Document, DocumentAnalysis, DocumentType, OCRResult
+      - __all__ exports: easy_documents, add_documents, Document, DocumentType, OCRResult, DocumentAnalysis
+      - Documents 6 endpoints: upload, get, list, delete, ocr, analyze
+    - [x] Create `src/fin_infra/documents/models.py` (153 lines)
+      - DocumentType enum with 7 types (TAX, STATEMENT, RECEIPT, CONFIRMATION, POLICY, CONTRACT, OTHER)
+      - Document model (10 fields with metadata dict)
+      - OCRResult model (6 fields with confidence validation)
+      - DocumentAnalysis model (6 fields with AI findings/recommendations)
+    - [x] Create `src/fin_infra/documents/storage.py` (179 lines)
+      - Function: upload_document (with virus scanning notes)
+      - Function: download_document (with permission checks)
+      - Function: delete_document (soft-delete support)
+      - Function: list_documents (with pagination notes)
+      - All functions documented with examples and production notes
+    - [x] Create `src/fin_infra/documents/ocr.py` (133 lines)
+      - Function: extract_text (Tesseract/Textract support)
+      - Function: _extract_with_tesseract (free OCR)
+      - Function: _extract_with_textract (AWS paid OCR)
+      - Function: _parse_tax_form (structured field extraction)
+    - [x] Create `src/fin_infra/documents/analysis.py` (166 lines)
+      - Function: analyze_document (AI-powered insights)
+      - Function: _build_analysis_prompt (LLM prompt building)
+      - Function: _validate_analysis (quality checks)
+      - Function: _analyze_tax_document (tax-specific analysis)
+      - Function: _analyze_bank_statement (spending insights)
+      - All functions use ai-infra CoreLLM (mandatory)
+    - [x] Create `src/fin_infra/documents/ease.py` (203 lines)
+      - DocumentManager class with upload/download/delete/list/extract_text/analyze methods
+      - Function: easy_documents (builder with sensible defaults)
+    - [x] Create `src/fin_infra/documents/add.py` (241 lines)
+      - 6 FastAPI routes: POST /upload, GET /{id}, GET /list, DELETE /{id}, POST /{id}/ocr, POST /{id}/analyze
+      - Uses svc-infra dual router (user_router for auth)
+      - Registers scoped docs with add_prefixed_docs
+      - Returns manager instance for programmatic access
     - Verify in coverage analysis: Addresses "Documents Module (New Domain)" recommendation
 
-37. [ ] **Define document models** (`src/fin_infra/documents/models.py`)
-    - [ ] `DocumentType` enum: `tax`, `statement`, `receipt`, `confirmation`, `policy`, `contract`, `other`
-    - [ ] `Document` model (id, user_id, type, filename, file_size, upload_date, metadata, storage_path)
-    - [ ] `OCRResult` model (document_id, text, confidence, fields_extracted)
-    - [ ] `DocumentAnalysis` model (document_id, summary, key_findings, recommendations, analysis_date)
+37. [x] **Define document models** (`src/fin_infra/documents/models.py`) ✅ 2025-01-27
+    - [x] `DocumentType` enum: `TAX`, `STATEMENT`, `RECEIPT`, `CONFIRMATION`, `POLICY`, `CONTRACT`, `OTHER`
+    - [x] `Document` model (id, user_id, type, filename, file_size, upload_date, metadata, storage_path, content_type, checksum)
+      - 10 fields total (added content_type and checksum for production use)
+      - metadata as Dict[str, str | int | float] for flexible document metadata (year, form_type, employer, etc.)
+      - Example: W-2 tax document with full metadata
+    - [x] `OCRResult` model (document_id, text, confidence, fields_extracted, extraction_date, provider)
+      - 6 fields total (added extraction_date and provider for tracking)
+      - confidence validated (0.0-1.0 range)
+      - fields_extracted as Dict[str, str] for structured data (employer, wages, etc.)
+      - Example: W-2 OCR with 94% confidence
+    - [x] `DocumentAnalysis` model (document_id, summary, key_findings, recommendations, analysis_date, confidence)
+      - 6 fields total (added analysis_date and confidence for quality tracking)
+      - key_findings as List[str] for multiple insights
+      - recommendations as List[str] for actionable advice
+      - Example: AI analysis with 3 findings and 3 recommendations
 
 38. [ ] **Implement document storage** (FILE: `src/fin_infra/documents/storage.py`)
     - [ ] Function: `upload_document(user_id, file, document_type, metadata) -> Document`
