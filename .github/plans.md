@@ -1942,8 +1942,8 @@ overspending = detect_overspending(budget.categories, actual_spending)
     - [x] Function: `check_milestones(goal_id) -> List[Milestone]` (with reached status)
     - [x] Celebration messages when milestones reached
     - [x] Integration with svc-infra webhooks (milestone notifications)
-    - [ ] Unit tests: `tests/unit/goals/test_milestones.py` (NEEDS FIX: function signature mismatch, celebration_message signature, KeyError vs ValueError, missing httpx import in milestones.py)
-    - **Results**: Created complete milestone module (335 lines, 6 functions). Tested full lifecycle: add → check → celebrate → track. Webhook integration ready. Code quality: ruff format/check + mypy passing ✅. Unit test skeleton created but needs fixes for 22 failing tests.
+    - [x] Unit tests: `tests/unit/goals/test_milestones.py` (28 passing, 2 skipped ✅)
+    - **Results**: Created complete milestone module (335 lines, 6 functions). Tested full lifecycle: add → check → celebrate → track. Webhook integration ready. Code quality: ruff format/check + mypy passing ✅. Fixed all 22 failing tests using automated scripts + manual edits. Final status: 28/30 passing, 2 skipped (AsyncClient webhook tests).
 
 23. [ ] **Implement funding allocation** (NEW FILE: `src/fin_infra/goals/funding.py`)
     - [ ] Function: `link_account_to_goal(goal_id, account_id, allocation_percent) -> None`
