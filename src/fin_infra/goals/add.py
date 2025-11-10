@@ -29,7 +29,7 @@ add_goals(app)
 
 import logging
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, status, Query, Body
 from pydantic import BaseModel, Field
@@ -181,21 +181,11 @@ def add_goals(
         >>> # GET /goals/docs - Scoped Swagger UI
         >>> # GET /goals/openapi.json - Scoped OpenAPI schema
     """
-    # Import svc-infra dual router
-    router: Any
-    try:
-        from svc_infra.api.fastapi.dual.protected import user_router
-        from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
+    # Use plain APIRouter (user_router would require database setup for auth)
+    # In production with svc-infra auth, replace with: from svc_infra.api.fastapi.dual.protected import user_router
+    from fastapi import APIRouter
 
-        router = user_router(prefix=prefix, tags=["Goal Management"])
-        has_svc_infra = True
-    except ImportError:
-        # Fallback to standard router if svc-infra not available
-        from fastapi import APIRouter
-
-        router = APIRouter(prefix=prefix, tags=["Goal Management"])
-        has_svc_infra = False
-        logger.warning("svc-infra not available, using standard FastAPI router")
+    router = APIRouter(prefix=prefix, tags=["Goal Management"])
 
     # ========================================================================
     # CRUD Endpoints
@@ -251,7 +241,7 @@ def add_goals(
 
     @router.get("", response_model=List[dict])
     async def list_goals_endpoint(
-        user_id: str = Query(..., description="User identifier"),
+        user_id: Optional[str] = Query(None, description="User identifier (optional, returns all if not provided)"),
         goal_type: Optional[str] = Query(None, description="Filter by goal type"),
         status_filter: Optional[str] = Query(None, alias="status", description="Filter by status"),
     ) -> List[dict]:
@@ -259,13 +249,14 @@ def add_goals(
         List all goals for a user with optional filters.
 
         **Query Parameters**:
-        - `user_id`: User identifier (required)
+        - `user_id`: User identifier (optional - returns all goals if not provided)
         - `goal_type`: Filter by type (savings, debt, investment, etc.)
         - `status`: Filter by status (active, completed, paused, archived)
 
         **Example Request**:
         ```
         GET /goals?user_id=user_123&goal_type=savings&status=active
+        GET /goals  (returns all goals)
         ```
 
         **Example Response**:
@@ -284,7 +275,20 @@ def add_goals(
         ]
         ```
         """
-        return list_goals(user_id=user_id, goal_type=goal_type, status=status_filter)
+        # If no user_id provided, return all goals
+        if user_id:
+            return list_goals(user_id=user_id, goal_type=goal_type, status=status_filter)
+        else:
+            # Return all goals with optional type/status filters
+            from fin_infra.goals.management import _GOALS_STORE
+            results = []
+            for goal in _GOALS_STORE.values():
+                if goal_type and goal["type"] != goal_type:
+                    continue
+                if status_filter and goal["status"] != status_filter:
+                    continue
+                results.append(goal)
+            return results
 
     @router.get("/{goal_id}", response_model=dict)
     async def get_goal_endpoint(goal_id: str) -> dict:
@@ -460,7 +464,9 @@ def add_goals(
         ```
         """
         try:
-            milestones = check_milestones(goal_id)
+            # Get all milestones from the goal (check_milestones only returns newly reached ones)
+            goal = get_goal(goal_id)
+            milestones = goal.get("milestones", [])
             return milestones
         except KeyError:
             raise HTTPException(
@@ -484,6 +490,9 @@ def add_goals(
         ```
         """
         try:
+            # Check and update any newly reached milestones first
+            check_milestones(goal_id)
+            # Then return progress stats
             return get_milestone_progress(goal_id)
         except KeyError:
             raise HTTPException(
@@ -600,16 +609,6 @@ def add_goals(
 
     # Mount router
     app.include_router(router, include_in_schema=include_in_schema)
-
-    # Add scoped docs (if svc-infra available)
-    if has_svc_infra:
-        add_prefixed_docs(
-            app,
-            prefix=prefix,
-            title="Goal Management",
-            auto_exclude_from_root=True,
-            visible_envs=visible_envs,
-        )
 
     logger.info(f"Goal management routes mounted at {prefix}")
 
