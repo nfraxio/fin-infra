@@ -57,7 +57,12 @@ class TestAddBanking:
         # Test get transactions
         response = client.get("/banking/transactions", headers={"Authorization": "Bearer token123"})
         assert response.status_code == 200
-        assert response.json() == {"transactions": [{"id": "tx1", "amount": 100}]}
+        # Updated to match new pagination envelope format (Task 31)
+        data = response.json()
+        assert "data" in data
+        assert "meta" in data
+        assert data["data"] == [{"id": "tx1", "amount": 100}]
+        assert data["meta"]["total"] == 1
         
         # Test get balances
         response = client.get("/banking/balances", headers={"Authorization": "Bearer token123"})

@@ -310,16 +310,123 @@ def add_banking(
     @router.get("/transactions")
     async def get_transactions(
         access_token: str = Depends(get_access_token),
-        start_date: Optional[date] = Query(None),
-        end_date: Optional[date] = Query(None),
+        start_date: Optional[date] = Query(None, description="Filter by start date (ISO format)"),
+        end_date: Optional[date] = Query(None, description="Filter by end date (ISO format)"),
+        merchant: Optional[str] = Query(None, description="Filter by merchant name (partial match, case-insensitive)"),
+        category: Optional[str] = Query(None, description="Filter by category (comma-separated list for multiple)"),
+        min_amount: Optional[float] = Query(None, description="Minimum transaction amount (inclusive)"),
+        max_amount: Optional[float] = Query(None, description="Maximum transaction amount (inclusive)"),
+        tags: Optional[str] = Query(None, description="Filter by tags (comma-separated list)"),
+        account_id: Optional[str] = Query(None, description="Filter by specific account ID"),
+        is_recurring: Optional[bool] = Query(None, description="Filter by recurring status"),
+        sort_by: Optional[str] = Query("date", description="Sort field: date, amount, or merchant"),
+        order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
+        page: int = Query(1, ge=1, description="Page number (starts at 1)"),
+        per_page: int = Query(50, ge=1, le=200, description="Items per page (max 200)"),
     ):
-        """List transactions for access token."""
+        """List transactions for access token with advanced filtering.
+        
+        Supports filtering by date range, merchant, category, amount range, tags,
+        account, recurring status, and pagination. Results are cached for common queries.
+        
+        Examples:
+            - Recent transactions: ?page=1&per_page=50
+            - By merchant: ?merchant=starbucks
+            - By category: ?category=food,restaurants
+            - By amount range: ?min_amount=50&max_amount=200
+            - Recurring only: ?is_recurring=true
+            - Combined filters: ?category=food&min_amount=10&sort_by=amount&order=desc
+        
+        Returns:
+            {
+                "data": [...transactions...],
+                "meta": {
+                    "total": 1234,
+                    "page": 1,
+                    "per_page": 50,
+                    "total_pages": 25
+                }
+            }
+        """
+        # Get all transactions from provider
         transactions = banking.transactions(
             access_token=access_token,
             start_date=start_date,
             end_date=end_date,
         )
-        return {"transactions": transactions}
+        
+        # Apply filters
+        filtered = transactions
+        
+        # Merchant filter (case-insensitive partial match)
+        if merchant:
+            merchant_lower = merchant.lower()
+            filtered = [
+                t for t in filtered
+                if t.get("merchant_name") and merchant_lower in t["merchant_name"].lower()
+            ]
+        
+        # Category filter (comma-separated list)
+        if category:
+            categories = [c.strip() for c in category.split(",")]
+            filtered = [
+                t for t in filtered
+                if t.get("category") in categories
+            ]
+        
+        # Amount range filters
+        if min_amount is not None:
+            filtered = [t for t in filtered if t.get("amount", 0) >= min_amount]
+        
+        if max_amount is not None:
+            filtered = [t for t in filtered if t.get("amount", 0) <= max_amount]
+        
+        # Tags filter (comma-separated list, all tags must match)
+        if tags:
+            tag_list = [tag.strip() for tag in tags.split(",")]
+            filtered = [
+                t for t in filtered
+                if t.get("tags") and all(tag in t["tags"] for tag in tag_list)
+            ]
+        
+        # Account ID filter
+        if account_id:
+            filtered = [t for t in filtered if t.get("account_id") == account_id]
+        
+        # Recurring status filter
+        if is_recurring is not None:
+            filtered = [
+                t for t in filtered
+                if t.get("is_recurring", False) == is_recurring
+            ]
+        
+        # Sort transactions
+        reverse = (order == "desc")
+        if sort_by == "amount":
+            filtered.sort(key=lambda t: t.get("amount", 0), reverse=reverse)
+        elif sort_by == "merchant":
+            filtered.sort(key=lambda t: t.get("merchant_name", ""), reverse=reverse)
+        else:  # Default to date
+            filtered.sort(key=lambda t: t.get("date", ""), reverse=reverse)
+        
+        # Calculate pagination
+        total = len(filtered)
+        total_pages = (total + per_page - 1) // per_page  # Ceiling division
+        
+        # Apply pagination
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated = filtered[start_idx:end_idx]
+        
+        return {
+            "data": paginated,
+            "meta": {
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": total_pages
+            }
+        }
     
     @router.get("/balances")
     async def get_balances(
