@@ -1012,3 +1012,8 @@ def get_goal_progress(goal_id: str) -> dict[str, Any]:
     )
 
     return progress.model_dump()
+
+
+def clear_goals_store() -> None:
+    """Clear all goals from storage (for testing)."""
+    _GOALS_STORE.clear()

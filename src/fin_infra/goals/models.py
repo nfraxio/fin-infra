@@ -99,6 +99,7 @@ class FundingSource(BaseModel):
     - Allocation percentages must sum to ≤100% per account
     """
 
+    goal_id: str = Field(..., description="Goal identifier")
     account_id: str = Field(..., description="Account identifier")
     allocation_percent: float = Field(
         ...,
