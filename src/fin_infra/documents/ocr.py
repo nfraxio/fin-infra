@@ -67,7 +67,6 @@ def extract_text(
         - Production: Store results in svc-infra SQL database
         - Production: Add retry logic for cloud providers
     """
-    from .models import OCRResult
     from .storage import download_document, get_document
 
     # Check cache first

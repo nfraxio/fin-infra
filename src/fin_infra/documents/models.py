@@ -58,9 +58,7 @@ class Document(BaseModel):
         default_factory=dict, description="Custom document metadata (year, form type, etc.)"
     )
     storage_path: str = Field(..., description="Storage location path")
-    content_type: str = Field(
-        ..., description="MIME type (application/pdf, image/jpeg, etc.)"
-    )
+    content_type: str = Field(..., description="MIME type (application/pdf, image/jpeg, etc.)")
     checksum: Optional[str] = Field(None, description="File checksum for integrity validation")
 
 

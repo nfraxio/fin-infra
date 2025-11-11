@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict
 
 if TYPE_CHECKING:
     from .models import DocumentAnalysis
@@ -194,9 +194,7 @@ def _validate_analysis(analysis: "DocumentAnalysis") -> bool:
     return True
 
 
-def _analyze_tax_document(
-    ocr_text: str, metadata: dict, document_id: str
-) -> "DocumentAnalysis":
+def _analyze_tax_document(ocr_text: str, metadata: dict, document_id: str) -> "DocumentAnalysis":
     """
     Specialized analysis for tax documents.
 
@@ -296,9 +294,7 @@ def _analyze_tax_document(
     )
 
 
-def _analyze_bank_statement(
-    ocr_text: str, metadata: dict, document_id: str
-) -> "DocumentAnalysis":
+def _analyze_bank_statement(ocr_text: str, metadata: dict, document_id: str) -> "DocumentAnalysis":
     """
     Specialized analysis for bank statements.
 
@@ -349,9 +345,7 @@ def _analyze_bank_statement(
     )
 
 
-def _analyze_receipt(
-    ocr_text: str, metadata: dict, document_id: str
-) -> "DocumentAnalysis":
+def _analyze_receipt(ocr_text: str, metadata: dict, document_id: str) -> "DocumentAnalysis":
     """
     Specialized analysis for receipts.
 
