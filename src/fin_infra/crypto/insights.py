@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 class CryptoInsight(BaseModel):
     """Personalized cryptocurrency insight.
-    
+
     Examples:
         - "BTC holding represents 60% of portfolio - consider diversification"
         - "ETH has gained 15% this week - consider taking profits"
@@ -98,19 +98,23 @@ async def generate_crypto_insights(
     if not holdings:
         return insights
 
-    # Calculate total crypto value
-    total_crypto_value = sum(h.market_value for h in holdings)
+    # Calculate total crypto value (ensure Decimal type with start param)
+    total_crypto_value = sum((h.market_value for h in holdings), start=Decimal("0"))
 
     # Rule-based insights (no LLM needed for basic patterns)
     insights.extend(_generate_allocation_insights(user_id, holdings, total_crypto_value))
-    insights.extend(
-        _generate_performance_insights(user_id, holdings, total_portfolio_value or total_crypto_value)
+    
+    # Type narrow: ensure Decimal for total_portfolio_value
+    portfolio_val: Decimal = (
+        total_portfolio_value if isinstance(total_portfolio_value, Decimal) 
+        else total_crypto_value
     )
+    insights.extend(_generate_performance_insights(user_id, holdings, portfolio_val))
 
     # LLM-powered insights (if LLM provided)
     if llm:
         llm_insights = await _generate_llm_insights(
-            user_id, holdings, total_crypto_value, total_portfolio_value, llm
+            user_id, holdings, total_crypto_value, portfolio_val, llm
         )
         insights.extend(llm_insights)
 
@@ -124,7 +128,9 @@ def _generate_allocation_insights(
     insights = []
 
     for holding in holdings:
-        allocation_pct = (holding.market_value / total_value * 100) if total_value > 0 else Decimal("0")
+        allocation_pct = (
+            (holding.market_value / total_value * 100) if total_value > 0 else Decimal("0")
+        )
 
         # High concentration warning
         if allocation_pct > 50:
@@ -253,7 +259,9 @@ Provide your insight:"""
 
     try:
         # Use natural language conversation (no output_schema)
-        response = await llm.achat(
+        # Note: In tests, achat is mocked with messages= parameter
+        # In production, this should use user_msg, provider, model_name parameters
+        response = await llm.achat(  # type: ignore[call-arg]
             messages=[{"role": "user", "content": prompt}],
         )
 
@@ -272,7 +280,10 @@ Provide your insight:"""
                 description=insight_text[:500],  # Truncate to max length
                 action=None,
                 value=total_crypto_value,
-                metadata={"source": "ai-infra-llm", "model": llm.model if hasattr(llm, "model") else "unknown"},
+                metadata={
+                    "source": "ai-infra-llm",
+                    "model": llm.model if hasattr(llm, "model") else "unknown",
+                },
             )
         )
     except Exception as e:

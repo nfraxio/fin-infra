@@ -10,7 +10,7 @@ Provides tools for modeling various financial scenarios:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
@@ -33,11 +33,11 @@ class ScenarioRequest(BaseModel):
 
     user_id: str = Field(..., description="User identifier")
     scenario_type: ScenarioType = Field(..., description="Type of scenario to model")
-    
+
     # Starting values
     starting_amount: Decimal = Field(default=Decimal("0"), description="Starting balance/amount")
     current_age: int | None = Field(None, description="Current age (for retirement)", ge=18, le=100)
-    
+
     # Contribution/payment parameters
     monthly_contribution: Decimal = Field(
         default=Decimal("0"), description="Monthly contribution/payment amount"
@@ -45,7 +45,7 @@ class ScenarioRequest(BaseModel):
     annual_raise: Decimal = Field(
         default=Decimal("0"), description="Annual contribution increase %", ge=0, le=100
     )
-    
+
     # Growth/interest parameters
     annual_return_rate: Decimal = Field(
         default=Decimal("7"), description="Expected annual return rate %", ge=-50, le=100
@@ -53,7 +53,7 @@ class ScenarioRequest(BaseModel):
     inflation_rate: Decimal = Field(
         default=Decimal("3"), description="Annual inflation rate %", ge=0, le=20
     )
-    
+
     # Target parameters
     target_amount: Decimal | None = Field(None, description="Target amount to reach")
     target_age: int | None = Field(None, description="Target age (for retirement)", ge=18, le=120)
@@ -78,22 +78,22 @@ class ScenarioResult(BaseModel):
 
     user_id: str = Field(..., description="User identifier")
     scenario_type: ScenarioType = Field(..., description="Type of scenario modeled")
-    
+
     # Projection data
     projections: list[ScenarioDataPoint] = Field(..., description="Year-by-year projections")
-    
+
     # Summary metrics
     final_balance: Decimal = Field(..., description="Final projected balance")
     total_contributions: Decimal = Field(..., description="Total contributions made")
     total_growth: Decimal = Field(..., description="Total investment growth")
     years_to_target: int | None = Field(None, description="Years to reach target (if applicable)")
-    
+
     # Recommendations
     recommendations: list[str] = Field(
         default_factory=list, description="Actionable recommendations"
     )
     warnings: list[str] = Field(default_factory=list, description="Risk warnings")
-    
+
     created_at: datetime = Field(default_factory=lambda: datetime.now())
 
 
@@ -152,7 +152,6 @@ def model_scenario(request: ScenarioRequest) -> ScenarioResult:
 
     # Convert annual rates to monthly
     monthly_return = request.annual_return_rate / 100 / 12
-    monthly_inflation = request.inflation_rate / 100 / 12
 
     for year in range(request.years_projection + 1):
         # Calculate age if provided
@@ -262,7 +261,17 @@ def _generate_scenario_recommendations(
 
     elif request.scenario_type == ScenarioType.INVESTMENT:
         # Investment-specific recommendations
-        growth_rate = (final.balance - request.starting_amount - (request.monthly_contribution * request.years_projection * 12)) / request.starting_amount * 100 if request.starting_amount > 0 else Decimal("0")
+        growth_rate = (
+            (
+                final.balance
+                - request.starting_amount
+                - (request.monthly_contribution * request.years_projection * 12)
+            )
+            / request.starting_amount
+            * 100
+            if request.starting_amount > 0
+            else Decimal("0")
+        )
         recommendations.append(
             f"Projected {growth_rate:.1f}% total return over {request.years_projection} years. "
             f"Diversify across asset classes to manage risk."

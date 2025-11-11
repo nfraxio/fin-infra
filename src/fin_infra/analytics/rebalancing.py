@@ -32,9 +32,7 @@ class Trade(BaseModel):
     tax_impact: Decimal = Field(
         Decimal("0"), description="Estimated tax cost (capital gains for sells)"
     )
-    transaction_cost: Decimal = Field(
-        Decimal("0"), description="Estimated commission/fees"
-    )
+    transaction_cost: Decimal = Field(Decimal("0"), description="Estimated commission/fees")
     reasoning: str = Field(..., description="Why this trade is recommended")
 
 
@@ -49,12 +47,8 @@ class RebalancingPlan(BaseModel):
         ..., description="Current asset class percentages"
     )
     trades: list[Trade] = Field(default_factory=list, description="Recommended trades")
-    total_tax_impact: Decimal = Field(
-        Decimal("0"), description="Total estimated tax cost"
-    )
-    total_transaction_costs: Decimal = Field(
-        Decimal("0"), description="Total commission/fees"
-    )
+    total_tax_impact: Decimal = Field(Decimal("0"), description="Total estimated tax cost")
+    total_transaction_costs: Decimal = Field(Decimal("0"), description="Total commission/fees")
     total_rebalance_amount: Decimal = Field(
         Decimal("0"), description="Total dollar amount being rebalanced"
     )
@@ -102,8 +96,8 @@ def generate_rebalancing_plan(
         >>> print(plan.trades)
     """
     # Calculate current portfolio value
-    total_value = sum(Decimal(str(p.market_value)) for p in positions)
-    
+    total_value = sum((Decimal(str(p.market_value)) for p in positions), start=Decimal("0"))
+
     # Handle empty or zero-value portfolio
     if total_value == 0:
         return RebalancingPlan(
@@ -123,9 +117,9 @@ def generate_rebalancing_plan(
     for position in positions:
         asset_class = asset_class_map.get(position.symbol, "other")
         position_value = Decimal(str(position.market_value))
-        current_allocation[asset_class] = current_allocation.get(
-            asset_class, Decimal("0")
-        ) + position_value
+        current_allocation[asset_class] = (
+            current_allocation.get(asset_class, Decimal("0")) + position_value
+        )
 
     # Convert to percentages
     current_allocation_pct = {
@@ -135,8 +129,7 @@ def generate_rebalancing_plan(
 
     # Calculate target values
     target_values = {
-        asset_class: (pct / 100 * total_value)
-        for asset_class, pct in target_allocation.items()
+        asset_class: (pct / 100 * total_value) for asset_class, pct in target_allocation.items()
     }
 
     # Generate trades
@@ -179,15 +172,11 @@ def generate_rebalancing_plan(
 
         # Get account info for this position
         account_id = position_accounts.get(position.symbol) if position_accounts else None
-        
+
         # Calculate tax impact (only for sells in taxable accounts)
         tax_impact = Decimal("0")
         if action == "sell" and account_id:
-            account_type = (
-                account_types.get(account_id, "taxable")
-                if account_types
-                else "taxable"
-            )
+            account_type = account_types.get(account_id, "taxable") if account_types else "taxable"
             if account_type == "taxable":
                 # Use actual cost_basis from position
                 cost_basis = Decimal(str(position.cost_basis))
@@ -239,7 +228,7 @@ def generate_rebalancing_plan(
     # Generate warnings
     warnings = _generate_warnings(trades, total_tax_impact)
 
-    total_rebalance_amount = sum(trade.trade_value for trade in trades)
+    total_rebalance_amount = sum((trade.trade_value for trade in trades), start=Decimal("0"))
 
     return RebalancingPlan(
         user_id=user_id,
@@ -307,9 +296,7 @@ def _sort_positions_for_tax_efficiency(
         # Get account info
         account_id = position_accounts.get(position.symbol) if position_accounts else None
         account_type = (
-            account_types.get(account_id, "taxable")
-            if account_types and account_id
-            else "taxable"
+            account_types.get(account_id, "taxable") if account_types and account_id else "taxable"
         )
 
         # Tax-advantaged accounts first (priority 0)

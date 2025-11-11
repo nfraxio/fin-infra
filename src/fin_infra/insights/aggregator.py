@@ -113,9 +113,7 @@ def get_user_insights(user_id: str, include_read: bool = False) -> InsightFeed:
     return InsightFeed(user_id=user_id, insights=[])
 
 
-def _generate_net_worth_insights(
-    user_id: str, snapshots: list[NetWorthSnapshot]
-) -> list[Insight]:
+def _generate_net_worth_insights(user_id: str, snapshots: list[NetWorthSnapshot]) -> list[Insight]:
     """Generate insights from net worth trends."""
     insights = []
 
@@ -164,7 +162,7 @@ def _generate_net_worth_insights(
 
 def _generate_budget_insights(user_id: str, budgets: list[Budget]) -> list[Insight]:
     """Generate insights from budget tracking."""
-    insights = []
+    insights: list[Insight] = []
 
     for budget in budgets:
         # For aggregation, we expect budgets to provide spent amounts somehow
@@ -181,9 +179,9 @@ def _generate_goal_insights(user_id: str, goals: list[Goal]) -> list[Insight]:
     insights = []
 
     for goal in goals:
-        current = goal.current_amount
-        target = goal.target_amount
-        pct = (current / target * 100) if target > 0 else Decimal("0")
+        current = Decimal(str(goal.current_amount))  # Convert float to Decimal
+        target = Decimal(str(goal.target_amount))
+        pct = Decimal((current / target * 100) if target > 0 else "0")
 
         # Goal milestones
         if pct >= 100:
@@ -218,9 +216,7 @@ def _generate_goal_insights(user_id: str, goals: list[Goal]) -> list[Insight]:
     return insights
 
 
-def _generate_recurring_insights(
-    user_id: str, patterns: list[RecurringPattern]
-) -> list[Insight]:
+def _generate_recurring_insights(user_id: str, patterns: list[RecurringPattern]) -> list[Insight]:
     """Generate insights from recurring transactions."""
     insights = []
 
