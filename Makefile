@@ -1,13 +1,17 @@
 SHELL := /bin/bash
 RMI ?= all
 
-.PHONY: help accept compose_up wait seed down pytest_accept unit unitv integration integrationv clean clean-pycache test lint type format
+.PHONY: help accept compose_up wait seed down pytest_accept unit unitv clean clean-pycache test lint type format setup-template run-template
 
 DC_FILE := docker-compose.test.yml
 COMPOSE := docker compose -f $(DC_FILE)
 
 help: ## Show available commands
 	@echo "Available commands:"
+	@echo ""
+	@echo "Template Example:"
+	@echo "  setup-template    Set up the example template (first time only)"
+	@echo "  run-template      Run the fin-infra-template example server"
 	@echo ""
 	@echo "Testing:"
 	@echo "  unit              Run unit tests (quiet)"
@@ -160,10 +164,33 @@ type:
 clean:
 	@echo "[clean] Removing Python caches, build artifacts, and logs"
 	rm -rf **/__pycache__ __pycache__ .pytest_cache .mypy_cache .ruff_cache build dist *.egg-info *.log
+	@echo "[clean] Cleaning examples directory"
+	@cd examples && rm -rf **/__pycache__ __pycache__ .pytest_cache .mypy_cache .ruff_cache build dist *.egg-info *.log 2>/dev/null || true
 
 clean-pycache:
-	@echo "[clean] Removing all __pycache__ directories recursively"
+	@echo "[clean] Removing all __pycache__ directories recursively from project"
 	@find . -type d -name '__pycache__' -prune -exec rm -rf {} +
+	@echo "[clean] Removing all __pycache__ directories recursively from examples"
+	@cd examples && find . -type d -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
+
+# --- Template example ---
+setup-template:
+	@echo "[template] Setting up fin-infra-template (install + scaffold + migrations)..."
+	@cd examples && $(MAKE) setup
+
+run-template:
+	@echo "[template] Installing dependencies for fin-infra-template..."
+	@cd examples && poetry install --no-interaction --quiet 2>/dev/null || true
+	@echo "[template] Checking if setup has been run..."
+	@if [ ! -d "examples/migrations" ]; then \
+		echo ""; \
+		echo "⚠️  Template not set up yet!"; \
+		echo "   Run 'make setup-template' first to scaffold models and initialize the database."; \
+		echo ""; \
+		exit 1; \
+	fi
+	@echo "[template] Running fin-infra-template example..."
+	@cd examples && env -i HOME="$$HOME" USER="$$USER" TERM="$$TERM" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" bash -c 'exec ./run.sh'
 
 # --- Combined test target ---
 test:

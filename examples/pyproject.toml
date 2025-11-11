@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "fin-infra-template"
+version = "0.1.0"
+description = "Complete fintech application template demonstrating fin-infra + svc-infra"
+authors = ["Ali Khatami <aliikhatami94@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+
+# Choose one based on usage:
+# 1. When used as standalone project (copy to your workspace):
+# fin-infra = "^0.1.0"
+# svc-infra = "^0.1.0"
+
+# 2. When used inside fin-infra repo (at examples/ level):
+fin-infra = { path = "../", develop = true }
+svc-infra = "^0.1.0"
+
+# SQLite driver (included for easy local development)
+aiosqlite = "^0.20.0"
+
+# Settings management
+pydantic-settings = "^2.0.0"
+
+# Optional: AI/LLM support for crypto insights and categorization
+# google-generativeai = "^0.3.0"
+# openai = "^1.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

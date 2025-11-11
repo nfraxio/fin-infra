@@ -1,0 +1,93 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Poetry
+poetry.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Alembic
+migrations/versions/*.py
+!migrations/versions/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Financial Data (SECURITY CRITICAL)
+# Never commit credentials, certificates, or financial data
+credentials/
+certificates/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# Provider-specific sensitive files
+teller_certificate.pem
+teller_private_key.pem
+plaid_*.json
+alpaca_*.json
+
+# Test data with real credentials
+test_credentials/
+*_credentials.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
