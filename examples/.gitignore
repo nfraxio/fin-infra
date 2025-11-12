@@ -30,7 +30,7 @@ env.bak/
 venv.bak/
 
 # Poetry
-poetry.lock
+# poetry.lock - KEEP IT COMMITTED for template reproducibility
 
 # IDE
 .vscode/
@@ -46,8 +46,9 @@ poetry.lock
 *.sqlite3
 
 # Alembic
-migrations/versions/*.py
-!migrations/versions/.gitkeep
+# migrations/versions/*.py - KEEP MIGRATIONS COMMITTED for template
+# Only ignore the actual .gitkeep if needed
+# !migrations/versions/.gitkeep
 
 # Logs
 *.log

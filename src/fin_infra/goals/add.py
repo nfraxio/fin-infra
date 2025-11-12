@@ -181,11 +181,10 @@ def add_goals(
         >>> # GET /goals/docs - Scoped Swagger UI
         >>> # GET /goals/openapi.json - Scoped OpenAPI schema
     """
-    # Use plain APIRouter (user_router would require database setup for auth)
-    # In production with svc-infra auth, replace with: from svc_infra.api.fastapi.dual.protected import user_router
-    from fastapi import APIRouter
+    # Use svc-infra user_router for authentication (goals are user-specific)
+    from svc_infra.api.fastapi.dual.protected import user_router
 
-    router = APIRouter(prefix=prefix, tags=["Goal Management"])
+    router = user_router(prefix=prefix, tags=["Goal Management"])
 
     # ========================================================================
     # CRUD Endpoints

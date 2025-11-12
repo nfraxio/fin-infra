@@ -93,18 +93,13 @@ def add_recurring_detection(
         llm_model=llm_model,
     )
 
-    # Store in app state for access in routes
+        # Store on app.state
     app.state.recurring_detector = detector
 
-    # Try to import svc-infra dual routers (fallback to APIRouter if not available)
-    try:
-        from svc_infra.api.fastapi.dual.protected import user_router
+    # Use svc-infra user_router for authentication (recurring detection is user-specific)
+    from svc_infra.api.fastapi.dual.protected import user_router
 
-        router = user_router(prefix=prefix, tags=["Recurring Detection"])
-    except ImportError:
-        from fastapi import APIRouter
-
-        router = APIRouter(prefix=prefix, tags=["Recurring Detection"])
+    router = user_router(prefix=prefix, tags=["Recurring Detection"])
 
     # Route 1: Detect patterns
     @router.post("/detect", response_model=DetectionResponse)

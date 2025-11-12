@@ -250,6 +250,46 @@ class Settings(BaseSettings):
             bool(self.google_api_key) or bool(self.openai_api_key)
         )
 
+    @property
+    def alpaca_paper_trading(self) -> bool:
+        """Check if Alpaca is in paper trading mode."""
+        return self.alpaca_env == "paper"
+
+    @property
+    def analytics_enabled(self) -> bool:
+        """Check if analytics is enabled."""
+        return self.enable_analytics
+
+    @property
+    def categorization_enabled(self) -> bool:
+        """Check if categorization is enabled."""
+        return self.enable_categorization
+
+    @property
+    def budgets_enabled(self) -> bool:
+        """Check if budgets is enabled."""
+        return self.enable_budgets
+
+    @property
+    def goals_enabled(self) -> bool:
+        """Check if goals is enabled."""
+        return self.enable_goals
+
+    @property
+    def net_worth_enabled(self) -> bool:
+        """Check if net worth tracking is enabled."""
+        return self.enable_net_worth
+
+    @property
+    def documents_enabled(self) -> bool:
+        """Check if documents is enabled."""
+        return self.enable_documents
+
+    @property
+    def insights_enabled(self) -> bool:
+        """Check if insights feed is enabled."""
+        return self.enable_insights
+
 
 # Singleton instance
 settings = Settings()
