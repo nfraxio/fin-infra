@@ -88,18 +88,9 @@ def add_tax_data(
         >>> # POST /tax/crypto-gains
         >>> # POST /tax/tax-liability
     """
-    # Import svc-infra dual router
-    try:
-        from svc_infra.api.fastapi.dual.protected import user_router
-        from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
-
-        use_dual_router = True
-    except ImportError:
-        # Fallback to generic APIRouter if svc-infra not available
-        from fastapi import APIRouter
-
-        user_router = APIRouter  # type: ignore
-        use_dual_router = False
+    # Use svc-infra user_router for authentication (tax data is user-specific and sensitive)
+    from svc_infra.api.fastapi.dual.protected import user_router
+    from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
 
     # Initialize provider
     if provider is None:
@@ -112,11 +103,8 @@ def add_tax_data(
 
         provider = easy_tax(provider=provider)
 
-    # Create router with proper auth
-    if use_dual_router:
-        router = user_router(prefix=prefix, tags=["Tax Data"])  # type: ignore
-    else:
-        router = APIRouter(prefix=prefix, tags=["Tax Data"])  # type: ignore
+    # Create router with svc-infra user_router for authentication
+    router = user_router(prefix=prefix, tags=["Tax Data"])
 
     @router.get("/documents")
     async def get_tax_documents(
@@ -417,18 +405,17 @@ def add_tax_data(
 
         return scenario
 
+    # Register scoped docs BEFORE mounting router to keep docs public
+    add_prefixed_docs(
+        app,
+        prefix=prefix,
+        title="Tax Data",
+        auto_exclude_from_root=True,
+        visible_envs=None,  # Show in all environments
+    )
+
     # Mount router
     app.include_router(router, include_in_schema=True)
-
-    # Add scoped docs (if svc-infra available)
-    if use_dual_router:
-        add_prefixed_docs(
-            app,
-            prefix=prefix,
-            title="Tax Data",
-            auto_exclude_from_root=True,
-            visible_envs=None,  # Show in all environments
-        )
 
     # Store provider on app state
     app.state.tax_provider = provider

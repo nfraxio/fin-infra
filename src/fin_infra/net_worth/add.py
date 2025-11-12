@@ -121,17 +121,10 @@ def add_net_worth_tracking(
     # Store tracker on app state for access in routes
     app.state.net_worth_tracker = tracker
 
-    # Import svc-infra dual router (when available)
-    # For now, use standard FastAPI router
-    try:
-        from svc_infra.api.fastapi.dual.protected import user_router
+    # Use svc-infra user_router for authentication (net worth is user-specific)
+    from svc_infra.api.fastapi.dual.protected import user_router
 
-        router = user_router(prefix=prefix, tags=["Net Worth"])
-    except ImportError:
-        # Fallback to standard router if svc-infra not available
-        from fastapi import APIRouter
-
-        router = APIRouter(prefix=prefix, tags=["Net Worth"])
+    router = user_router(prefix=prefix, tags=["Net Worth"])
 
     @router.get(
         "/current",
@@ -694,7 +687,6 @@ def add_net_worth_tracking(
             app,
             prefix=prefix,
             title="Net Worth Tracking",
-            description="Calculate and track net worth from multiple financial providers",
             auto_exclude_from_root=True,
             visible_envs=None,  # Show in all environments
         )

@@ -117,11 +117,10 @@ def add_budgets(
     # Store on app state for access in routes and programmatic use
     app.state.budget_tracker = tracker
 
-    # Use plain APIRouter (user_router would require database setup for auth)
-    # In production, apps can add authentication dependencies separately
-    from fastapi import APIRouter
+    # Use svc-infra user_router for authentication (budgets are user-specific)
+    from svc_infra.api.fastapi.dual.protected import user_router
 
-    router = APIRouter(prefix=prefix, tags=["Budget Management"])
+    router = user_router(prefix=prefix, tags=["Budget Management"])
 
     # Endpoint 1: Create budget
     @router.post("", response_model=Budget, summary="Create Budget")
@@ -406,10 +405,8 @@ def add_budgets(
                 status_code=500, detail=f"Failed to create budget from template: {str(e)}"
             )
 
-    # Mount router to app
-    app.include_router(router, include_in_schema=True)
-
-    # Register scoped docs for landing page card (CRITICAL)
+    # Register scoped docs for landing page card BEFORE mounting router (CRITICAL)
+    # This ensures docs endpoints remain public even if router has auth
     try:
         from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
 
@@ -422,5 +419,8 @@ def add_budgets(
         )
     except ImportError:
         pass  # svc-infra not available, skip docs registration
+
+    # Mount router (after docs registration)
+    app.include_router(router, include_in_schema=True)
 
     return tracker

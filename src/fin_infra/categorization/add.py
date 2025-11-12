@@ -70,15 +70,8 @@ def add_categorization(
             Get categorization statistics.
             Response: {"total_categories": 56, "categories_by_group": {...}, ...}
     """
-    # Import svc-infra dual routers
-    try:
-        from svc_infra.api.fastapi.dual.public import public_router
-    except ImportError:
-        # Fallback to regular FastAPI router if svc-infra not available
-        from fastapi import APIRouter
-
-        def public_router(prefix: str, tags: list[str]):
-            return APIRouter(prefix=prefix, tags=tags)
+    # Use svc-infra public_router (categorization is a utility function)
+    from svc_infra.api.fastapi.dual.public import public_router
 
     # Create categorization engine
     engine = easy_categorization(

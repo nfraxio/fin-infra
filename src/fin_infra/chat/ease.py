@@ -20,7 +20,7 @@ Example:
 
 from typing import Any
 
-from fin_infra.conversation.planning import FinancialPlanningConversation
+from fin_infra.chat.planning import FinancialPlanningConversation
 
 
 def easy_financial_conversation(
