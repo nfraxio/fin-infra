@@ -681,15 +681,6 @@ def add_net_worth_tracking(
 
     # Register scoped docs (when svc-infra available)
     try:
-        from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
-
-        add_prefixed_docs(
-            app,
-            prefix=prefix,
-            title="Net Worth Tracking",
-            auto_exclude_from_root=True,
-            visible_envs=None,  # Show in all environments
-        )
     except ImportError:
         # svc-infra not available, skip scoped docs
         pass

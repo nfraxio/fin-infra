@@ -252,15 +252,6 @@ def add_market_data(
     app.include_router(router, include_in_schema=True)
 
     # Register scoped docs for landing page card (creates separate card like /auth, /payments)
-    from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
-
-    add_prefixed_docs(
-        app,
-        prefix=prefix,
-        title="Market Data",
-        auto_exclude_from_root=True,
-        visible_envs=None,  # Show in all environments
-    )
 
     # Store provider instance on app state for access in routes
     if not hasattr(app.state, "market_provider"):

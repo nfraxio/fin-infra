@@ -280,15 +280,6 @@ def add_analytics(
 
     # 7. Call add_prefixed_docs for landing page card (CRITICAL)
     try:
-        from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
-
-        add_prefixed_docs(
-            app,
-            prefix=prefix,
-            title="Analytics",
-            auto_exclude_from_root=True,
-            visible_envs=None,  # Show in all environments
-        )
     except ImportError:
         # svc-infra not available, skip scoped docs
         pass

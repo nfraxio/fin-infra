@@ -432,15 +432,6 @@ def add_recurring_detection(
 
     # Register scoped docs (if svc-infra available)
     try:
-        from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
-
-        add_prefixed_docs(
-            app,
-            prefix=prefix,
-            title="Recurring Detection",
-            auto_exclude_from_root=True,
-            visible_envs=None,
-        )
     except ImportError:
         pass  # svc-infra not available, skip scoped docs
 

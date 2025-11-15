@@ -182,15 +182,6 @@ def add_categorization(
 
     # Register scoped docs (svc-infra pattern)
     try:
-        from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
-
-        add_prefixed_docs(
-            app,
-            prefix=prefix,
-            title="Transaction Categorization",
-            auto_exclude_from_root=True,
-            visible_envs=None,  # Show in all environments
-        )
     except ImportError:
         pass  # svc-infra not available
 

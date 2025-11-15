@@ -408,15 +408,6 @@ def add_budgets(
     # Register scoped docs for landing page card BEFORE mounting router (CRITICAL)
     # This ensures docs endpoints remain public even if router has auth
     try:
-        from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
-
-        add_prefixed_docs(
-            app,
-            prefix=prefix,
-            title="Budget Management",
-            auto_exclude_from_root=True,
-            visible_envs=None,  # Show in all environments
-        )
     except ImportError:
         pass  # svc-infra not available, skip docs registration
 

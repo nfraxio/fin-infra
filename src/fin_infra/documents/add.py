@@ -272,15 +272,6 @@ def add_documents(
 
     # Register scoped docs for landing page card BEFORE mounting router
     # This ensures docs endpoints are public and not protected by user_router auth
-    from svc_infra.api.fastapi.docs.scoped import add_prefixed_docs
-
-    add_prefixed_docs(
-        app,
-        prefix=prefix,
-        title="Document Management",
-        auto_exclude_from_root=True,
-        visible_envs=None,  # Show in all environments
-    )
 
     # Mount router (after docs so auth doesn't block docs endpoints)
     app.include_router(router, include_in_schema=True)
