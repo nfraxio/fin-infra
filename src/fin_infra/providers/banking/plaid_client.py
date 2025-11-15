@@ -12,16 +12,38 @@ from ..base import BankingProvider
 
 
 class PlaidClient(BankingProvider):
-    def __init__(self, settings: Settings | None = None) -> None:
-        self.settings = settings or Settings()
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        client_id: str | None = None,
+        secret: str | None = None,
+        environment: str | None = None,
+    ) -> None:
+        """Initialize Plaid client with either Settings object or individual parameters.
+        
+        Args:
+            settings: Settings object (legacy pattern)
+            client_id: Plaid client ID (preferred - from env or passed directly)
+            secret: Plaid secret (preferred - from env or passed directly)
+            environment: Plaid environment - sandbox, development, or production
+        """
         if PlaidClientSDK is None:
             raise RuntimeError(
                 "plaid-python client not available or import failed; check installed version"
             )
+        
+        # Support both patterns: Settings object or individual params
+        if settings is not None:
+            # Legacy pattern with Settings object
+            client_id = client_id or settings.plaid_client_id
+            secret = secret or settings.plaid_secret
+            environment = environment or settings.plaid_env
+        
+        # Individual params take precedence
         self.client = PlaidClientSDK(
-            client_id=self.settings.plaid_client_id,
-            secret=self.settings.plaid_secret,
-            environment=self.settings.plaid_env,
+            client_id=client_id,
+            secret=secret,
+            environment=environment,
         )
 
     def create_link_token(self, user_id: str) -> str:
