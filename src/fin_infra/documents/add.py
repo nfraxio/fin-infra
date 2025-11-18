@@ -1,20 +1,24 @@
 """
-FastAPI integration for document management.
+FastAPI integration for financial document management.
 
-Mounts document endpoints:
-- POST /documents/upload - Upload new document
-- GET /documents/{document_id} - Get document details
-- GET /documents/list - List user's documents
-- DELETE /documents/{document_id} - Delete document
-- POST /documents/{document_id}/ocr - Extract text via OCR
-- POST /documents/{document_id}/analyze - Analyze document with AI
+Extends svc-infra documents module with financial-specific features:
+- Base endpoints (upload, list, get, delete) from svc-infra
+- Financial extensions: OCR text extraction, AI analysis
+
+Mounts 6 endpoints total:
+1. POST /documents/upload - Upload new document (svc-infra base)
+2. GET /documents/list - List user's documents (svc-infra base)
+3. GET /documents/{document_id} - Get document details (svc-infra base)
+4. DELETE /documents/{document_id} - Delete document (svc-infra base)
+5. POST /documents/{document_id}/ocr - Extract text via OCR (fin-infra)
+6. POST /documents/{document_id}/analyze - Analyze document with AI (fin-infra)
 
 Quick Start:
     >>> from fastapi import FastAPI
     >>> from fin_infra.documents import add_documents
     >>>
     >>> app = FastAPI()
-    >>> manager = add_documents(app, storage_path="/data/documents")
+    >>> manager = add_documents(app)  # Auto-detects storage backend
 """
 
 from __future__ import annotations
@@ -24,191 +28,91 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
-    from .ease import DocumentManager
+    from svc_infra.storage.base import StorageBackend
+
+    from .ease import FinancialDocumentManager
 
 
 def add_documents(
     app: "FastAPI",
-    storage_path: str = "/tmp/documents",
+    storage: Optional["StorageBackend"] = None,
     default_ocr_provider: str = "tesseract",
     prefix: str = "/documents",
-) -> "DocumentManager":
+    tags: Optional[list[str]] = None,
+) -> "FinancialDocumentManager":
     """
-    Add document management endpoints to FastAPI app.
+    Add financial document management endpoints to FastAPI app.
 
-    Mounts 6 endpoints:
-    1. POST /documents/upload - Upload new document
-    2. GET /documents/{document_id} - Get document details
-    3. GET /documents/list - List user's documents
-    4. DELETE /documents/{document_id} - Delete document
-    5. POST /documents/{document_id}/ocr - Extract text via OCR
-    6. POST /documents/{document_id}/analyze - Analyze document with AI
+    Extends svc-infra documents module by:
+    1. Mounting base endpoints (upload, list, get, delete) via svc-infra
+    2. Adding financial-specific endpoints (OCR, analyze)
+
+    Mounts 6 endpoints total:
+    1. POST /documents/upload - Upload new document (svc-infra base)
+    2. GET /documents/list - List user's documents (svc-infra base)
+    3. GET /documents/{document_id} - Get document details (svc-infra base)
+    4. DELETE /documents/{document_id} - Delete document (svc-infra base)
+    5. POST /documents/{document_id}/ocr - Extract text via OCR (fin-infra)
+    6. POST /documents/{document_id}/analyze - Analyze with AI (fin-infra)
 
     Args:
         app: FastAPI application
-        storage_path: Base path for document storage
+        storage: Storage backend (auto-detected if None)
         default_ocr_provider: Default OCR provider (tesseract/textract)
-        prefix: URL prefix for document endpoints
+        prefix: URL prefix for document endpoints (default: /documents)
+        tags: OpenAPI tags for documentation (default: ["Documents"])
 
     Returns:
-        Document manager instance for programmatic access
+        Financial document manager instance for programmatic access
 
     Examples:
         >>> from fastapi import FastAPI
         >>> from fin_infra.documents import add_documents
         >>>
         >>> app = FastAPI()
-        >>> manager = add_documents(
-        ...     app,
-        ...     storage_path="/data/documents",
-        ...     default_ocr_provider="tesseract"
-        ... )
+        >>> manager = add_documents(app)  # Auto-detects storage
         >>>
         >>> # Access manager programmatically
-        >>> doc = manager.upload(user_id="user_123", file=file_bytes, document_type="tax")
+        >>> doc = await manager.upload_financial(
+        ...     user_id="user_123",
+        ...     file=file_bytes,
+        ...     document_type=DocumentType.TAX,
+        ...     filename="w2_2024.pdf"
+        ... )
 
     Notes:
-        - Uses svc-infra dual routers (user_router for auth)
-        - Registers scoped docs with add_prefixed_docs
-        - Stores manager on app.state for route access
-        - All routes require user authentication
+        - Base endpoints (upload, list, get, delete) from svc-infra
+        - Financial endpoints (OCR, analyze) added by fin-infra
+        - All routes require user authentication (dual router pattern)
+        - Stores manager on app.state.financial_documents
     """
-    from .ease import easy_documents
+    from fastapi import HTTPException
 
-    # Create manager
-    manager = easy_documents(
-        storage_path=storage_path,
-        default_ocr_provider=default_ocr_provider,
-    )
-
-    # Create router with svc-infra dual router (user_router for auth)
     from svc_infra.api.fastapi.dual.protected import user_router
 
-    router = user_router(prefix=prefix, tags=["Documents"])
+    # Import svc-infra base function to mount base endpoints
+    from svc_infra.documents import add_documents as add_base_documents
 
-    # Route 1: Upload document
-    @router.post("/upload")
-    async def upload_document(
-        user_id: str,
-        file: bytes,
-        document_type: str,
-        filename: str,
-        metadata: Optional[dict] = None,
-    ):
-        """
-        Upload a financial document.
+    from .ease import easy_documents
+    from .models import OCRResult
 
-        Args:
-            user_id: User uploading the document
-            file: File content as bytes
-            document_type: Type of document (tax, statement, receipt, etc.)
-            filename: Original filename
-            metadata: Optional custom metadata (year, form_type, etc.)
+    # Step 1: Mount base endpoints (upload, list, get, delete) via svc-infra
+    # This returns the base DocumentManager, but we'll create our own FinancialDocumentManager
+    add_base_documents(app, storage_backend=storage, prefix=prefix, tags=tags)
 
-        Returns:
-            Uploaded document with ID and storage information
+    # Step 2: Create financial document manager with OCR/AI capabilities
+    manager = easy_documents(storage=storage, default_ocr_provider=default_ocr_provider)
 
-        Examples:
-            >>> # Upload W-2 tax document
-            >>> POST /documents/upload
-            >>> {
-            ...     "user_id": "user_123",
-            ...     "file": <binary data>,
-            ...     "document_type": "tax",
-            ...     "filename": "w2_2024.pdf",
-            ...     "metadata": {"year": 2024, "form_type": "W-2"}
-            ... }
-        """
-        from .models import DocumentType
+    # Step 3: Create router for financial-specific endpoints
+    router = user_router(prefix=prefix, tags=tags or ["Documents"])
 
-        return manager.upload(
-            user_id=user_id,
-            file=file,
-            document_type=DocumentType(document_type),
-            filename=filename,
-            metadata=metadata,
-        )
-
-    # Route 2: Get document details
-    @router.get("/{document_id}")
-    async def get_document(document_id: str):
-        """
-        Get document details (not file content).
-
-        Args:
-            document_id: Document identifier
-
-        Returns:
-            Document metadata
-
-        Examples:
-            >>> GET /documents/doc_abc123
-        """
-        from .storage import get_document as get_doc_metadata
-
-        doc = get_doc_metadata(document_id)
-        if not doc:
-            raise ValueError(f"Document not found: {document_id}")
-        return doc
-
-    # Route 3: List user's documents
-    @router.get("/list")
-    async def list_documents(
-        user_id: str,
-        type: Optional[str] = None,
-        year: Optional[int] = None,
-    ):
-        """
-        List user's documents with optional filters.
-
-        Args:
-            user_id: User identifier
-            type: Optional document type filter
-            year: Optional year filter
-
-        Returns:
-            List of user's documents
-
-        Examples:
-            >>> # All documents
-            >>> GET /documents/list?user_id=user_123
-            >>>
-            >>> # Tax documents only
-            >>> GET /documents/list?user_id=user_123&type=tax
-            >>>
-            >>> # 2024 tax documents
-            >>> GET /documents/list?user_id=user_123&type=tax&year=2024
-        """
-        from .models import DocumentType
-
-        type_enum = DocumentType(type) if type else None
-        return manager.list(user_id=user_id, type=type_enum, year=year)
-
-    # Route 4: Delete document
-    @router.delete("/{document_id}")
-    async def delete_document(document_id: str):
-        """
-        Delete a document and its metadata.
-
-        Args:
-            document_id: Document identifier
-
-        Returns:
-            Success message
-
-        Examples:
-            >>> DELETE /documents/doc_abc123
-        """
-        manager.delete(document_id)
-        return {"message": "Document deleted successfully"}
-
-    # Route 5: Extract text via OCR
-    @router.post("/{document_id}/ocr")
-    async def extract_text(
+    # Financial Endpoint 1: Extract text via OCR
+    @router.post("/{document_id}/ocr", response_model=OCRResult)
+    async def extract_text_ocr(
         document_id: str,
         provider: Optional[str] = None,
         force_refresh: bool = False,
-    ):
+    ) -> OCRResult:
         """
         Extract text from document using OCR.
 
@@ -220,25 +124,33 @@ def add_documents(
         Returns:
             OCR result with extracted text and structured fields
 
-        Examples:
-            >>> # Basic OCR (default provider)
-            >>> POST /documents/doc_abc123/ocr
-            >>>
-            >>> # High-accuracy OCR (AWS Textract)
-            >>> POST /documents/doc_abc123/ocr?provider=textract
-            >>>
-            >>> # Force re-extraction
-            >>> POST /documents/doc_abc123/ocr?force_refresh=true
-        """
-        return manager.extract_text(
-            document_id=document_id,
-            provider=provider,
-            force_refresh=force_refresh,
-        )
+        Raises:
+            HTTPException: 404 if document not found
 
-    # Route 6: Analyze document with AI
+        Examples:
+            ```bash
+            # Basic OCR (default provider)
+            curl -X POST http://localhost:8000/documents/doc_abc123/ocr
+
+            # High-accuracy OCR (AWS Textract)
+            curl -X POST "http://localhost:8000/documents/doc_abc123/ocr?provider=textract"
+
+            # Force re-extraction
+            curl -X POST "http://localhost:8000/documents/doc_abc123/ocr?force_refresh=true"
+            ```
+        """
+        try:
+            return await manager.extract_text(
+                document_id=document_id,
+                provider=provider,
+                force_refresh=force_refresh,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+    # Financial Endpoint 2: Analyze document with AI
     @router.post("/{document_id}/analyze")
-    async def analyze_document(
+    async def analyze_document_ai(
         document_id: str,
         force_refresh: bool = False,
     ):
@@ -252,31 +164,46 @@ def add_documents(
         Returns:
             Document analysis with summary, findings, and recommendations
 
+        Raises:
+            HTTPException: 404 if document not found
+
         Examples:
-            >>> POST /documents/doc_abc123/analyze
-            >>> {
-            ...     "document_id": "doc_abc123",
-            ...     "summary": "W-2 showing $85,000 annual wages from Acme Corp",
-            ...     "key_findings": [
-            ...         "High federal tax withholding (22% effective rate)",
-            ...         "State tax withholding matches California brackets"
-            ...     ],
-            ...     "recommendations": [
-            ...         "Consider adjusting W-4 allowances",
-            ...         "Review retirement contribution limits"
-            ...     ],
-            ...     "confidence": 0.92
-            ... }
+            ```bash
+            # Analyze document
+            curl -X POST http://localhost:8000/documents/doc_abc123/analyze
+
+            # Force re-analysis
+            curl -X POST "http://localhost:8000/documents/doc_abc123/analyze?force_refresh=true"
+            ```
+
+            Response:
+            ```json
+            {
+                "document_id": "doc_abc123",
+                "summary": "W-2 showing $85,000 annual wages from Acme Corp",
+                "key_findings": [
+                    "High federal tax withholding (22% effective rate)",
+                    "State tax withholding matches California brackets"
+                ],
+                "recommendations": [
+                    "Consider adjusting W-4 allowances",
+                    "Review retirement contribution limits"
+                ],
+                "confidence": 0.92
+            }
+            ```
         """
-        return manager.analyze(document_id=document_id, force_refresh=force_refresh)
+        try:
+            return await manager.analyze(
+                document_id=document_id, force_refresh=force_refresh
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
 
-    # Register scoped docs for landing page card BEFORE mounting router
-    # This ensures docs endpoints are public and not protected by user_router auth
+    # Mount financial endpoints
+    app.include_router(router)
 
-    # Mount router (after docs so auth doesn't block docs endpoints)
-    app.include_router(router, include_in_schema=True)
-
-    # Store manager on app.state for route access
-    app.state.document_manager = manager
+    # Store financial manager on app.state for route access
+    app.state.financial_documents = manager
 
     return manager

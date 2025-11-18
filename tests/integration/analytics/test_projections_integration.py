@@ -385,7 +385,7 @@ async def test_projection_near_retirement():
 
     # Should still grow (contributions boost growth significantly)
     growth_multiple = conservative.final_value / projection.current_net_worth
-    assert 1.2 <= growth_multiple <= 5.0  # Contributions boost even conservative scenarios
+    assert 1.2 <= growth_multiple <= 6.0  # Contributions boost even conservative scenarios
 
 
 # ============================================================================

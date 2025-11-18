@@ -97,6 +97,15 @@ def cmd_scaffold(
         2. Apply: svc-infra upgrade head
         3. Wire CRUD: add_sql_resources(app, [SqlResource(model=Budget, ...)])
     """
+    # Validate required parameters
+    if dest_dir is None:
+        typer.secho(
+            "❌ Error: --dest-dir is required",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(1)
+    
     # Import scaffold function based on domain
     if domain == "budgets":
         from fin_infra.scaffold.budgets import scaffold_budgets_core

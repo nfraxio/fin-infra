@@ -16,10 +16,12 @@ from fin_infra.documents.storage import clear_storage
 def app():
     """Create FastAPI app with document routes (no auth for testing)."""
     from svc_infra.api.fastapi.dual.public import public_router
+    from svc_infra.storage import MemoryBackend
     from fin_infra.documents.ease import easy_documents
 
     app = FastAPI()
-    manager = easy_documents(storage_path="/tmp/test_documents")
+    storage = MemoryBackend()
+    manager = easy_documents(storage=storage)
 
     # Create router WITHOUT auth for integration testing
     router = public_router(prefix="/documents", tags=["Documents"])
@@ -33,33 +35,48 @@ def app():
         file = request["file"]
         document_type = request["document_type"]
         filename = request["filename"]
-        metadata = request.get("metadata")
+        metadata = request.get("metadata", {})
+
+        # Extract tax_year and form_type from metadata
+        tax_year = metadata.pop("year", None) if metadata else None
+        form_type = metadata.pop("form_type", None) if metadata else None
 
         doc_type = DocumentType(document_type)
         file_bytes = file.encode() if isinstance(file, str) else file
-        return manager.upload(user_id, file_bytes, doc_type, filename, metadata)
+        return await manager.upload_financial(
+            user_id, file_bytes, doc_type, filename, metadata, 
+            tax_year=tax_year, form_type=form_type
+        )
 
     # Route 2: List documents (MUST come before /{document_id} to avoid path conflict)
     @router.get("/list")
-    async def list_documents(user_id: str, type: Optional[str] = None, year: Optional[int] = None):
-        from fin_infra.documents.storage import list_documents as list_docs
-
-        return list_docs(user_id, type=type, year=year)
+    async def list_documents_route(user_id: str, type: Optional[str] = None, year: Optional[int] = None):
+        from fin_infra.documents.models import DocumentType
+        
+        doc_type = DocumentType(type) if type else None
+        return manager.list_financial(
+            user_id=user_id, 
+            document_type=doc_type, 
+            tax_year=year
+        )
 
     # Route 3: Get document
     @router.get("/{document_id}")
-    async def get_document(document_id: str):
-        from fin_infra.documents.storage import get_document as get_doc
+    async def get_document_route(document_id: str):
+        from fin_infra.documents.storage import get_document
+        from fastapi import HTTPException
 
-        doc = get_doc(document_id)
+        doc = get_document(document_id)
         if doc is None:
-            raise ValueError(f"Document {document_id} not found")
+            raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
         return doc
 
     # Route 4: Delete document
     @router.delete("/{document_id}")
-    async def delete_document(document_id: str):
-        manager.delete(document_id)
+    async def delete_document_route(document_id: str):
+        from fin_infra.documents.storage import delete_document
+        
+        await delete_document(manager.storage, document_id)
         return {"message": "Document deleted successfully"}
 
     # Route 5: Extract text (OCR)
@@ -67,14 +84,14 @@ def app():
     async def extract_text(
         document_id: str, provider: Optional[str] = None, force_refresh: bool = False
     ):
-        return manager.extract_text(
+        return await manager.extract_text(
             document_id, provider=provider or "tesseract", force_refresh=force_refresh
         )
 
     # Route 6: Analyze document
     @router.post("/{document_id}/analyze")
     async def analyze_document(document_id: str, force_refresh: bool = False):
-        return manager.analyze(document_id, force_refresh=force_refresh)
+        return await manager.analyze(document_id, force_refresh=force_refresh)
 
     app.include_router(router)
     app.state.document_manager = manager
@@ -123,7 +140,7 @@ class TestDocumentsAPI:
         assert data["user_id"] == "user_123"
         assert data["type"] == "tax"
         assert data["filename"] == "test.pdf"
-        assert data["metadata"]["year"] == 2024
+        assert data["tax_year"] == 2024
 
     def test_get_document(self, client):
         """Test getting document details."""
@@ -233,7 +250,7 @@ class TestDocumentsAPI:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
-        assert data[0]["metadata"]["year"] == 2024
+        assert data[0]["tax_year"] == 2024
 
     def test_delete_document(self, client):
         """Test deleting a document."""
@@ -371,7 +388,8 @@ class TestDocumentsAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["metadata"] == {}
+        # metadata contains at least document_type
+        assert "document_type" in data["metadata"]
 
     def test_list_empty_documents(self, client):
         """Test listing when user has no documents."""

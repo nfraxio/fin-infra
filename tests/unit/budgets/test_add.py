@@ -489,18 +489,6 @@ class TestAddBudgetsFunction:
         routes = [route.path for route in app.routes]
         assert "/budgets" in routes or any("/budgets" in r for r in routes)
 
-    @patch("svc_infra.api.fastapi.docs.scoped.add_prefixed_docs")
-    def test_add_budgets_registers_docs(self, mock_add_docs, mock_tracker):
-        """Test add_budgets() registers scoped docs."""
-        app = FastAPI()
-        add_budgets(app, tracker=mock_tracker)
-
-        # Verify add_prefixed_docs was called with correct args
-        mock_add_docs.assert_called_once()
-        call_args = mock_add_docs.call_args
-        assert call_args.kwargs["prefix"] == "/budgets"
-        assert call_args.kwargs["title"] == "Budget Management"
-
 
 class TestIntegration:
     """Integration tests for full budget workflow."""

@@ -1,5 +1,14 @@
 """Test app to verify landing page cards for banking and market data."""
 
+import os
+import pytest
+
+# Skip entire module if Teller certificates not available
+TELLER_CERT = os.getenv("TELLER_CERT_PATH")
+TELLER_KEY = os.getenv("TELLER_KEY_PATH")
+if not TELLER_CERT or not TELLER_KEY or not os.path.exists(TELLER_CERT) or not os.path.exists(TELLER_KEY):
+    pytest.skip("Teller certificates not available - skipping cards app tests", allow_module_level=True)
+
 from svc_infra.api.fastapi.ease import easy_service_app
 from fin_infra.banking import add_banking
 from fin_infra.markets import add_market_data

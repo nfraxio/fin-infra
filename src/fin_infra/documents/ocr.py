@@ -28,21 +28,25 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, Optional
 
 if TYPE_CHECKING:
+    from svc_infra.storage.base import StorageBackend
+
     from .models import OCRResult
 
 # In-memory OCR cache (production: use svc-infra cache)
 _ocr_cache: Dict[str, "OCRResult"] = {}
 
 
-def extract_text(
+async def extract_text(
+    storage: "StorageBackend",
     document_id: str,
     provider: str = "tesseract",
     force_refresh: bool = False,
 ) -> "OCRResult":
     """
-    Extract text from a document using OCR.
+    Extract text from a document using OCR (uses svc-infra storage).
 
     Args:
+        storage: Storage backend instance  
         document_id: Document identifier
         provider: OCR provider ("tesseract" or "textract")
         force_refresh: Force re-extraction even if cached result exists
@@ -51,16 +55,20 @@ def extract_text(
         OCR result with extracted text and structured fields
 
     Examples:
+        >>> from svc_infra.storage import easy_storage
+        >>> storage = easy_storage()
+        >>>
         >>> # Basic OCR (Tesseract)
-        >>> result = extract_text("doc_abc123")
+        >>> result = await extract_text(storage, "doc_abc123")
         >>>
         >>> # High-accuracy OCR (AWS Textract)
-        >>> result = extract_text("doc_abc123", provider="textract")
+        >>> result = await extract_text(storage, "doc_abc123", provider="textract")
         >>>
         >>> # Force re-extraction
-        >>> result = extract_text("doc_abc123", force_refresh=True)
+        >>> result = await extract_text(storage, "doc_abc123", force_refresh=True)
 
     Notes:
+        - Uses svc-infra storage backend for document retrieval
         - Current: Simulated OCR (mock text extraction)
         - Production: Check cache before extraction (use svc-infra cache)
         - Production: Queue long-running OCR jobs (use svc-infra jobs)
@@ -74,13 +82,13 @@ def extract_text(
     if not force_refresh and cache_key in _ocr_cache:
         return _ocr_cache[cache_key]
 
-    # Get document metadata
+    # Get document metadata (sync call to svc-infra)
     doc = get_document(document_id)
     if not doc:
         raise ValueError(f"Document not found: {document_id}")
 
-    # Download file content
-    file_content = download_document(document_id)
+    # Download file content (async call to svc-infra)
+    file_content = await download_document(storage, document_id)
 
     # Extract text based on provider
     if provider == "tesseract":

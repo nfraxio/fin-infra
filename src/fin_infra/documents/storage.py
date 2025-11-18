@@ -1,148 +1,187 @@
 """
-Document storage operations.
+Financial document storage operations (Layer 2 - delegates to svc-infra Layer 1).
 
-Handles upload, download, deletion, and listing of financial documents.
-Uses in-memory storage for simplicity (production: use svc-infra S3/SQL).
+This module provides financial-specific wrappers around svc-infra's generic document storage.
+All storage operations delegate to svc-infra/documents for consistency.
+
+Architecture:
+    Layer 1 (svc-infra): Generic document CRUD using storage backend
+    Layer 2 (fin-infra): Financial wrappers with DocumentType, tax_year, form_type
 
 Quick Start:
     >>> from fin_infra.documents.storage import upload_document, list_documents
+    >>> from svc_infra.storage import easy_storage
     >>>
-    >>> # Upload document
-    >>> doc = upload_document(
+    >>> storage = easy_storage()  # Auto-detects S3/local/memory
+    >>>
+    >>> # Upload financial document
+    >>> doc = await upload_document(
+    ...     storage=storage,
     ...     user_id="user_123",
     ...     file=uploaded_file,
     ...     document_type=DocumentType.TAX,
-    ...     metadata={"year": 2024, "form_type": "W-2"}
+    ...     filename="w2_2024.pdf",
+    ...     metadata={"tax_year": 2024, "form_type": "W-2"}
     ... )
     >>>
     >>> # List user's documents
-    >>> docs = list_documents(user_id="user_123", type=DocumentType.TAX, year=2024)
+    >>> docs = list_documents(user_id="user_123", document_type=DocumentType.TAX)
     >>>
     >>> # Download document
-    >>> file_data = download_document(doc.id)
+    >>> file_data = await download_document(storage, doc.id)
     >>>
     >>> # Delete document
-    >>> delete_document(doc.id)
-
-Production Integration:
-    - Use svc-infra file storage for S3/local filesystem
-    - Store metadata in svc-infra SQL database
-    - Enable virus scanning (ClamAV integration)
-    - Implement retention policies (auto-delete after N years)
-    - Add document versioning support
+    >>> await delete_document(storage, doc.id)
 """
 
 from __future__ import annotations
 
-import hashlib
-import mimetypes
-import uuid
-from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, List, Optional
+
+from svc_infra.documents import (
+    delete_document as base_delete_document,
+    download_document as base_download_document,
+    get_document as base_get_document,
+    list_documents as base_list_documents,
+    upload_document as base_upload_document,
+)
 
 if TYPE_CHECKING:
-    from .models import Document, DocumentType
+    from svc_infra.storage.base import StorageBackend
 
-# In-memory storage (production: use svc-infra SQL + S3)
-_documents: Dict[str, "Document"] = {}
-_file_storage: Dict[str, bytes] = {}
+    from .models import DocumentType, FinancialDocument
 
 
-def upload_document(
+async def upload_document(
+    storage: "StorageBackend",
     user_id: str,
     file: bytes,
     document_type: "DocumentType",
     filename: str,
     metadata: Optional[dict] = None,
-) -> "Document":
+    tax_year: Optional[int] = None,
+    form_type: Optional[str] = None,
+) -> "FinancialDocument":
     """
-    Upload a financial document.
+    Upload a financial document (delegates to svc-infra, adds financial fields).
 
     Args:
+        storage: Storage backend instance
         user_id: User uploading the document
         file: File content as bytes
-        document_type: Type of document
+        document_type: Type of financial document
         filename: Original filename
-        metadata: Optional custom metadata (year, form type, etc.)
+        metadata: Optional custom metadata (employer, account, etc.)
+        tax_year: Optional tax year (2024, 2023, etc.)
+        form_type: Optional form type (W-2, 1099-INT, etc.)
 
     Returns:
-        Document with storage information
+        FinancialDocument with storage information and financial fields
 
     Examples:
-        >>> doc = upload_document(
+        >>> from svc_infra.storage import easy_storage
+        >>> storage = easy_storage()
+        >>>
+        >>> # Upload W-2 tax document
+        >>> doc = await upload_document(
+        ...     storage=storage,
         ...     user_id="user_123",
         ...     file=file_bytes,
         ...     document_type=DocumentType.TAX,
         ...     filename="w2_2024.pdf",
-        ...     metadata={"year": 2024, "form_type": "W-2"}
+        ...     metadata={"employer": "ACME Corp"},
+        ...     tax_year=2024,
+        ...     form_type="W-2"
         ... )
 
     Notes:
-        - Current: In-memory storage (for development/testing)
-        - Production: Use svc-infra file storage (S3/local)
-        - Production: Enable virus scanning before storage
-        - Production: Store metadata in svc-infra SQL database
+        - Delegates to svc-infra.documents.upload_document for base storage
+        - Adds financial-specific fields (type, tax_year, form_type)
+        - Uses svc-infra storage backend (S3/local/memory)
     """
-    from .models import Document
+    from .models import FinancialDocument
 
-    # Generate unique document ID
-    doc_id = f"doc_{uuid.uuid4().hex[:12]}"
+    # Merge financial metadata into base metadata
+    merged_metadata = metadata or {}
+    merged_metadata["document_type"] = document_type.value
+    if tax_year:
+        merged_metadata["tax_year"] = tax_year
+    if form_type:
+        merged_metadata["form_type"] = form_type
 
-    # Generate unique storage path
-    storage_path = f"/documents/{user_id}/{doc_id}/{filename}"
-
-    # Calculate checksum for integrity
-    checksum = hashlib.sha256(file).hexdigest()
-
-    # Detect content type
-    content_type, _ = mimetypes.guess_type(filename)
-    if not content_type:
-        content_type = "application/octet-stream"
-
-    # Create document metadata
-    doc = Document(
-        id=doc_id,
+    # Upload via svc-infra base layer
+    base_doc = await base_upload_document(
+        storage=storage,
         user_id=user_id,
-        type=document_type,
+        file=file,
         filename=filename,
-        file_size=len(file),
-        upload_date=datetime.utcnow(),
-        metadata=metadata or {},
-        storage_path=storage_path,
-        content_type=content_type,
-        checksum=checksum,
+        metadata=merged_metadata,
     )
 
-    # Store document metadata and file
-    _documents[doc_id] = doc
-    _file_storage[doc_id] = file
+    # Convert to FinancialDocument with financial-specific fields
+    financial_doc = FinancialDocument(
+        **base_doc.model_dump(),
+        type=document_type,
+        tax_year=tax_year,
+        form_type=form_type,
+    )
 
-    return doc
+    return financial_doc
 
 
-def get_document(document_id: str) -> Optional["Document"]:
+def get_document(document_id: str) -> Optional["FinancialDocument"]:
     """
-    Get document metadata by ID.
+    Get financial document metadata by ID (delegates to svc-infra).
 
     Args:
         document_id: Document identifier
 
     Returns:
-        Document metadata or None if not found
+        FinancialDocument metadata or None if not found
 
     Examples:
         >>> doc = get_document("doc_abc123")
         >>> if doc:
-        ...     print(doc.filename)
+        ...     print(doc.filename, doc.type, doc.tax_year)
+    
+    Notes:
+        - Delegates to svc-infra.documents.get_document
+        - Converts base Document to FinancialDocument
+        - Extracts financial fields from metadata if present
     """
-    return _documents.get(document_id)
+    from .models import DocumentType, FinancialDocument
+
+    base_doc = base_get_document(document_id)
+    if not base_doc:
+        return None
+
+    # Extract financial fields from metadata
+    doc_type_str = base_doc.metadata.get("document_type", "other")
+    tax_year = base_doc.metadata.get("tax_year")
+    form_type = base_doc.metadata.get("form_type")
+
+    # Convert to FinancialDocument
+    try:
+        doc_type = DocumentType(doc_type_str)
+    except ValueError:
+        doc_type = DocumentType.OTHER
+
+    financial_doc = FinancialDocument(
+        **base_doc.model_dump(),
+        type=doc_type,
+        tax_year=tax_year,
+        form_type=form_type,
+    )
+
+    return financial_doc
 
 
-def download_document(document_id: str) -> bytes:
+async def download_document(storage: "StorageBackend", document_id: str) -> bytes:
     """
-    Download a document by ID.
+    Download a financial document by ID (delegates to svc-infra).
 
     Args:
+        storage: Storage backend instance
         document_id: Document identifier
 
     Returns:
@@ -152,63 +191,59 @@ def download_document(document_id: str) -> bytes:
         ValueError: If document not found
 
     Examples:
-        >>> file_data = download_document("doc_abc123")
+        >>> from svc_infra.storage import easy_storage
+        >>> storage = easy_storage()
+        >>> file_data = await download_document(storage, "doc_abc123")
 
     Notes:
-        - Current: In-memory storage
-        - Production: Use svc-infra file storage retrieval
-        - Production: Check user permissions before download
-        - Production: Log download for audit trail
+        - Delegates to svc-infra.documents.download_document
+        - Uses svc-infra storage backend for retrieval
     """
-    if document_id not in _file_storage:
-        raise ValueError(f"Document not found: {document_id}")
-
-    return _file_storage[document_id]
+    return await base_download_document(storage=storage, document_id=document_id)
 
 
-def delete_document(document_id: str) -> None:
+async def delete_document(storage: "StorageBackend", document_id: str) -> bool:
     """
-    Delete a document and its metadata.
+    Delete a financial document and its metadata (delegates to svc-infra).
 
     Args:
+        storage: Storage backend instance
         document_id: Document identifier
 
-    Raises:
-        ValueError: If document not found
+    Returns:
+        True if deleted successfully, False if not found
 
     Examples:
-        >>> delete_document("doc_abc123")
+        >>> from svc_infra.storage import easy_storage
+        >>> storage = easy_storage()
+        >>> success = await delete_document(storage, "doc_abc123")
 
     Notes:
-        - Current: Hard delete from memory
-        - Production: Check user permissions before deletion
-        - Production: Soft-delete (mark as deleted, don't remove immediately)
-        - Production: Implement retention policy (auto-delete after N days)
-        - Production: Remove from file storage and database
+        - Delegates to svc-infra.documents.delete_document
+        - Removes from storage backend and metadata
     """
-    if document_id not in _documents:
-        raise ValueError(f"Document not found: {document_id}")
-
-    # Remove from both storages
-    del _documents[document_id]
-    del _file_storage[document_id]
+    return await base_delete_document(storage=storage, document_id=document_id)
 
 
 def list_documents(
     user_id: str,
-    type: Optional["DocumentType"] = None,
-    year: Optional[int] = None,
-) -> List["Document"]:
+    document_type: Optional["DocumentType"] = None,
+    tax_year: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> List["FinancialDocument"]:
     """
-    List user's documents with optional filters.
+    List user's financial documents with optional filters (delegates to svc-infra).
 
     Args:
         user_id: User identifier
-        type: Optional document type filter
-        year: Optional year filter (from metadata)
+        document_type: Optional document type filter (TAX, STATEMENT, etc.)
+        tax_year: Optional tax year filter
+        limit: Maximum number of documents to return (default: 100)
+        offset: Number of documents to skip (default: 0)
 
     Returns:
-        List of user's documents
+        List of user's financial documents
 
     Examples:
         >>> # All documents
@@ -218,38 +253,66 @@ def list_documents(
         >>> tax_docs = list_documents(user_id="user_123", type=DocumentType.TAX)
         >>>
         >>> # 2024 tax documents
-        >>> tax_2024 = list_documents(user_id="user_123", type=DocumentType.TAX, year=2024)
+        >>> tax_2024 = list_documents(
+        ...     user_id="user_123",
+        ...     document_type=DocumentType.TAX,
+        ...     tax_year=2024
+        ... )
 
     Notes:
-        - Current: In-memory filtering
-        - Production: Query svc-infra SQL database
-        - Production: Add pagination for large result sets
-        - Production: Sort by upload_date descending
-        - Production: Include soft-deleted flag in filters
+        - Delegates to svc-infra.documents.list_documents
+        - Applies financial-specific filters on top of base results
+        - Converts base Documents to FinancialDocuments
     """
-    # Filter by user_id
-    docs = [doc for doc in _documents.values() if doc.user_id == user_id]
+    from .models import DocumentType, FinancialDocument
 
-    # Filter by type
-    if type is not None:
-        docs = [doc for doc in docs if doc.type == type]
+    # Get all user documents from svc-infra
+    base_docs = base_list_documents(user_id=user_id, limit=limit, offset=offset)
 
-    # Filter by year (from metadata)
-    if year is not None:
-        docs = [doc for doc in docs if doc.metadata.get("year") == year]
+    # Convert to FinancialDocuments and apply filters
+    financial_docs = []
+    for base_doc in base_docs:
+        # Extract financial fields from metadata
+        doc_type_str = base_doc.metadata.get("document_type", "other")
+        year = base_doc.metadata.get("tax_year")
+        form = base_doc.metadata.get("form_type")
 
-    # Sort by upload_date descending
-    docs.sort(key=lambda d: d.upload_date, reverse=True)
+        try:
+            doc_type = DocumentType(doc_type_str)
+        except ValueError:
+            doc_type = DocumentType.OTHER
 
-    return docs
+        # Apply filters
+        if document_type is not None and doc_type != document_type:
+            continue
+        if tax_year is not None and year != tax_year:
+            continue
+
+        # Convert to FinancialDocument
+        financial_doc = FinancialDocument(
+            **base_doc.model_dump(),
+            type=doc_type,
+            tax_year=year,
+            form_type=form,
+        )
+        financial_docs.append(financial_doc)
+
+    return financial_docs
 
 
 def clear_storage() -> None:
     """
-    Clear all documents from storage (for testing only).
+    Clear all document metadata (for testing only).
+
+    Delegates to svc-infra clear_storage.
 
     Examples:
-        >>> clear_storage()
+        >>> clear_storage()  # Clears all documents for testing
+
+    Notes:
+        - Only for testing - DO NOT use in production
+        - Delegates to svc-infra.documents.clear_storage
     """
-    _documents.clear()
-    _file_storage.clear()
+    from svc_infra.documents import clear_storage as base_clear_storage
+
+    base_clear_storage()

@@ -221,6 +221,34 @@ Add these to GitHub Settings → Secrets and variables → Actions:
 - `EXPERIAN_USERNAME` (optional)
 - `EXPERIAN_PASSWORD` (optional)
 
+## Documents Acceptance Tests
+
+Financial document management acceptance tests (Layer 2 features):
+
+### Test Coverage
+
+- **A_FIN_DOC_01**: Upload financial document with DocumentType
+- **A_FIN_DOC_02**: OCR extraction with default provider
+- **A_FIN_DOC_03**: OCR with specific provider selection
+- **A_FIN_DOC_04**: W-2 field extraction (employer, wages, taxes)
+- **A_FIN_DOC_05**: AI analysis generates financial insights
+- **A_FIN_DOC_06**: Analysis includes professional advisor disclaimer
+- **A_FIN_DOC_07**: List documents filtered by type
+
+### Running Documents Tests
+
+```bash
+# Run all documents acceptance tests
+poetry run pytest -q -m acceptance tests/acceptance/test_documents_acceptance.py
+
+# Run specific test
+poetry run pytest -q -m acceptance tests/acceptance/test_documents_acceptance.py::test_a_fin_doc_02_ocr_extraction_default_provider
+```
+
+### No Credentials Required
+
+Documents acceptance tests use in-memory storage and mock OCR/analysis providers, so no external API credentials are needed.
+
 ## Best Practices
 
 1. **Use Sandbox/Test Environments**: Never use production credentials

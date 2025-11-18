@@ -27,13 +27,16 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict
 
 if TYPE_CHECKING:
+    from svc_infra.storage.base import StorageBackend
+
     from .models import DocumentAnalysis
 
 # In-memory analysis cache (production: use svc-infra cache)
 _analysis_cache: Dict[str, "DocumentAnalysis"] = {}
 
 
-def analyze_document(
+async def analyze_document(
+    storage: "StorageBackend",
     document_id: str,
     force_refresh: bool = False,
 ) -> "DocumentAnalysis":
@@ -41,6 +44,7 @@ def analyze_document(
     Analyze a document using AI to extract insights and recommendations.
 
     Args:
+        storage: Storage backend instance
         document_id: Document identifier
         force_refresh: Force re-analysis even if cached result exists
 
@@ -48,8 +52,11 @@ def analyze_document(
         Document analysis with summary, findings, and recommendations
 
     Examples:
+        >>> from svc_infra.storage import easy_storage
+        >>> storage = easy_storage()
+        >>>
         >>> # Analyze W-2 tax document
-        >>> analysis = analyze_document("doc_abc123")
+        >>> analysis = await analyze_document(storage, "doc_abc123")
         >>> print(analysis.summary)
         >>> # "W-2 showing $85,000 annual wages from Acme Corp"
         >>>
@@ -75,13 +82,13 @@ def analyze_document(
     if not force_refresh and document_id in _analysis_cache:
         return _analysis_cache[document_id]
 
-    # Get document metadata
+    # Get document metadata (sync)
     doc = get_document(document_id)
     if not doc:
         raise ValueError(f"Document not found: {document_id}")
 
-    # Extract text via OCR (uses OCR cache if available)
-    ocr_result = extract_text(document_id, provider="tesseract", force_refresh=False)
+    # Extract text via OCR (async, uses OCR cache if available)
+    ocr_result = await extract_text(storage, document_id, provider="tesseract", force_refresh=False)
 
     # Analyze based on document type
     if doc.type.value == "tax":

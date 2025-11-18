@@ -1,163 +1,204 @@
 """
-Easy builder for document management.
+Financial document manager (extends svc-infra DocumentManager with OCR/AI).
 
-Provides a simple interface for document upload, OCR, and analysis.
-Returns a manager instance with all document operations.
+Provides financial-specific document operations built on svc-infra base:
+- Upload, download, delete, list (inherited from svc-infra)
+- OCR text extraction for tax forms (financial extension)
+- AI-powered analysis (financial extension)
+
+Architecture:
+    Layer 1 (svc-infra): Generic document CRUD
+    Layer 2 (fin-infra): + OCR + AI analysis
 
 Quick Start:
     >>> from fin_infra.documents import easy_documents
+    >>> from svc_infra.storage import easy_storage
     >>>
-    >>> # Create manager
-    >>> manager = easy_documents(storage_path="/data/documents")
+    >>> storage = easy_storage()  # Auto-detects backend
+    >>> manager = easy_documents(storage)
     >>>
-    >>> # Upload document
-    >>> doc = manager.upload(
+    >>> # Upload financial document (with financial fields)
+    >>> doc = await manager.upload_financial(
     ...     user_id="user_123",
     ...     file=uploaded_file,
-    ...     document_type="tax",
-    ...     metadata={"year": 2024}
+    ...     document_type=DocumentType.TAX,
+    ...     filename="w2.pdf",
+    ...     tax_year=2024,
+    ...     form_type="W-2"
     ... )
     >>>
-    >>> # Extract text
-    >>> ocr_result = manager.extract_text(doc.id)
+    >>> # Extract text with OCR
+    >>> ocr_result = await manager.extract_text(doc.id)
     >>>
-    >>> # Analyze document
-    >>> analysis = manager.analyze(doc.id)
+    >>> # Analyze with AI
+    >>> analysis = await manager.analyze(doc.id)
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+from svc_infra.documents import DocumentManager as BaseDocumentManager
+
 if TYPE_CHECKING:
-    from .models import Document, DocumentAnalysis, DocumentType, OCRResult
+    from svc_infra.storage.base import StorageBackend
+
+    from .models import DocumentAnalysis, DocumentType, FinancialDocument, OCRResult
 
 
-class DocumentManager:
+class FinancialDocumentManager(BaseDocumentManager):
     """
-    Document manager for upload, OCR, and analysis operations.
+    Financial document manager extending svc-infra with OCR and AI analysis.
+
+    Inherits from svc-infra DocumentManager:
+        - upload(), download(), delete(), get(), list() for base document CRUD
+        - storage backend integration
+    
+    Adds financial-specific methods:
+        - upload_financial(): Upload with DocumentType, tax_year, form_type
+        - extract_text(): OCR for tax forms  
+        - analyze(): AI-powered financial insights
 
     Attributes:
-        storage_path: Base path for document storage
-        default_ocr_provider: Default OCR provider (tesseract/textract)
+        storage: Storage backend (inherited from BaseDocumentManager)
+        default_ocr_provider: OCR provider (tesseract/textract)
 
     Examples:
-        >>> manager = DocumentManager(storage_path="/data/documents")
-        >>> doc = manager.upload(user_id="user_123", file=file_bytes, document_type="tax")
+        >>> from svc_infra.storage import easy_storage
+        >>> storage = easy_storage()
+        >>> manager = FinancialDocumentManager(storage)
+        >>>
+        >>> # Upload W-2 tax form
+        >>> doc = await manager.upload_financial(
+        ...     user_id="user_123",
+        ...     file=file_bytes,
+        ...     document_type=DocumentType.TAX,
+        ...     filename="w2.pdf",
+        ...     tax_year=2024,
+        ...     form_type="W-2"
+        ... )
     """
 
     def __init__(
         self,
-        storage_path: str = "/tmp/documents",
+        storage: "StorageBackend",
         default_ocr_provider: str = "tesseract",
     ):
         """
-        Initialize document manager.
+        Initialize financial document manager.
 
         Args:
-            storage_path: Base path for document storage
+            storage: Storage backend instance (S3/local/memory)
             default_ocr_provider: Default OCR provider (tesseract/textract)
         """
-        self.storage_path = storage_path
+        super().__init__(storage)
         self.default_ocr_provider = default_ocr_provider
 
-    def upload(
+    async def upload_financial(
         self,
         user_id: str,
         file: bytes,
         document_type: "DocumentType",
         filename: str,
         metadata: Optional[dict] = None,
-    ) -> "Document":
+        tax_year: Optional[int] = None,
+        form_type: Optional[str] = None,
+    ) -> "FinancialDocument":
         """
-        Upload a financial document.
+        Upload a financial document with financial-specific fields.
 
         Args:
             user_id: User uploading the document
             file: File content as bytes
-            document_type: Type of document
+            document_type: Type of financial document
             filename: Original filename
-            metadata: Optional custom metadata
+            metadata: Optional custom metadata (employer, account, etc.)
+            tax_year: Optional tax year (2024, 2023, etc.)
+            form_type: Optional form type (W-2, 1099-INT, etc.)
 
         Returns:
-            Uploaded document
+            FinancialDocument with storage info and financial fields
 
         Examples:
-            >>> doc = manager.upload(
+            >>> doc = await manager.upload_financial(
             ...     user_id="user_123",
             ...     file=file_bytes,
-            ...     document_type="tax",
+            ...     document_type=DocumentType.TAX,
             ...     filename="w2_2024.pdf",
-            ...     metadata={"year": 2024}
+            ...     metadata={"employer": "ACME Corp"},
+            ...     tax_year=2024,
+            ...     form_type="W-2"
             ... )
         """
         from .storage import upload_document
 
-        return upload_document(user_id, file, document_type, filename, metadata)
+        return await upload_document(
+            storage=self.storage,
+            user_id=user_id,
+            file=file,
+            document_type=document_type,
+            filename=filename,
+            metadata=metadata,
+            tax_year=tax_year,
+            form_type=form_type,
+        )
 
-    def download(self, document_id: str) -> bytes:
-        """
-        Download a document by ID.
-
-        Args:
-            document_id: Document identifier
-
-        Returns:
-            Document file content
-
-        Examples:
-            >>> file_data = manager.download("doc_abc123")
-        """
-        from .storage import download_document
-
-        return download_document(document_id)
-
-    def delete(self, document_id: str) -> None:
-        """
-        Delete a document.
-
-        Args:
-            document_id: Document identifier
-
-        Examples:
-            >>> manager.delete("doc_abc123")
-        """
-        from .storage import delete_document
-
-        delete_document(document_id)
-
-    def list(
+    def list_financial(
         self,
         user_id: str,
-        type: Optional["DocumentType"] = None,
-        year: Optional[int] = None,
-    ) -> list["Document"]:
+        document_type: Optional["DocumentType"] = None,
+        tax_year: Optional[int] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list["FinancialDocument"]:
         """
-        List user's documents.
+        List user's financial documents with filters.
 
         Args:
             user_id: User identifier
-            type: Optional document type filter
-            year: Optional year filter
+            document_type: Optional document type filter
+            tax_year: Optional tax year filter
+            limit: Maximum number of documents (default: 100)
+            offset: Number of documents to skip (default: 0)
 
         Returns:
-            List of documents
+            List of financial documents
 
         Examples:
-            >>> docs = manager.list(user_id="user_123", type="tax", year=2024)
+            >>> # All documents
+            >>> docs = manager.list_financial(user_id="user_123")
+            >>>
+            >>> # Tax documents only
+            >>> tax_docs = manager.list_financial(
+            ...     user_id="user_123",
+            ...     document_type=DocumentType.TAX
+            ... )
+            >>>
+            >>> # 2024 tax documents
+            >>> tax_2024 = manager.list_financial(
+            ...     user_id="user_123",
+            ...     document_type=DocumentType.TAX,
+            ...     tax_year=2024
+            ... )
         """
         from .storage import list_documents
 
-        return list_documents(user_id, type, year)
+        return list_documents(
+            user_id=user_id,
+            document_type=document_type,
+            tax_year=tax_year,
+            limit=limit,
+            offset=offset,
+        )
 
-    def extract_text(
+    async def extract_text(
         self,
         document_id: str,
         provider: Optional[str] = None,
         force_refresh: bool = False,
     ) -> "OCRResult":
         """
-        Extract text from document using OCR.
+        Extract text from document using OCR (financial extension).
 
         Args:
             document_id: Document identifier
@@ -168,59 +209,83 @@ class DocumentManager:
             OCR result with extracted text
 
         Examples:
-            >>> result = manager.extract_text("doc_abc123")
+            >>> result = await manager.extract_text("doc_abc123")
             >>> print(result.text)
+            >>> print(result.fields_extracted)  # Structured tax form fields
         """
         from .ocr import extract_text
 
-        return extract_text(document_id, provider or self.default_ocr_provider, force_refresh)
+        return await extract_text(
+            storage=self.storage,
+            document_id=document_id,
+            provider=provider or self.default_ocr_provider,
+            force_refresh=force_refresh,
+        )
 
-    def analyze(
+    async def analyze(
         self,
         document_id: str,
         force_refresh: bool = False,
     ) -> "DocumentAnalysis":
         """
-        Analyze document using AI.
+        Analyze document using AI (financial extension).
 
         Args:
             document_id: Document identifier
             force_refresh: Force re-analysis
 
         Returns:
-            Document analysis with insights
+            Document analysis with financial insights
 
         Examples:
-            >>> analysis = manager.analyze("doc_abc123")
+            >>> analysis = await manager.analyze("doc_abc123")
             >>> print(analysis.summary)
+            >>> print(analysis.key_findings)
+            >>> print(analysis.recommendations)
         """
         from .analysis import analyze_document
 
-        return analyze_document(document_id, force_refresh)
+        return await analyze_document(
+            storage=self.storage, document_id=document_id, force_refresh=force_refresh
+        )
+
+
+# Backward compatibility alias
+DocumentManager = FinancialDocumentManager
 
 
 def easy_documents(
-    storage_path: str = "/tmp/documents",
+    storage: Optional["StorageBackend"] = None,
     default_ocr_provider: str = "tesseract",
-) -> DocumentManager:
+) -> FinancialDocumentManager:
     """
-    Create a document manager with sensible defaults.
+    Create a financial document manager with sensible defaults.
 
     Args:
-        storage_path: Base path for document storage
+        storage: Storage backend (auto-detects if None)
         default_ocr_provider: Default OCR provider (tesseract/textract)
 
     Returns:
-        Configured document manager
+        Configured financial document manager
 
     Examples:
-        >>> # Development (local storage, free OCR)
+        >>> from svc_infra.storage import easy_storage
+        >>>
+        >>> # Auto-detect storage backend
         >>> manager = easy_documents()
         >>>
-        >>> # Production (S3 storage, AWS Textract)
-        >>> manager = easy_documents(
-        ...     storage_path="s3://my-bucket/documents",
-        ...     default_ocr_provider="textract"
-        ... )
+        >>> # Explicit S3 storage
+        >>> storage = easy_storage()  # Uses env vars for S3 config
+        >>> manager = easy_documents(storage, default_ocr_provider="textract")
+        >>>
+        >>> # Memory backend for testing
+        >>> from svc_infra.storage import MemoryBackend
+        >>> storage = MemoryBackend()
+        >>> manager = easy_documents(storage)
     """
-    return DocumentManager(storage_path=storage_path, default_ocr_provider=default_ocr_provider)
+    if storage is None:
+        from svc_infra.storage import easy_storage
+
+        storage = easy_storage()
+
+    return FinancialDocumentManager(storage=storage, default_ocr_provider=default_ocr_provider)

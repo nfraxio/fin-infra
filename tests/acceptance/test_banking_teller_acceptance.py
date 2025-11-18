@@ -7,9 +7,16 @@ from fin_infra.providers.banking.teller_client import TellerClient
 pytestmark = [pytest.mark.acceptance]
 
 
+def _teller_certs_available():
+    """Check if Teller certificates exist."""
+    cert_path = os.getenv("TELLER_CERTIFICATE_PATH")
+    key_path = os.getenv("TELLER_PRIVATE_KEY_PATH")
+    return cert_path and key_path and os.path.exists(cert_path) and os.path.exists(key_path)
+
+
 @pytest.mark.skipif(
-    not (os.getenv("TELLER_CERTIFICATE_PATH") and os.getenv("TELLER_PRIVATE_KEY_PATH")),
-    reason="No Teller certificates configured (set TELLER_CERTIFICATE_PATH and TELLER_PRIVATE_KEY_PATH)",
+    not _teller_certs_available(),
+    reason="No Teller certificates configured or files not found (set TELLER_CERTIFICATE_PATH and TELLER_PRIVATE_KEY_PATH)",
 )
 def test_teller_accounts_smoke():
     """Smoke test for Teller banking provider with real certificates."""

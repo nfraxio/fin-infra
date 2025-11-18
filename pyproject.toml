@@ -54,7 +54,7 @@ numpy-financial = "^1.0.0"
 yahooquery = "^2.3.7"
 ccxt = "^4.4.26"
 plaid-python = "^25.0.0"
-svc-infra = "^0.1.636"
+svc-infra = "^0.1.665"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"

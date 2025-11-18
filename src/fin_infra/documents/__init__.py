@@ -46,11 +46,12 @@ FastAPI Integration:
 """
 
 from .add import add_documents
-from .ease import easy_documents
+from .ease import DocumentManager, FinancialDocumentManager, easy_documents
 from .models import (
-    Document,
+    Document,  # Backward compatibility alias
     DocumentAnalysis,
     DocumentType,
+    FinancialDocument,
     OCRResult,
 )
 
@@ -58,8 +59,12 @@ __all__ = [
     # Easy builders
     "easy_documents",
     "add_documents",
+    # Managers
+    "DocumentManager",  # Backward compatibility
+    "FinancialDocumentManager",
     # Models
-    "Document",
+    "Document",  # Backward compatibility
+    "FinancialDocument",
     "DocumentType",
     "OCRResult",
     "DocumentAnalysis",

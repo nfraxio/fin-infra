@@ -2,9 +2,17 @@
 
 import pytest
 
+from svc_infra.storage.backends.memory import MemoryBackend
+
 from fin_infra.documents.models import DocumentType
 from fin_infra.documents.ocr import clear_cache, extract_text
 from fin_infra.documents.storage import clear_storage, upload_document
+
+
+@pytest.fixture
+def storage():
+    """Create memory storage backend for testing."""
+    return MemoryBackend()
 
 
 @pytest.fixture(autouse=True)
@@ -17,20 +25,23 @@ def clean_caches():
     clear_cache()
 
 
+@pytest.mark.asyncio
 class TestExtractText:
     """Tests for extract_text function."""
 
-    def test_extract_text_basic(self):
+    async def test_extract_text_basic(self, storage):
         """Test basic text extraction."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"PDF content",
             document_type=DocumentType.TAX,
             filename="test.pdf",
-            metadata={"year": 2024, "form_type": "W-2"},
+            tax_year=2024,
+            form_type="W-2",
         )
 
-        result = extract_text(doc.id, provider="tesseract")
+        result = await extract_text(storage, doc.id, provider="tesseract")
 
         assert result.document_id == doc.id
         assert result.text is not None
@@ -39,16 +50,17 @@ class TestExtractText:
         assert result.provider == "tesseract"
         assert result.extraction_date is not None
 
-    def test_extract_text_w2_form(self):
+    async def test_extract_text_w2_form(self, storage):
         """Test extracting text from W-2 tax form."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"W-2 content",
             document_type=DocumentType.TAX,
             filename="w2_2024.pdf",
+            tax_year=2024,
+            form_type="W-2",
             metadata={
-                "year": 2024,
-                "form_type": "W-2",
                 "employer": "Acme Corp",
                 "wages": "85000",
                 "federal_tax": "18700",
@@ -57,7 +69,7 @@ class TestExtractText:
             },
         )
 
-        result = extract_text(doc.id, provider="tesseract")
+        result = await extract_text(storage, doc.id, provider="tesseract")
 
         assert "W-2" in result.text
         assert "Acme Corp" in result.text
@@ -65,96 +77,110 @@ class TestExtractText:
         assert "employer" in result.fields_extracted
         assert "wages" in result.fields_extracted
 
-    def test_extract_text_1099_form(self):
+    async def test_extract_text_1099_form(self, storage):
         """Test extracting text from 1099 tax form."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"1099 content",
             document_type=DocumentType.TAX,
             filename="1099_2024.pdf",
+            tax_year=2024,
+            form_type="1099",
             metadata={
-                "year": 2024,
-                "form_type": "1099",
                 "payer": "Client LLC",
                 "income": "45000",
                 "document_id": "doc_1099",
             },
         )
 
-        result = extract_text(doc.id, provider="tesseract")
+        result = await extract_text(storage, doc.id, provider="tesseract")
 
         assert "1099" in result.text
         assert "Client LLC" in result.text
         assert result.fields_extracted is not None
 
-    def test_extract_text_tesseract_provider(self):
+    async def test_extract_text_tesseract_provider(self, storage):
         """Test Tesseract provider has lower confidence."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content",
             document_type=DocumentType.TAX,
             filename="test.pdf",
-            metadata={"year": 2024, "form_type": "W-2", "document_id": "doc_tess"},
+            tax_year=2024,
+            form_type="W-2",
+            metadata={"document_id": "doc_tess"},
         )
 
-        result = extract_text(doc.id, provider="tesseract")
+        result = await extract_text(storage, doc.id, provider="tesseract")
 
         assert result.provider == "tesseract"
         # Tesseract should have lower confidence
         assert 0.80 <= result.confidence <= 0.90
 
-    def test_extract_text_textract_provider(self):
+    async def test_extract_text_textract_provider(self, storage):
         """Test AWS Textract provider has higher confidence."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content",
             document_type=DocumentType.TAX,
             filename="test.pdf",
-            metadata={"year": 2024, "form_type": "W-2", "document_id": "doc_textract"},
+            tax_year=2024,
+            form_type="W-2",
+            metadata={"document_id": "doc_textract"},
         )
 
-        result = extract_text(doc.id, provider="textract")
+        result = await extract_text(storage, doc.id, provider="textract")
 
         assert result.provider == "textract"
         # Textract should have higher confidence
         assert result.confidence >= 0.90
 
-    def test_extract_text_caching(self):
+    async def test_extract_text_caching(self, storage):
         """Test that OCR results are cached."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content",
             document_type=DocumentType.TAX,
             filename="test.pdf",
-            metadata={"year": 2024, "form_type": "W-2", "document_id": "doc_cache"},
+            tax_year=2024,
+            form_type="W-2",
+            metadata={"document_id": "doc_cache"},
         )
 
-        result1 = extract_text(doc.id, provider="tesseract")
-        result2 = extract_text(doc.id, provider="tesseract")
+        result1 = await extract_text(storage, doc.id, provider="tesseract")
+        result2 = await extract_text(storage, doc.id, provider="tesseract")
 
         # Should be the same cached result
         assert result1.extraction_date == result2.extraction_date
         assert result1.text == result2.text
 
-    def test_extract_text_force_refresh(self):
+    async def test_extract_text_force_refresh(self, storage):
         """Test force refresh bypasses cache."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content",
             document_type=DocumentType.TAX,
             filename="test.pdf",
-            metadata={"year": 2024, "form_type": "W-2", "document_id": "doc_refresh"},
+            tax_year=2024,
+            form_type="W-2",
+            metadata={"document_id": "doc_refresh"},
         )
 
-        result1 = extract_text(doc.id, provider="tesseract")
-        result2 = extract_text(doc.id, provider="tesseract", force_refresh=True)
+        result1 = await extract_text(storage, doc.id, provider="tesseract")
+        result2 = await extract_text(storage, doc.id, provider="tesseract", force_refresh=True)
 
         # Should have different extraction dates
         assert result1.extraction_date != result2.extraction_date
 
-    def test_extract_text_invalid_provider(self):
+    async def test_extract_text_invalid_provider(self, storage):
         """Test invalid provider raises error."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content",
             document_type=DocumentType.TAX,
@@ -163,38 +189,40 @@ class TestExtractText:
         )
 
         with pytest.raises(ValueError, match="Unknown OCR provider"):
-            extract_text(doc.id, provider="invalid")
+            await extract_text(storage, doc.id, provider="invalid")
 
-    def test_extract_text_nonexistent_document(self):
+    async def test_extract_text_nonexistent_document(self, storage):
         """Test extracting from non-existent document raises error."""
         with pytest.raises(ValueError, match="Document not found"):
-            extract_text("doc_nonexistent")
+            await extract_text(storage, "doc_nonexistent")
 
-    def test_extract_text_generic_document(self):
+    async def test_extract_text_generic_document(self, storage):
         """Test extracting text from generic document type."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"Generic content",
             document_type=DocumentType.RECEIPT,
             filename="receipt.pdf",
         )
 
-        result = extract_text(doc.id, provider="tesseract")
+        result = await extract_text(storage, doc.id, provider="tesseract")
 
         assert result.document_id == doc.id
         assert result.text is not None
         assert result.confidence > 0
 
-    def test_extract_text_fields_extracted(self):
+    async def test_extract_text_fields_extracted(self, storage):
         """Test that structured fields are extracted from W-2."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"W-2 content",
             document_type=DocumentType.TAX,
             filename="w2.pdf",
+            tax_year=2024,
+            form_type="W-2",
             metadata={
-                "year": 2024,
-                "form_type": "W-2",
                 "employer": "Test Company",
                 "wages": "100000",
                 "federal_tax": "22000",
@@ -203,7 +231,7 @@ class TestExtractText:
             },
         )
 
-        result = extract_text(doc.id, provider="textract")
+        result = await extract_text(storage, doc.id, provider="textract")
 
         # Should have extracted fields
         assert len(result.fields_extracted) > 0

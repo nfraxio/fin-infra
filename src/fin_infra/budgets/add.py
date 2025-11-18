@@ -405,13 +405,7 @@ def add_budgets(
                 status_code=500, detail=f"Failed to create budget from template: {str(e)}"
             )
 
-    # Register scoped docs for landing page card BEFORE mounting router (CRITICAL)
-    # This ensures docs endpoints remain public even if router has auth
-    try:
-    except ImportError:
-        pass  # svc-infra not available, skip docs registration
-
-    # Mount router (after docs registration)
+    # Mount router
     app.include_router(router, include_in_schema=True)
 
     return tracker

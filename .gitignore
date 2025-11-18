@@ -82,4 +82,5 @@ credentials/
 
 # Documentation
 .github/AGENTS.md
+.github/copilot-instructions.md
 .github/PLAN.md

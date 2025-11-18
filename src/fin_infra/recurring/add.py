@@ -430,11 +430,6 @@ def add_recurring_detection(
     # Mount router
     app.include_router(router, include_in_schema=include_in_schema)
 
-    # Register scoped docs (if svc-infra available)
-    try:
-    except ImportError:
-        pass  # svc-infra not available, skip scoped docs
-
     return detector
 
 

@@ -1,10 +1,30 @@
 """
-Pydantic models for document management.
+Pydantic models for financial document management.
 
-This module defines data models for:
-- Document metadata and storage
-- OCR extraction results
+This module defines financial-specific data models built on top of svc-infra base:
+- FinancialDocument: Extends base Document with financial fields (type, tax_year, form_type)
+- OCR extraction results for tax forms
 - AI-powered document analysis
+
+Architecture:
+    Layer 1 (svc-infra): Generic Document with flexible metadata
+    Layer 2 (fin-infra): FinancialDocument with financial-specific fields
+
+Quick Start:
+    >>> from fin_infra.documents.models import FinancialDocument, DocumentType
+    >>>
+    >>> # Create financial document (inherits from svc-infra Document)
+    >>> doc = FinancialDocument(
+    ...     id="doc_123",
+    ...     user_id="user_123",
+    ...     filename="w2.pdf",
+    ...     file_size=524288,
+    ...     storage_path="documents/user_123/doc_123.pdf",
+    ...     content_type="application/pdf",
+    ...     type=DocumentType.TAX,
+    ...     tax_year=2024,
+    ...     form_type="W-2"
+    ... )
 """
 
 from __future__ import annotations
@@ -14,10 +34,11 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+from svc_infra.documents import Document as BaseDocument
 
 
 class DocumentType(str, Enum):
-    """Type of financial document."""
+    """Type of financial document (financial-specific extension)."""
 
     TAX = "tax"
     STATEMENT = "statement"
@@ -28,8 +49,46 @@ class DocumentType(str, Enum):
     OTHER = "other"
 
 
-class Document(BaseModel):
-    """Financial document metadata and storage information."""
+class FinancialDocument(BaseDocument):
+    """
+    Financial document extending base Document with financial-specific fields.
+    
+    Inherits from svc-infra Document:
+        - id, user_id, filename, file_size, upload_date
+        - storage_path, content_type, checksum
+        - metadata (Dict[str, Any])
+    
+    Adds financial-specific fields:
+        - type: DocumentType enum
+        - tax_year: Optional year for tax documents
+        - form_type: Optional form identifier (W-2, 1099, etc.)
+    
+    Examples:
+        >>> # Tax document with W-2 form
+        >>> doc = FinancialDocument(
+        ...     id="doc_123",
+        ...     user_id="user_123",
+        ...     filename="w2_2024.pdf",
+        ...     file_size=524288,
+        ...     storage_path="documents/user_123/doc_123.pdf",
+        ...     content_type="application/pdf",
+        ...     type=DocumentType.TAX,
+        ...     tax_year=2024,
+        ...     form_type="W-2"
+        ... )
+        >>>
+        >>> # Bank statement
+        >>> doc = FinancialDocument(
+        ...     id="doc_456",
+        ...     user_id="user_123",
+        ...     filename="statement_jan.pdf",
+        ...     file_size=102400,
+        ...     storage_path="documents/user_123/doc_456.pdf",
+        ...     content_type="application/pdf",
+        ...     type=DocumentType.STATEMENT,
+        ...     metadata={"month": "january", "account": "****1234"}
+        ... )
+    """
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -40,26 +99,24 @@ class Document(BaseModel):
                 "filename": "w2_2024.pdf",
                 "file_size": 524288,
                 "upload_date": "2025-11-10T14:30:00Z",
-                "metadata": {"year": 2024, "form_type": "W-2", "employer": "ACME Corp"},
+                "metadata": {"employer": "ACME Corp", "employer_ein": "12-3456789"},
                 "storage_path": "documents/user_123/2024/tax/doc_abc123.pdf",
                 "content_type": "application/pdf",
                 "checksum": "sha256:abc123...",
+                "tax_year": 2024,
+                "form_type": "W-2",
             }
         }
     )
 
-    id: str = Field(..., description="Unique document identifier")
-    user_id: str = Field(..., description="User who uploaded the document")
-    type: DocumentType = Field(..., description="Document type category")
-    filename: str = Field(..., description="Original filename")
-    file_size: int = Field(..., description="File size in bytes")
-    upload_date: datetime = Field(..., description="Upload timestamp")
-    metadata: Dict[str, str | int | float] = Field(
-        default_factory=dict, description="Custom document metadata (year, form type, etc.)"
-    )
-    storage_path: str = Field(..., description="Storage location path")
-    content_type: str = Field(..., description="MIME type (application/pdf, image/jpeg, etc.)")
-    checksum: Optional[str] = Field(None, description="File checksum for integrity validation")
+    # Financial-specific fields
+    type: DocumentType = Field(..., description="Document type category (financial-specific)")
+    tax_year: Optional[int] = Field(None, description="Tax year for tax documents (e.g., 2024)")
+    form_type: Optional[str] = Field(None, description="Tax form type (W-2, 1099-INT, 1040, etc.)")
+
+
+# Backward compatibility: alias for existing code
+Document = FinancialDocument
 
 
 class OCRResult(BaseModel):

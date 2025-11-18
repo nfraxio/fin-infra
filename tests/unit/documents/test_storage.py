@@ -1,6 +1,8 @@
-"""Unit tests for document storage operations."""
+"""Unit tests for financial document storage operations."""
 
 import pytest
+
+from svc_infra.storage.backends.memory import MemoryBackend
 
 from fin_infra.documents.models import DocumentType
 from fin_infra.documents.storage import (
@@ -13,21 +15,29 @@ from fin_infra.documents.storage import (
 )
 
 
+@pytest.fixture
+def storage():
+    """Create memory storage backend for testing."""
+    return MemoryBackend()
+
+
 @pytest.fixture(autouse=True)
-def clean_storage():
-    """Clear storage before and after each test."""
+def clear_metadata():
+    """Clear document metadata before each test."""
     clear_storage()
     yield
     clear_storage()
 
 
+@pytest.mark.asyncio
 class TestUploadDocument:
     """Tests for upload_document function."""
 
-    def test_upload_basic_document(self):
-        """Test uploading a basic document."""
+    async def test_upload_basic_document(self, storage):
+        """Test uploading a basic financial document."""
         file_content = b"Test document content"
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=file_content,
             document_type=DocumentType.TAX,
@@ -44,27 +54,32 @@ class TestUploadDocument:
         assert doc.content_type == "application/pdf"
         assert doc.checksum is not None
 
-    def test_upload_without_metadata(self):
+    async def test_upload_without_metadata(self, storage):
         """Test uploading document without metadata."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_456",
             file=b"content",
             document_type=DocumentType.RECEIPT,
             filename="receipt.jpg",
         )
 
-        assert doc.metadata == {}
+        # Metadata contains document_type (required for filtering)
+        assert "document_type" in doc.metadata
+        assert doc.metadata["document_type"] == "receipt"
         assert doc.content_type == "image/jpeg"
 
-    def test_upload_generates_unique_ids(self):
+    async def test_upload_generates_unique_ids(self, storage):
         """Test that each upload generates a unique ID."""
-        doc1 = upload_document(
+        doc1 = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content1",
             document_type=DocumentType.TAX,
             filename="doc1.pdf",
         )
-        doc2 = upload_document(
+        doc2 = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content2",
             document_type=DocumentType.TAX,
@@ -73,10 +88,11 @@ class TestUploadDocument:
 
         assert doc1.id != doc2.id
 
-    def test_upload_calculates_checksum(self):
+    async def test_upload_calculates_checksum(self, storage):
         """Test that checksum is calculated for uploaded files."""
         file_content = b"Test content for checksum"
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=file_content,
             document_type=DocumentType.STATEMENT,
@@ -84,15 +100,17 @@ class TestUploadDocument:
         )
 
         assert doc.checksum is not None
-        assert len(doc.checksum) == 64  # SHA-256 hex digest
+        assert doc.checksum.startswith("sha256:")  # SHA-256 with prefix
 
 
+@pytest.mark.asyncio
 class TestGetDocument:
     """Tests for get_document function."""
 
-    def test_get_existing_document(self):
+    async def test_get_existing_document(self, storage):
         """Test getting an existing document."""
-        uploaded = upload_document(
+        uploaded = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content",
             document_type=DocumentType.TAX,
@@ -104,80 +122,88 @@ class TestGetDocument:
         assert retrieved.id == uploaded.id
         assert retrieved.filename == uploaded.filename
 
-    def test_get_nonexistent_document(self):
+    async def test_get_nonexistent_document(self, storage):
         """Test getting a non-existent document returns None."""
         result = get_document("doc_nonexistent")
         assert result is None
 
 
+@pytest.mark.asyncio
 class TestDownloadDocument:
     """Tests for download_document function."""
 
-    def test_download_existing_document(self):
+    async def test_download_existing_document(self, storage):
         """Test downloading an existing document."""
         file_content = b"Test file content"
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=file_content,
             document_type=DocumentType.TAX,
             filename="test.pdf",
         )
 
-        downloaded = download_document(doc.id)
+        downloaded = await download_document(storage, doc.id)
         assert downloaded == file_content
 
-    def test_download_nonexistent_document(self):
+    async def test_download_nonexistent_document(self, storage):
         """Test downloading non-existent document raises error."""
         with pytest.raises(ValueError, match="Document not found"):
-            download_document("doc_nonexistent")
+            await download_document(storage, "doc_nonexistent")
 
 
+@pytest.mark.asyncio
 class TestDeleteDocument:
     """Tests for delete_document function."""
 
-    def test_delete_existing_document(self):
+    async def test_delete_existing_document(self, storage):
         """Test deleting an existing document."""
-        doc = upload_document(
+        doc = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content",
             document_type=DocumentType.TAX,
             filename="test.pdf",
         )
 
-        delete_document(doc.id)
+        await delete_document(storage, doc.id)
 
         # Verify document is deleted
         assert get_document(doc.id) is None
 
         # Verify file is deleted
         with pytest.raises(ValueError, match="Document not found"):
-            download_document(doc.id)
+            await download_document(storage, doc.id)
 
-    def test_delete_nonexistent_document(self):
-        """Test deleting non-existent document raises error."""
-        with pytest.raises(ValueError, match="Document not found"):
-            delete_document("doc_nonexistent")
+    async def test_delete_nonexistent_document(self, storage):
+        """Test deleting non-existent document returns False."""
+        success = await delete_document(storage, "doc_nonexistent")
+        assert success is False
 
 
+@pytest.mark.asyncio
 class TestListDocuments:
     """Tests for list_documents function."""
 
-    def test_list_all_user_documents(self):
+    async def test_list_all_user_documents(self, storage):
         """Test listing all documents for a user."""
-        doc1 = upload_document(
+        doc1 = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content1",
             document_type=DocumentType.TAX,
             filename="tax.pdf",
         )
-        doc2 = upload_document(
+        doc2 = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content2",
             document_type=DocumentType.RECEIPT,
             filename="receipt.pdf",
         )
         # Different user
-        upload_document(
+        await upload_document(
+            storage=storage,
             user_id="user_456",
             file=b"content3",
             document_type=DocumentType.TAX,
@@ -189,83 +215,92 @@ class TestListDocuments:
         assert doc1.id in [d.id for d in docs]
         assert doc2.id in [d.id for d in docs]
 
-    def test_list_documents_by_type(self):
+    async def test_list_documents_by_type(self, storage):
         """Test filtering documents by type."""
-        doc1 = upload_document(
+        doc1 = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content1",
             document_type=DocumentType.TAX,
             filename="tax.pdf",
         )
-        upload_document(
+        await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content2",
             document_type=DocumentType.RECEIPT,
             filename="receipt.pdf",
         )
 
-        docs = list_documents(user_id="user_123", type=DocumentType.TAX)
+        docs = list_documents(user_id="user_123", document_type=DocumentType.TAX)
         assert len(docs) == 1
         assert docs[0].id == doc1.id
 
-    def test_list_documents_by_year(self):
+    async def test_list_documents_by_year(self, storage):
         """Test filtering documents by year."""
-        doc1 = upload_document(
+        doc1 = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content1",
             document_type=DocumentType.TAX,
             filename="tax_2024.pdf",
-            metadata={"year": 2024},
+            tax_year=2024,
         )
-        upload_document(
+        await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content2",
             document_type=DocumentType.TAX,
             filename="tax_2023.pdf",
-            metadata={"year": 2023},
+            tax_year=2023,
         )
 
-        docs = list_documents(user_id="user_123", year=2024)
+        docs = list_documents(user_id="user_123", tax_year=2024)
         assert len(docs) == 1
         assert docs[0].id == doc1.id
 
-    def test_list_documents_by_type_and_year(self):
+    async def test_list_documents_by_type_and_year(self, storage):
         """Test filtering by both type and year."""
-        doc1 = upload_document(
+        doc1 = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content1",
             document_type=DocumentType.TAX,
             filename="tax_2024.pdf",
-            metadata={"year": 2024},
+            tax_year=2024,
         )
-        upload_document(
+        await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content2",
             document_type=DocumentType.TAX,
             filename="tax_2023.pdf",
-            metadata={"year": 2023},
+            tax_year=2023,
         )
-        upload_document(
+        await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content3",
             document_type=DocumentType.RECEIPT,
             filename="receipt_2024.pdf",
-            metadata={"year": 2024},
+            tax_year=2024,
         )
 
-        docs = list_documents(user_id="user_123", type=DocumentType.TAX, year=2024)
+        docs = list_documents(user_id="user_123", document_type=DocumentType.TAX, tax_year=2024)
         assert len(docs) == 1
         assert docs[0].id == doc1.id
 
-    def test_list_documents_sorted_by_date(self):
+    async def test_list_documents_sorted_by_date(self, storage):
         """Test that documents are sorted by upload date descending."""
-        doc1 = upload_document(
+        doc1 = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content1",
             document_type=DocumentType.TAX,
             filename="first.pdf",
         )
-        doc2 = upload_document(
+        doc2 = await upload_document(
+            storage=storage,
             user_id="user_123",
             file=b"content2",
             document_type=DocumentType.TAX,
@@ -277,7 +312,7 @@ class TestListDocuments:
         assert docs[0].id == doc2.id
         assert docs[1].id == doc1.id
 
-    def test_list_documents_empty(self):
+    async def test_list_documents_empty(self, storage):
         """Test listing documents for user with no documents."""
         docs = list_documents(user_id="user_empty")
         assert docs == []

@@ -211,67 +211,137 @@ for doc in tax_docs_2024:
 
 ## Architecture
 
+### Layered Design (svc-infra Base + fin-infra Extensions)
+
+fin-infra documents module is built as **Layer 2** on top of svc-infra's generic document system (**Layer 1**):
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    FastAPI Application                       │
-│                     (add_documents)                          │
-└───────────────────┬─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    FastAPI Application                          │
+│                     (add_documents)                             │
+└───────────────────┬─────────────────────────────────────────────┘
                     │
                     ▼
-        ┌───────────────────────────┐
-        │   DocumentManager          │
-        │   (easy_documents)         │
-        └───────┬───────────────────┘
-                │
-    ┌───────────┼───────────┬───────────────┐
-    │           │           │               │
-    ▼           ▼           ▼               ▼
-┌────────┐  ┌──────┐  ┌─────────┐  ┌──────────────┐
-│Storage │  │ OCR  │  │Analysis │  │   Models     │
-│  .py   │  │ .py  │  │  .py    │  │(Pydantic v2) │
-└────────┘  └──────┘  └─────────┘  └──────────────┘
-    │           │           │
-    ▼           ▼           ▼
-┌────────┐  ┌──────┐  ┌─────────┐
-│In-Mem  │  │Cache │  │  Cache  │
-│Dict    │  │Dict  │  │  Dict   │
-└────────┘  └──────┘  └─────────┘
-
-Production Migration:
-┌────────┐      ┌──────┐      ┌─────────┐
-│S3/SQL  │      │Redis │      │ai-infra │
-│Storage │      │Cache │      │CoreLLM  │
-└────────┘      └──────┘      └─────────┘
+        ┌────────────────────────────────┐
+        │ FinancialDocumentManager        │  ← Layer 2 (fin-infra)
+        │   extends BaseDocumentManager   │     Financial features
+        └────────────┬───────────────────┘
+                     │
+                     ▼
+        ┌────────────────────────────────┐
+        │   BaseDocumentManager           │  ← Layer 1 (svc-infra)
+        │   (generic CRUD)                │     Generic storage
+        └────────────┬───────────────────┘
+                     │
+    ┌────────────────┼────────────────┬────────────────┐
+    │                │                │                │
+    ▼                ▼                ▼                ▼
+┌─────────┐   ┌─────────┐   ┌──────────┐   ┌──────────────┐
+│ Storage │   │   OCR   │   │ Analysis │   │    Models    │
+│  (Base) │   │(Fin Ext)│   │(Fin Ext) │   │ (Financial)  │
+└─────────┘   └─────────┘   └──────────┘   └──────────────┘
+     │             │              │
+     ▼             ▼              ▼
+┌─────────┐   ┌─────────┐   ┌──────────┐
+│svc-infra│   │  Cache  │   │ai-infra  │
+│ Storage │   │  Dict   │   │ CoreLLM  │
+│ Backend │   │(→Redis) │   │(→GenAI)  │
+└─────────┘   └─────────┘   └──────────┘
 ```
+
+**Layer 1 (svc-infra)**: Generic document infrastructure
+- `svc_infra.documents.Document` - Base document model
+- `svc_infra.documents.upload_document()` - Storage integration
+- `svc_infra.documents.add_documents()` - 4 base endpoints (upload, list, get, delete)
+- Works with ANY storage backend (S3, local, memory)
+- Domain-agnostic - usable by ANY application
+
+**Layer 2 (fin-infra)**: Financial-specific extensions
+- `FinancialDocument` extends `Document` with tax_year, form_type, DocumentType
+- `extract_text()` - OCR for tax forms (W-2, 1099) with field parsing
+- `analyze()` - AI-powered financial insights and recommendations
+- 2 additional endpoints: POST /documents/{id}/ocr, POST /documents/{id}/analyze
+- Backward compatible - same API surface as before
+
+**Why This Architecture?**
+✅ **Separation of concerns**: Generic file storage vs financial domain logic  
+✅ **Reusability**: Other domains (medical, legal) can use svc-infra base  
+✅ **No duplication**: fin-infra imports from svc-infra (not copy-paste)  
+✅ **Clear extension pattern**: Shows how to build domain features on generic base  
+✅ **Backward compatible**: fin-infra API unchanged, just refactored internally
 
 ### Component Responsibilities
 
-**Storage** (`storage.py`):
-- Document upload with unique ID generation (`doc_{uuid}`)
-- SHA-256 checksum calculation
-- MIME type detection
-- Retrieval, deletion, listing with filters
-- In-memory storage (production: S3 for files, SQL for metadata)
+**Storage** (`storage.py`) - **Layer 2 Wrapper**:
+- Delegates to `svc_infra.documents` for all CRUD operations
+- Converts between `Document` (base) and `FinancialDocument` (extended)
+- Injects/extracts financial metadata (document_type, tax_year, form_type)
+- Maintains backward compatibility via function aliases
+- Uses svc-infra storage backend (S3, local, memory)
 
-**OCR** (`ocr.py`):
+**OCR** (`ocr.py`) - **Financial Extension**:
 - Text extraction from images/PDFs
 - Provider selection (Tesseract, AWS Textract)
 - Tax form field parsing (W-2, 1099)
 - Result caching (production: Redis with 7d TTL)
 
-**Analysis** (`analysis.py`):
-- Document analysis with insights and recommendations
+**Analysis** (`analysis.py`) - **Financial Extension**:
+- Document analysis with financial insights and recommendations
 - Type-specific analyzers (tax, bank statement, receipt, generic)
 - Quality validation (confidence >= 0.7, non-empty fields)
 - Result caching (production: Redis with 24h TTL)
 - Production: Use ai-infra CoreLLM for AI-powered analysis
+- Extracts financial metrics (wages, taxes, spending patterns)
 
-**Models** (`models.py`):
+**Models** (`models.py`) - **Layer 2 Extensions**:
+- `FinancialDocument` extends `svc_infra.documents.Document` with financial fields
+- `Document` = alias for backward compatibility
+- `DocumentType` enum (7 types: TAX, BANK_STATEMENT, RECEIPT, etc.)
+- `OCRResult` model (text, confidence, fields for W-2/1099 forms)
+- `DocumentAnalysis` model (summary, findings, recommendations)
 - Pydantic v2 models for data validation
-- DocumentType enum (7 types)
-- Document model (metadata)
-- OCRResult model (text, confidence, fields)
-- DocumentAnalysis model (summary, findings, recommendations)
+
+### How fin-infra Extends svc-infra
+
+**Import Pattern**:
+```python
+# fin-infra imports base functionality from svc-infra
+from svc_infra.documents import (
+    Document as BaseDocument,
+    upload_document as base_upload_document,
+    add_documents as add_base_documents
+)
+
+# Then extends with financial features
+class FinancialDocument(BaseDocument):
+    type: DocumentType  # Financial-specific enum
+    tax_year: Optional[int] = None
+    form_type: Optional[str] = None
+```
+
+**add_documents() Pattern** (Layer 2 calls Layer 1):
+```python
+def add_documents(app, storage, prefix="/documents"):
+    # Step 1: Mount base CRUD endpoints from svc-infra
+    add_base_documents(app, storage_backend=storage, prefix=prefix)
+    # This gives you: POST /upload, GET /list, GET /{id}, DELETE /{id}
+    
+    # Step 2: Add financial-specific endpoints
+    @router.post("/{document_id}/ocr")
+    async def extract_text_ocr(...):
+        return await manager.extract_text(...)
+    
+    @router.post("/{document_id}/analyze")
+    async def analyze_document_ai(...):
+        return await manager.analyze(...)
+```
+
+**For Other Domains**: Follow the same pattern:
+- Medical app: `MedicalDocument` extends `BaseDocument` with diagnosis_codes, treatment_dates
+- Legal app: `LegalDocument` extends `BaseDocument` with case_number, court_jurisdiction
+- E-commerce: `ProductDocument` extends `BaseDocument` with sku, category
+
+**Reference Implementation**: See svc-infra's generic documents at `src/svc_infra/docs/documents.md`
 
 ---
 
@@ -575,57 +645,71 @@ class DocumentAnalysis(BaseModel):
 
 ## Storage
 
-### In-Memory Implementation (Current)
+### Layered Storage Architecture
 
-**Purpose**: Testing and development
+fin-infra delegates all storage operations to **svc-infra's generic storage system** (Layer 1).
 
-**Structure:**
-- `_documents`: Dict[str, Document] - Document metadata by ID
-- `_file_storage`: Dict[str, bytes] - File content by ID
-
-**Benefits:**
-- Fast and simple
-- No external dependencies
-- Easy to clear between tests
-
-**Limitations:**
-- Data lost on restart
-- Not scalable for production
-- No persistence
-
-### Production Migration
-
-**Recommended Architecture:**
-
+**How It Works:**
 ```python
-# Use svc-infra for production storage
-from svc_infra.storage import S3Storage
-from svc_infra.db import get_session
+# fin-infra storage.py delegates to svc-infra
+from svc_infra.documents import (
+    upload_document as base_upload,
+    download_document as base_download
+)
 
-# Store files in S3
-s3 = S3Storage(bucket="user-documents")
-file_url = s3.upload(key=f"documents/{doc.id}", content=file_bytes)
+# Financial wrapper adds DocumentType, tax_year, form_type
+async def upload_document(storage, user_id, file, document_type, ...):
+    # Convert financial fields to metadata
+    metadata = {"document_type": document_type.value, ...}
+    
+    # Call base layer
+    base_doc = await base_upload(storage, user_id, file, metadata=metadata)
+    
+    # Convert to FinancialDocument
+    return FinancialDocument(**base_doc.model_dump(), type=document_type)
+```
 
-# Store metadata in SQL
-async with get_session() as session:
-    db_doc = DocumentModel(
-        id=doc.id,
-        user_id=doc.user_id,
-        type=doc.type,
-        filename=doc.filename,
-        s3_url=file_url,
-        checksum=doc.checksum,
-        size_bytes=doc.size_bytes,
-        metadata=doc.metadata
-    )
-    session.add(db_doc)
-    await session.commit()
+**Storage Backends** (via svc-infra):
+- **MemoryBackend**: Testing (fast, no persistence)
+- **LocalBackend**: Railway volumes, filesystem storage
+- **S3Backend**: AWS S3, DigitalOcean Spaces, Wasabi, Backblaze B2
+
+**See**: [svc-infra Storage Guide](../../../svc-infra/src/svc_infra/docs/storage.md) for backend documentation
+
+### Production Setup
+
+**Configuration** (via environment variables):
+```bash
+# For S3 backend
+export STORAGE_S3_BUCKET=user-documents
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+
+# For Railway volumes
+export RAILWAY_VOLUME_MOUNT_PATH=/data
+```
+
+**Usage**:
+```python
+from fin_infra.documents import add_documents, easy_documents
+from svc_infra.storage import easy_storage
+
+# Create storage backend (auto-detects from environment)
+storage = easy_storage()  # → S3Backend or LocalBackend
+
+# Option 1: FastAPI integration
+add_documents(app, storage=storage)
+
+# Option 2: Programmatic
+docs = easy_documents(storage=storage)
+doc = await docs.upload(user_id, file, DocumentType.TAX, ...)
 ```
 
 **Benefits:**
-- S3: Scalable, durable file storage
-- SQL: Queryable metadata with indexes
-- svc-infra: Battle-tested infrastructure
+- **Layered design**: Generic base + financial extensions
+- **Backend flexibility**: S3, Railway, local, memory
+- **Battle-tested**: Uses svc-infra infrastructure
+- **No vendor lock-in**: Switch backends via environment variables
 
 ---
 
@@ -1137,11 +1221,17 @@ client = TestClient(app, raise_server_exceptions=False)
 
 ## Related Documentation
 
-- [ADR 0027: Document Management Design](adr/0027-document-management-design.md)
-- [svc-infra Storage Guide](../../svc-infra/docs/storage.md)
-- [svc-infra Caching Guide](../../svc-infra/docs/cache.md)
-- [ai-infra LLM Guide](../../ai-infra/docs/llm.md)
-- [fin-infra README](../README.md)
+**Layered Architecture**:
+- [svc-infra Documents Guide](../../../svc-infra/src/svc_infra/docs/documents.md) - Generic Layer 1 base
+- [svc-infra Storage Guide](../../../svc-infra/src/svc_infra/docs/storage.md) - Backend abstraction (S3, local, memory)
+
+**Financial Features**:
+- [ADR 0027: Document Management Design](adr/0027-document-management-design.md) - Design decisions
+- [ai-infra LLM Guide](../../../ai-infra/docs/llm.md) - AI-powered analysis
+
+**Infrastructure**:
+- [svc-infra Caching Guide](../../../svc-infra/src/svc_infra/docs/cache.md) - OCR/analysis result caching
+- [fin-infra README](../README.md) - Package overview
 
 ---
 
