@@ -75,6 +75,7 @@ async def status():
             "market_data": settings.market_data_configured,
             "credit": settings.credit_configured,
             "brokerage": settings.brokerage_configured,
+            "investments": settings.investments_configured,
             "tax": settings.enable_tax,
             "analytics": settings.enable_analytics,
             "budgets": settings.enable_budgets,
@@ -107,6 +108,10 @@ async def status():
             "brokerage": {
                 "alpaca": bool(settings.alpaca_api_key and settings.alpaca_secret_key),
                 "ib": bool(settings.ib_username and settings.ib_password),
+                "snaptrade": bool(settings.snaptrade_client_id and settings.snaptrade_consumer_key),
+            },
+            "investments": {
+                "plaid": bool(settings.plaid_client_id and settings.plaid_secret),
                 "snaptrade": bool(settings.snaptrade_client_id and settings.snaptrade_consumer_key),
             },
             "tax": {
@@ -173,6 +178,18 @@ async def features():
                 "Order execution",
                 "Position tracking",
                 "Trade history",
+            ],
+        },
+        "investments": {
+            "enabled": settings.enable_investments,
+            "configured": settings.investments_configured,
+            "providers": ["plaid", "snaptrade"],
+            "capabilities": [
+                "Investment holdings (real-time)",
+                "Cost basis tracking",
+                "Real P/L calculations",
+                "Asset allocation analysis",
+                "Multi-account aggregation",
             ],
         },
         "analytics": {
@@ -471,6 +488,208 @@ async def get_portfolio():
         ],
         "provider": "alpaca" if settings.alpaca_api_key else "demo",
         "note": "Configure ALPACA_API_KEY and ALPACA_API_SECRET for real data",
+    }
+
+
+# ============================================================================
+# Investments Endpoints
+# ============================================================================
+
+
+@router.get("/investments/holdings")
+async def get_investment_holdings():
+    """
+    Retrieve investment holdings from connected accounts.
+
+    Returns all holdings with real-time values, cost basis, and P/L.
+    Supports both Plaid (401k, IRA) and SnapTrade (retail brokerage).
+    """
+    if not settings.enable_investments:
+        raise HTTPException(status_code=503, detail="Investments feature is disabled")
+
+    if not settings.investments_configured:
+        raise HTTPException(
+            status_code=503,
+            detail="No investment providers configured (requires Plaid or SnapTrade)",
+        )
+
+    # TODO: Implement actual investments integration
+    # from fin_infra.investments import easy_investments
+    # investments = easy_investments(provider="plaid")
+    # holdings = await investments.get_holdings(access_token)
+
+    return {
+        "holdings": [
+            {
+                "account_id": "acc_401k_123",
+                "account_name": "Vanguard 401(k)",
+                "security": {
+                    "security_id": "VFIAX",
+                    "ticker_symbol": "VFIAX",
+                    "name": "Vanguard 500 Index Fund Admiral",
+                    "type": "mutual_fund",
+                    "close_price": 425.67,
+                    "close_price_as_of": datetime.utcnow().isoformat(),
+                },
+                "quantity": 234.567,
+                "institution_value": 99876.54,
+                "institution_price": 425.67,
+                "cost_basis": 85000.00,
+                "currency": "USD",
+                "unrealized_gain_loss": 14876.54,
+                "unrealized_gain_loss_percent": 17.50,
+            },
+            {
+                "account_id": "acc_ira_456",
+                "account_name": "Fidelity Roth IRA",
+                "security": {
+                    "security_id": "AAPL",
+                    "ticker_symbol": "AAPL",
+                    "name": "Apple Inc",
+                    "type": "equity",
+                    "close_price": 175.43,
+                    "close_price_as_of": datetime.utcnow().isoformat(),
+                },
+                "quantity": 100.0,
+                "institution_value": 17543.00,
+                "institution_price": 175.43,
+                "cost_basis": 15000.00,
+                "currency": "USD",
+                "unrealized_gain_loss": 2543.00,
+                "unrealized_gain_loss_percent": 16.95,
+            },
+        ],
+        "total_value": 117419.54,
+        "total_cost_basis": 100000.00,
+        "total_unrealized_gain_loss": 17419.54,
+        "total_unrealized_gain_loss_percent": 17.42,
+        "provider": "plaid" if settings.plaid_client_id else "snaptrade" if settings.snaptrade_client_id else "demo",
+        "last_updated": datetime.utcnow().isoformat(),
+        "note": "Configure PLAID or SNAPTRADE credentials for real holdings data",
+    }
+
+
+@router.get("/investments/allocation")
+async def get_asset_allocation():
+    """
+    Get asset allocation breakdown from investment holdings.
+
+    Returns allocation by security type (equity, bond, cash, etc.)
+    and optionally by sector.
+    """
+    if not settings.enable_investments:
+        raise HTTPException(status_code=503, detail="Investments feature is disabled")
+
+    if not settings.investments_configured:
+        raise HTTPException(status_code=503, detail="No investment providers configured")
+
+    # TODO: Implement actual allocation calculation
+    # from fin_infra.investments import easy_investments
+    # investments = easy_investments(provider="plaid")
+    # allocation = await investments.get_allocation(access_token)
+
+    return {
+        "allocation_by_asset_class": [
+            {
+                "asset_class": "equity",
+                "value": 70493.72,
+                "percentage": 60.0,
+            },
+            {
+                "asset_class": "mutual_fund",
+                "value": 35246.86,
+                "percentage": 30.0,
+            },
+            {
+                "asset_class": "bond",
+                "value": 11748.95,
+                "percentage": 10.0,
+            },
+        ],
+        "allocation_by_sector": [
+            {
+                "sector": "Technology",
+                "value": 47013.53,
+                "percentage": 40.0,
+            },
+            {
+                "sector": "Healthcare",
+                "value": 23506.77,
+                "percentage": 20.0,
+            },
+            {
+                "sector": "Financial",
+                "value": 17630.08,
+                "percentage": 15.0,
+            },
+            {
+                "sector": "Consumer",
+                "value": 14104.06,
+                "percentage": 12.0,
+            },
+            {
+                "sector": "Other",
+                "value": 15265.10,
+                "percentage": 13.0,
+            },
+        ],
+        "total_value": 117419.54,
+        "provider": "plaid" if settings.plaid_client_id else "demo",
+        "calculated_at": datetime.utcnow().isoformat(),
+        "note": "Based on current holdings and security metadata",
+    }
+
+
+@router.get("/investments/accounts")
+async def get_investment_accounts():
+    """
+    List all investment accounts with aggregated metrics.
+
+    Returns account details with total value, cost basis, and P/L per account.
+    """
+    if not settings.enable_investments:
+        raise HTTPException(status_code=503, detail="Investments feature is disabled")
+
+    if not settings.investments_configured:
+        raise HTTPException(status_code=503, detail="No investment providers configured")
+
+    # TODO: Implement actual accounts fetch
+    # from fin_infra.investments import easy_investments
+    # investments = easy_investments(provider="plaid")
+    # accounts = await investments.get_investment_accounts(access_token)
+
+    return {
+        "accounts": [
+            {
+                "account_id": "acc_401k_123",
+                "name": "Vanguard 401(k)",
+                "type": "investment",
+                "subtype": "401k",
+                "institution": "Vanguard",
+                "total_value": 99876.54,
+                "total_cost_basis": 85000.00,
+                "total_unrealized_gain_loss": 14876.54,
+                "total_unrealized_gain_loss_percent": 17.50,
+                "holdings_count": 5,
+            },
+            {
+                "account_id": "acc_ira_456",
+                "name": "Fidelity Roth IRA",
+                "type": "investment",
+                "subtype": "roth_ira",
+                "institution": "Fidelity",
+                "total_value": 17543.00,
+                "total_cost_basis": 15000.00,
+                "total_unrealized_gain_loss": 2543.00,
+                "total_unrealized_gain_loss_percent": 16.95,
+                "holdings_count": 3,
+            },
+        ],
+        "total_value": 117419.54,
+        "total_cost_basis": 100000.00,
+        "total_unrealized_gain_loss": 17419.54,
+        "provider": "plaid" if settings.plaid_client_id else "demo",
+        "last_updated": datetime.utcnow().isoformat(),
     }
 
 

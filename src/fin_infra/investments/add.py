@@ -94,6 +94,7 @@ def add_investments(
     prefix: str = "/investments",
     provider: Optional[InvestmentProvider] = None,
     include_in_schema: bool = True,
+    tags: Optional[list[str]] = None,
 ) -> InvestmentProvider:
     """Add investment endpoints to FastAPI application.
 
@@ -106,6 +107,7 @@ def add_investments(
         prefix: URL prefix for investment endpoints (default: "/investments")
         provider: Optional pre-configured InvestmentProvider instance
         include_in_schema: Include in OpenAPI schema (default: True)
+        tags: OpenAPI tags for the router (default: ["Investments"])
 
     Returns:
         InvestmentProvider instance (either provided or newly created)
@@ -163,7 +165,7 @@ def add_investments(
     # 3. Import user_router from svc-infra (requires authentication)
     from svc_infra.api.fastapi.dual.protected import user_router
 
-    router = user_router(prefix=prefix, tags=["Investments"])
+    router = user_router(prefix=prefix, tags=tags or ["Investments"])
 
     # 4. Define endpoint handlers
 

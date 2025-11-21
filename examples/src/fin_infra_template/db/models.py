@@ -200,7 +200,86 @@ class Position(Base, TimestampMixin, UserOwnedMixin):
         state = inspect(self)
         if state.detached or state.expired:
             return f"<Position at {hex(id(self))}>"
-        return f"<Position(id={self.id}, symbol={self.symbol!r}, qty={self.quantity})>"
+        return f"<Position(id={self.id}, symbol={self.symbol!r}, qty={self.quantity}, value={self.market_value})>"
+
+
+class Holding(Base, TimestampMixin, UserOwnedMixin):
+    """
+    Investment holding snapshot (from Plaid/SnapTrade/aggregators).
+
+    Demonstrates:
+    - Real-time holdings from investment providers
+    - Cost basis and P/L tracking from external sources
+    - Security metadata (ticker, name, type, price)
+    - Multi-account aggregation
+    
+    Note: Different from Position model:
+    - Position: Internal brokerage positions (Alpaca trading)
+    - Holding: External aggregated holdings (Plaid/SnapTrade 401k, IRA, retail brokerages)
+    """
+
+    __tablename__ = "holdings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int] = mapped_column(nullable=False, index=True)
+
+    # Provider info (Plaid, SnapTrade, etc.)
+    provider: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )  # plaid, snaptrade, teller
+    provider_account_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    provider_security_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+
+    # Security details
+    ticker_symbol: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
+    security_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    security_type: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )  # equity, etf, mutual_fund, bond, cash, derivative
+    cusip: Mapped[Optional[str]] = mapped_column(String(9), nullable=True)
+    isin: Mapped[Optional[str]] = mapped_column(String(12), nullable=True)
+    sector: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    # Position details
+    quantity: Mapped[Decimal] = mapped_column(DECIMAL(20, 8), nullable=False)
+    institution_price: Mapped[Decimal] = mapped_column(
+        DECIMAL(15, 4), nullable=False
+    )  # price per unit from provider
+    institution_value: Mapped[Decimal] = mapped_column(
+        DECIMAL(15, 2), nullable=False
+    )  # total value from provider
+    cost_basis: Mapped[Optional[Decimal]] = mapped_column(
+        DECIMAL(15, 2), nullable=True
+    )  # total cost (may be unavailable)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+
+    # Market data (latest close price from provider)
+    close_price: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(15, 4), nullable=True)
+    close_price_as_of: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # P&L (calculated from cost_basis and institution_value)
+    unrealized_gain_loss: Mapped[Optional[Decimal]] = mapped_column(
+        DECIMAL(15, 2), nullable=True
+    )
+    unrealized_gain_loss_percent: Mapped[Optional[Decimal]] = mapped_column(
+        DECIMAL(8, 4), nullable=True
+    )
+
+    # Sync metadata
+    last_synced_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    sync_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="synced"
+    )  # synced, pending, failed
+
+    def __repr__(self) -> str:
+        state = inspect(self)
+        if state.detached or state.expired:
+            return f"<Holding at {hex(id(self))}>"
+        return f"<Holding(id={self.id}, symbol={self.ticker_symbol!r}, qty={self.quantity}, value={self.institution_value})>"
 
 
 class Goal(Base, TimestampMixin, SoftDeleteMixin, UserOwnedMixin):

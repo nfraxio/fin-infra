@@ -501,3 +501,258 @@ def _calculate_beta(
 
     # For mock data, return typical beta values
     return 0.95  # Slightly less volatile than market
+
+
+# ============================================================================
+# Holdings-based Portfolio Analytics (Real P/L from Investment Data)
+# ============================================================================
+
+
+def portfolio_metrics_with_holdings(holdings: list) -> PortfolioMetrics:
+    """Calculate portfolio metrics from real investment holdings data.
+
+    Uses actual holdings data from investment providers (Plaid, SnapTrade) to
+    calculate real profit/loss, asset allocation, and portfolio value.
+
+    This function replaces mock data with real holdings to provide accurate
+    portfolio analytics based on actual positions, cost basis, and current values.
+
+    Args:
+        holdings: List of Holding objects from investment provider
+            Each holding should have:
+            - institution_value (float): Current market value
+            - cost_basis (float): Original purchase cost
+            - security.type (SecurityType): Asset class (equity, bond, etf, etc.)
+
+    Returns:
+        PortfolioMetrics with real portfolio analysis
+
+    Real Data Advantages:
+        - Actual cost basis → accurate P/L calculations
+        - Real security types → precise asset allocation
+        - Current market values → live portfolio value
+        - No mock data → production-ready analytics
+
+    Limitations:
+        - Day/YTD/MTD returns require historical snapshots (not in holdings)
+        - Time-based returns default to 0.0 (apps must store snapshots)
+        - Use calculate_day_change_with_snapshot() for daily tracking
+
+    Examples:
+        >>> from fin_infra.investments import easy_investments
+        >>> from fin_infra.analytics.portfolio import portfolio_metrics_with_holdings
+        >>>
+        >>> # Get real holdings from investment provider
+        >>> investments = easy_investments(provider="plaid")
+        >>> holdings = await investments.get_holdings(access_token="...")
+        >>>
+        >>> # Calculate metrics from real data
+        >>> metrics = portfolio_metrics_with_holdings(holdings)
+        >>> print(f"Total value: ${metrics.total_value:,.2f}")
+        >>> print(f"Total return: {metrics.total_return_percent:.2f}%")
+        >>> print(f"Stocks allocation: {metrics.allocation_by_asset_class.get('Stocks', 0):.1f}%")
+
+        >>> # Compare to mock-based calculation
+        >>> mock_metrics = await calculate_portfolio_metrics("user123")
+        >>> # mock_metrics uses _generate_mock_holdings()
+        >>> # metrics uses real holdings from Plaid/SnapTrade
+
+    Integration with Investments Module:
+        >>> # holdings parameter comes from investments module
+        >>> from fin_infra.investments import easy_investments
+        >>> investments = easy_investments()
+        >>> holdings = await investments.get_holdings(access_token)
+        >>> metrics = portfolio_metrics_with_holdings(holdings)
+    """
+    # Import here to avoid circular dependency
+    from decimal import Decimal
+
+    # Calculate total portfolio value and cost basis
+    total_value = float(sum(
+        holding.institution_value
+        for holding in holdings
+    ))
+
+    total_cost_basis = float(sum(
+        holding.cost_basis if holding.cost_basis is not None else 0
+        for holding in holdings
+    ))
+
+    # Calculate total return (P/L)
+    total_return_dollars = total_value - total_cost_basis
+    total_return_percent = (
+        (total_return_dollars / total_cost_basis * 100.0)
+        if total_cost_basis > 0
+        else 0.0
+    )
+
+    # Calculate asset allocation from real security types
+    allocation = _calculate_allocation_from_holdings(holdings, total_value)
+
+    # Note: Time-based returns (YTD, MTD, day) require historical snapshots
+    # Applications must store daily/monthly snapshots to calculate these
+    # For now, default to 0.0 (or use calculate_day_change_with_snapshot)
+    return PortfolioMetrics(
+        total_value=total_value,
+        total_return=total_return_dollars,
+        total_return_percent=total_return_percent,
+        ytd_return=0.0,  # Requires historical snapshot at Jan 1
+        ytd_return_percent=0.0,
+        mtd_return=0.0,  # Requires historical snapshot at month start
+        mtd_return_percent=0.0,
+        day_change=0.0,  # Requires historical snapshot from previous day
+        day_change_percent=0.0,
+        allocation_by_asset_class=allocation,  # Now list[AssetAllocation]
+    )
+
+
+def calculate_day_change_with_snapshot(
+    current_holdings: list,
+    previous_snapshot: list,
+) -> dict:
+    """Calculate day change by comparing current holdings to previous snapshot.
+
+    Compares current holdings values to a previous snapshot (e.g., yesterday's close)
+    to calculate daily change in portfolio value.
+
+    This function enables day-over-day tracking when applications store daily
+    snapshots of holdings. Without snapshots, day change defaults to 0.0.
+
+    Args:
+        current_holdings: List of current Holding objects
+        previous_snapshot: List of Holding objects from previous day
+            Must have same structure with institution_value field
+
+    Returns:
+        dict with day_change_dollars and day_change_percent
+
+    Snapshot Storage:
+        Applications must store daily holdings snapshots to use this function.
+        Recommended approach:
+        1. Daily cron job: Fetch and store holdings at market close
+        2. Database table: holdings_snapshots(date, user_id, holdings_json)
+        3. On portfolio request: Compare current to yesterday's snapshot
+
+    Examples:
+        >>> from fin_infra.investments import easy_investments
+        >>> from fin_infra.analytics.portfolio import calculate_day_change_with_snapshot
+        >>>
+        >>> # Get current holdings
+        >>> investments = easy_investments(provider="plaid")
+        >>> current = await investments.get_holdings(access_token)
+        >>>
+        >>> # Load yesterday's snapshot from database
+        >>> previous = load_holdings_snapshot(user_id, date=yesterday)
+        >>>
+        >>> # Calculate day change
+        >>> day_stats = calculate_day_change_with_snapshot(current, previous)
+        >>> print(f"Day change: ${day_stats['day_change_dollars']:,.2f}")
+        >>> print(f"Day change %: {day_stats['day_change_percent']:.2f}%")
+
+        >>> # Use with portfolio_metrics_with_holdings()
+        >>> metrics = portfolio_metrics_with_holdings(current)
+        >>> day_stats = calculate_day_change_with_snapshot(current, previous)
+        >>> # Merge day_stats into metrics
+        >>> metrics.day_change = day_stats['day_change_dollars']
+        >>> metrics.day_change_percent = day_stats['day_change_percent']
+
+    Matching Holdings:
+        Function matches holdings by account_id + security_id for accurate tracking
+        of individual position changes (accounts for buys/sells, not just price moves).
+    """
+    # Build lookup map for previous snapshot: (account_id, security_id) → value
+    previous_map = {}
+    for holding in previous_snapshot:
+        key = (holding.account_id, holding.security.security_id)
+        previous_map[key] = float(holding.institution_value)
+
+    # Calculate current total and compare to previous
+    current_total = 0.0
+    previous_total = 0.0
+
+    for holding in current_holdings:
+        current_value = float(holding.institution_value)
+        current_total += current_value
+
+        # Find matching holding in previous snapshot
+        key = (holding.account_id, holding.security.security_id)
+        if key in previous_map:
+            previous_total += previous_map[key]
+        else:
+            # New holding (bought today) - use current value as baseline
+            previous_total += current_value
+
+    # Calculate day change
+    day_change_dollars = current_total - previous_total
+    day_change_percent = (
+        (day_change_dollars / previous_total * 100.0)
+        if previous_total > 0
+        else 0.0
+    )
+
+    return {
+        "day_change_dollars": day_change_dollars,
+        "day_change_percent": day_change_percent,
+    }
+
+
+def _calculate_allocation_from_holdings(
+    holdings: list,
+    total_value: float,
+) -> list:
+    """Calculate asset allocation from real holdings.
+
+    Groups holdings by security type (from Security.type field) and calculates
+    percentage allocation for each asset class.
+
+    Args:
+        holdings: List of Holding objects with security.type
+        total_value: Total portfolio value for percentage calculations
+
+    Returns:
+        list[AssetAllocation] with asset_class, value, and percentage
+
+    Asset Class Mapping:
+        - equity → Stocks
+        - etf → Stocks (equity ETFs grouped with stocks)
+        - mutual_fund → Bonds (conservative assumption)
+        - bond → Bonds
+        - cash → Cash
+        - derivative → Other
+        - other → Other
+    """
+    from collections import defaultdict
+    from .models import AssetAllocation
+
+    if total_value == 0:
+        return []
+
+    # Map SecurityType to asset class names
+    type_to_class = {
+        "equity": "Stocks",
+        "etf": "Stocks",  # Most ETFs are equity
+        "mutual_fund": "Bonds",  # Conservative: assume bond funds
+        "bond": "Bonds",
+        "cash": "Cash",
+        "derivative": "Other",
+        "other": "Other",
+    }
+
+    # Sum values by asset class
+    allocation_values = defaultdict(float)
+    for holding in holdings:
+        security_type = holding.security.type.value if hasattr(holding.security.type, 'value') else holding.security.type
+        asset_class = type_to_class.get(security_type, "Other")
+        allocation_values[asset_class] += float(holding.institution_value)
+
+    # Convert to list of AssetAllocation objects
+    allocation_list = [
+        AssetAllocation(
+            asset_class=asset_class,
+            value=value,
+            percentage=round((value / total_value) * 100.0, 2)
+        )
+        for asset_class, value in allocation_values.items()
+    ]
+
+    return allocation_list

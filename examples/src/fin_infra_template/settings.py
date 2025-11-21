@@ -133,6 +133,17 @@ class Settings(BaseSettings):
     snaptrade_consumer_key: Optional[str] = Field(default=None)
 
     # ========================================================================
+    # Investment Holdings Providers (fin-infra)
+    # ========================================================================
+    enable_investments: bool = Field(default=False)
+
+    # Plaid Investment API (uses same credentials as banking)
+    # Already configured above in Banking Providers section
+
+    # SnapTrade Investment API (uses same credentials as brokerage)
+    # Already configured above in Brokerage Providers section
+
+    # ========================================================================
     # Tax Data Providers (fin-infra)
     # ========================================================================
     enable_tax: bool = Field(default=True)
@@ -167,6 +178,7 @@ class Settings(BaseSettings):
     enable_budgets: bool = Field(default=True)
     enable_goals: bool = Field(default=True)
     enable_documents: bool = Field(default=True)
+    enable_investments: bool = Field(default=True)
     enable_net_worth: bool = Field(default=True)
     enable_recurring: bool = Field(default=True)
     enable_categorization: bool = Field(default=True)
@@ -242,6 +254,15 @@ class Settings(BaseSettings):
     def brokerage_configured(self) -> bool:
         """Check if any brokerage provider is configured."""
         return self.enable_brokerage and bool(self.alpaca_api_key and self.alpaca_secret_key)
+
+    @property
+    def investments_configured(self) -> bool:
+        """Check if any investment holdings provider is configured."""
+        # Investments can use Plaid (banking) or SnapTrade (brokerage) credentials
+        return self.enable_investments and (
+            bool(self.plaid_client_id and self.plaid_secret)
+            or bool(self.snaptrade_client_id and self.snaptrade_consumer_key)
+        )
 
     @property
     def llm_configured(self) -> bool:

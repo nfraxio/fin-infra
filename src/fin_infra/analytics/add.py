@@ -202,17 +202,79 @@ def add_analytics(
         "/portfolio",
         response_model=PortfolioMetrics,
         summary="Portfolio Metrics",
-        description="Calculate portfolio performance metrics",
+        description="Calculate portfolio performance metrics with optional real holdings data",
     )
     async def get_portfolio_metrics(
         user_id: str,
         accounts: Optional[list[str]] = None,
+        with_holdings: bool = Query(
+            False,
+            description="Use real holdings data from investment provider for accurate P/L"
+        ),
+        access_token: Optional[str] = Query(
+            None,
+            description="Investment provider access token (required if with_holdings=true)"
+        ),
     ) -> PortfolioMetrics:
         """
         Calculate portfolio performance metrics.
 
-        Provides returns, allocation, and Sharpe ratio.
+        By default, uses account balance data for portfolio calculations (mock holdings).
+        When with_holdings=true and investment provider available, fetches real holdings
+        for accurate profit/loss, cost basis, and asset allocation.
+
+        Query Parameters:
+            - user_id: User identifier
+            - accounts: Optional list of account IDs to include
+            - with_holdings: Use real holdings data (default: false)
+            - access_token: Investment provider token (Plaid/SnapTrade, required if with_holdings=true)
+
+        Returns:
+            PortfolioMetrics with performance analysis
+
+        Examples:
+            # Mock-based calculation (balance only)
+            GET /analytics/portfolio?user_id=user123
+
+            # Real holdings calculation (accurate P/L)
+            GET /analytics/portfolio?user_id=user123&with_holdings=true&access_token=plaid-token
+
+        Note:
+            Real holdings provide:
+            - Accurate cost basis → real profit/loss
+            - Security types → precise asset allocation
+            - Current values → live portfolio tracking
         """
+        # If with_holdings requested and investment provider available
+        if with_holdings:
+            # Check if investment provider is available on app state
+            investment_provider = getattr(app.state, "investment_provider", None)
+            
+            if investment_provider and access_token:
+                try:
+                    # Fetch real holdings from investment provider
+                    from fin_infra.analytics.portfolio import portfolio_metrics_with_holdings
+                    
+                    holdings = await investment_provider.get_holdings(
+                        access_token=access_token,
+                        account_ids=accounts,
+                    )
+                    
+                    # Calculate metrics from real holdings
+                    return portfolio_metrics_with_holdings(holdings)
+                    
+                except Exception as e:
+                    # Fall back to balance-only calculation on error
+                    # Log error but don't fail the request
+                    import logging
+                    logging.warning(f"Failed to fetch holdings, falling back to balance-only: {e}")
+            elif with_holdings and not access_token:
+                raise HTTPException(
+                    status_code=400,
+                    detail="access_token required when with_holdings=true"
+                )
+        
+        # Default: Use balance-only calculation (existing behavior)
         return await provider.portfolio_metrics(
             user_id,
             accounts=accounts,

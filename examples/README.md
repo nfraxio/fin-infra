@@ -32,6 +32,7 @@ This is a **complete, working example** that demonstrates **ALL 20+ fin-infra ca
 ✅ **Crypto Data** - CoinGecko/Yahoo/CCXT crypto market data (3 endpoints)  
 ✅ **Credit Scores** - Experian FICO/VantageScore monitoring (4 endpoints)  
 ✅ **Brokerage** - Alpaca paper/live trading (4 endpoints)  
+✅ **Investments** - Plaid/SnapTrade holdings, real P/L, cost basis (5 endpoints) **NEW**  
 ✅ **Tax Data** - IRS/TaxBit forms & calculations (5 endpoints)
 
 ### 🧠 Financial Intelligence (Analytics & AI)

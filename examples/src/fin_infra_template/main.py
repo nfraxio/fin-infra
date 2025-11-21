@@ -131,6 +131,9 @@ async def startup_event():
     print(
         f"   Brokerage: {'✅ Configured' if settings.brokerage_configured else '❌ Not configured'}"
     )
+    print(
+        f"   Investments: {'✅ Configured' if settings.investments_configured else '❌ Not configured'}"
+    )
     print(f"   Tax: {'✅ Enabled' if settings.enable_tax else '❌ Disabled'}")
     print(f"   AI/LLM: {'✅ Configured' if settings.llm_configured else '❌ Not configured'}")
 
@@ -140,6 +143,7 @@ async def startup_event():
         ("Budgets", settings.enable_budgets),
         ("Goals", settings.enable_goals),
         ("Documents", settings.enable_documents),
+        ("Investments", settings.enable_investments),
         ("Net Worth", settings.enable_net_worth),
         ("Recurring Detection", settings.enable_recurring),
         ("Categorization", settings.enable_categorization),
@@ -190,6 +194,7 @@ if settings.database_configured:
         Budget,
         Document,
         Goal,
+        Holding,
         NetWorthSnapshot,
         Position,
         Transaction,
@@ -208,6 +213,9 @@ if settings.database_configured:
         GoalCreate,
         GoalRead,
         GoalUpdate,
+        HoldingCreate,
+        HoldingRead,
+        HoldingUpdate,
         NetWorthSnapshotCreate,
         NetWorthSnapshotRead,
         NetWorthSnapshotUpdate,
@@ -309,6 +317,26 @@ if settings.database_configured:
                 read_schema=PositionRead,
                 create_schema=PositionCreate,
                 update_schema=PositionUpdate,
+            ),
+            SqlResource(
+                model=Holding,
+                prefix="/holdings",
+                tags=["Holdings"],
+                soft_delete=False,
+                search_fields=["ticker_symbol", "security_name", "security_type", "provider"],
+                ordering_default="-institution_value",
+                allowed_order_fields=[
+                    "id",
+                    "ticker_symbol",
+                    "quantity",
+                    "institution_value",
+                    "cost_basis",
+                    "last_synced_at",
+                    "created_at",
+                ],
+                read_schema=HoldingRead,
+                create_schema=HoldingCreate,
+                update_schema=HoldingUpdate,
             ),
             SqlResource(
                 model=Goal,
@@ -621,7 +649,37 @@ if settings.brokerage_configured:
 else:
     print("⏭️  Brokerage skipped (set ALPACA_API_KEY and ALPACA_SECRET_KEY)")
 
-# 5.6 Tax Data - Tax documents and calculations (IRS e-File, TaxBit, Mock)
+# 5.6 Investments - Investment holdings & portfolio data (Plaid, SnapTrade)
+# Endpoints: /investments/holdings, /investments/transactions, /investments/accounts,
+#           /investments/allocation, /investments/securities
+# Features: Real P/L calculations, cost basis tracking, asset allocation,
+#           portfolio performance, multi-account aggregation
+# Providers: Plaid Investment API (401k, IRA, traditional accounts),
+#           SnapTrade (retail brokerage - E*TRADE, Wealthsimple, Robinhood)
+# Use Case: Portfolio tracking apps, wealth management, investment analysis
+# Note: READ-ONLY data (for trading see brokerage module)
+if settings.investments_configured:
+    from fin_infra.investments import add_investments
+    
+    # Determine provider (Plaid Investment API or SnapTrade)
+    if settings.plaid_client_id and settings.plaid_secret:
+        investments_provider = "plaid"
+    elif settings.snaptrade_client_id and settings.snaptrade_consumer_key:
+        investments_provider = "snaptrade"
+    else:
+        investments_provider = "plaid"  # Default fallback
+    
+    investments = add_investments(
+        app,
+        provider=investments_provider,
+        prefix="/investments",
+    )
+    app.state.investments_provider = investments
+    print(f"✅ Investments enabled (provider: {investments_provider}, 5 endpoints: holdings, transactions, accounts, allocation, securities)")
+else:
+    print("⏭️  Investments skipped (requires PLAID credentials or SNAPTRADE credentials)")
+
+# 5.7 Tax Data - Tax documents and calculations (IRS e-File, TaxBit, Mock)
 # Endpoints: /tax/documents, /tax/liability, /tax/tlh (tax-loss harvesting)
 # Features: Document management, liability calculations, crypto tax reports
 # Compliance: IRS record retention (7 years)
@@ -638,7 +696,7 @@ print("✅ Tax data enabled (provider: mock)")
 
 # ==================== FINANCIAL INTELLIGENCE (ANALYTICS & AI) ====================
 
-# 5.7 Analytics - Financial insights and advice (7 endpoints)
+# 5.8 Analytics - Financial insights and advice (7 endpoints)
 # Endpoints:
 #   /analytics/cash-flow - Income vs expenses with category breakdowns
 #   /analytics/savings-rate - Gross/net/discretionary savings calculations
@@ -655,7 +713,7 @@ analytics = add_analytics(app, prefix="/analytics")
 app.state.analytics = analytics
 print("✅ Analytics enabled (7 endpoints: cash-flow, savings-rate, spending-insights, advice, portfolio, projections, rebalance)")
 
-# 5.8 Categorization - Transaction categorization (56 MX categories, 100+ rules)
+# 5.9 Categorization - Transaction categorization (56 MX categories, 100+ rules)
 # Endpoints: /categorize (single), /categorize/batch (multiple transactions)
 # Features: Rule-based matching, smart normalization, LLM fallback for unknowns
 # Performance: ~1000 predictions/sec, ~2.5ms avg latency
@@ -667,7 +725,7 @@ categorizer = add_categorization(app, prefix="/categorize")
 app.state.categorizer = categorizer
 print("✅ Categorization enabled (56 categories, 100+ rules, LLM fallback)")
 
-# 5.9 Recurring Detection - Subscription and bill identification
+# 5.10 Recurring Detection - Subscription and bill identification
 # Endpoints: /recurring/detect, /recurring/insights
 # Features: Fixed subscriptions (Netflix, Spotify), variable bills (utilities),
 #           irregular/annual (insurance), pattern detection, cost insights
@@ -678,7 +736,7 @@ recurring = add_recurring_detection(app, prefix="/recurring")
 app.state.recurring = recurring
 print("✅ Recurring detection enabled (subscriptions, bills, annual charges)")
 
-# 5.10 Insights Feed - Unified dashboard aggregating all insights
+# 5.11 Insights Feed - Unified dashboard aggregating all insights
 # Endpoints: /insights/feed, /insights/priority
 # Sources: Net worth, budgets, goals, recurring, portfolio, tax, crypto (7 sources)
 # Features: Priority-based sorting (high/medium/low), action items, deadlines
@@ -691,7 +749,7 @@ print("✅ Insights feed enabled (unified dashboard, 7 data sources)")
 
 # ==================== FINANCIAL PLANNING (GOALS & BUDGETS) ====================
 
-# 5.11 Budgets - Budget management (8 endpoints)
+# 5.12 Budgets - Budget management (8 endpoints)
 # Endpoints:
 #   GET/POST /budgets - List and create budgets
 #   GET/PATCH/DELETE /budgets/{id} - CRUD operations
@@ -706,7 +764,7 @@ from .helpers import add_budgets
 add_budgets(app, prefix="/budgets")
 print("✅ Budgets enabled (8 endpoints: CRUD, progress, alerts, templates)")
 
-# 5.12 Goals - Financial goal tracking (13 endpoints)
+# 5.13 Goals - Financial goal tracking (13 endpoints)
 # Endpoints:
 #   GET/POST /goals - List and create goals
 #   GET/PATCH/DELETE /goals/{id} - CRUD operations
@@ -726,7 +784,7 @@ from .helpers import add_goals
 add_goals(app, prefix="/goals")
 print("✅ Goals enabled (13 endpoints: CRUD, milestones, funding, AI recommendations)")
 
-# 5.13 Net Worth Tracking - Multi-account net worth aggregation
+# 5.14 Net Worth Tracking - Multi-account net worth aggregation
 # Endpoints:
 #   GET /net-worth/current - Current net worth across all accounts
 #   GET /net-worth/history - Historical snapshots (daily/weekly/monthly)
@@ -769,7 +827,7 @@ else:
 
 # ==================== COMPLIANCE & DOCUMENT MANAGEMENT ====================
 
-# 5.14 Documents - Financial document management
+# 5.15 Documents - Financial document management
 # Endpoints:
 #   GET/POST /documents - List and upload documents
 #   GET/DELETE /documents/{id} - Retrieve and delete
@@ -783,7 +841,7 @@ documents = add_documents(app, prefix="/documents")
 app.state.documents = documents
 print("✅ Documents enabled (upload, OCR, AI analysis, retention policies)")
 
-# 5.15 Security - Financial-specific security middleware
+# 5.16 Security - Financial-specific security middleware
 # Features: PII detection (SSN, account numbers), credit report access logging,
 #           high-risk endpoint rate limiting, audit trail for compliance
 # Compliance: FCRA (credit reports), GLBA (financial privacy), SOC 2
@@ -793,7 +851,7 @@ from .helpers import add_financial_security
 add_financial_security(app)
 print("✅ Financial security middleware enabled (PII detection, audit logging)")
 
-# 5.16 Compliance - Data lifecycle and retention
+# 5.17 Compliance - Data lifecycle and retention
 # Features: Automatic data retention (IRS: 7 years for tax), GDPR right to delete,
 #           data export, audit logs, compliance reports
 # Jobs: Daily cleanup of expired data via svc-infra scheduler

@@ -33,6 +33,7 @@ Alpha. Core functionality is stable, but the surface is intentionally small whil
 | **Budgets** | **Multi-type budget tracking with templates, alerts, and progress monitoring** | **[Budget Management](src/fin_infra/docs/budgets.md)** |
 | **Documents** | **Tax forms, bank statements, receipts with OCR extraction and AI analysis** | **[Document Management](src/fin_infra/docs/documents.md)** |
 | **Insights** | **Unified insights feed with priority-based aggregation from multiple sources** | **[Insights Feed](src/fin_infra/docs/insights.md)** |
+| **Investments** | **Investment holdings, portfolio data, real P/L calculations with cost basis tracking** | **[Investment Holdings](src/fin_infra/docs/investments.md)** |
 | **Crypto** | **Crypto market data, portfolio tracking, and AI-powered insights** | **[Crypto](src/fin_infra/docs/crypto.md)** |
 | Banking | Account aggregation, transactions, statements | [Banking](src/fin_infra/docs/banking.md) |
 | Market Data | Stocks, crypto, forex quotes and historical data | [Market Data](src/fin_infra/docs/market-data.md) |
@@ -77,6 +78,13 @@ banking = easy_banking()
 accounts = await banking.get_accounts("access_token")
 transactions = await banking.get_transactions("account_id")
 
+# Investment Holdings
+from fin_infra.investments import easy_investments
+
+investments = easy_investments(provider="plaid")
+holdings = await investments.get_holdings(access_token="...")  # Real cost basis
+allocation = await investments.get_allocation(access_token="...")  # Asset allocation
+
 # Market Data
 market = easy_market()
 quote = market.quote("AAPL")
@@ -108,6 +116,8 @@ app = FastAPI(title="Fintech API")
 
 # Add financial capabilities (fin-infra)
 add_banking(app, provider="plaid")
+from fin_infra.investments import add_investments
+add_investments(app, provider="plaid")  # Investment holdings & portfolio data
 add_market_data(app, provider="alphavantage")
 
 # Option 1: Basic observability (all routes auto-instrumented)

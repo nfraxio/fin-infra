@@ -220,6 +220,103 @@ curl "http://localhost:8001/crypto/quotes?symbols=BTC,ETH,SOL"
 
 ---
 
+## Investments
+
+### Get Investment Holdings
+
+```bash
+curl http://localhost:8001/investments/holdings
+
+# Response:
+{
+  "holdings": [
+    {
+      "account_id": "acc_401k_123",
+      "account_name": "Vanguard 401(k)",
+      "security": {
+        "ticker_symbol": "VFIAX",
+        "name": "Vanguard 500 Index Fund Admiral",
+        "type": "mutual_fund",
+        "close_price": 425.67
+      },
+      "quantity": 234.567,
+      "institution_value": 99876.54,
+      "cost_basis": 85000.00,
+      "unrealized_gain_loss": 14876.54,
+      "unrealized_gain_loss_percent": 17.50
+    }
+  ],
+  "total_value": 117419.54,
+  "total_cost_basis": 100000.00,
+  "total_unrealized_gain_loss": 17419.54
+}
+```
+
+### Get Asset Allocation
+
+```bash
+curl http://localhost:8001/investments/allocation
+
+# Response:
+{
+  "allocation_by_asset_class": [
+    {
+      "asset_class": "equity",
+      "value": 70493.72,
+      "percentage": 60.0
+    },
+    {
+      "asset_class": "mutual_fund",
+      "value": 35246.86,
+      "percentage": 30.0
+    },
+    {
+      "asset_class": "bond",
+      "value": 11748.95,
+      "percentage": 10.0
+    }
+  ],
+  "total_value": 117419.54
+}
+```
+
+### Get Investment Accounts
+
+```bash
+curl http://localhost:8001/investments/accounts
+
+# Response:
+{
+  "accounts": [
+    {
+      "account_id": "acc_401k_123",
+      "name": "Vanguard 401(k)",
+      "type": "investment",
+      "subtype": "401k",
+      "total_value": 99876.54,
+      "total_cost_basis": 85000.00,
+      "total_unrealized_gain_loss": 14876.54,
+      "holdings_count": 5
+    },
+    {
+      "account_id": "acc_ira_456",
+      "name": "Fidelity Roth IRA",
+      "type": "investment",
+      "subtype": "roth_ira",
+      "total_value": 17543.00,
+      "total_cost_basis": 15000.00,
+      "total_unrealized_gain_loss": 2543.00,
+      "holdings_count": 3
+    }
+  ],
+  "total_value": 117419.54
+}
+```
+
+**Note**: Configure `PLAID_CLIENT_ID` and `PLAID_SECRET` (for 401k/IRA) or `SNAPTRADE_CLIENT_ID` and `SNAPTRADE_CONSUMER_KEY` (for retail brokerages) in `.env` for real holdings data.
+
+---
+
 ## Analytics
 
 ### Cash Flow Analysis

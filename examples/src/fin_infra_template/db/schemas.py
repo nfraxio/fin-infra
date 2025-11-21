@@ -202,6 +202,68 @@ class PositionRead(PositionBase):
 
 
 # ============================================================================
+# Holding Schemas (Investment Holdings from Plaid/SnapTrade)
+# ============================================================================
+
+
+class HoldingBase(BaseModel):
+    """Base holding fields."""
+
+    account_id: int
+    provider: str  # plaid, snaptrade, teller
+    provider_account_id: str
+    provider_security_id: str
+    ticker_symbol: Optional[str] = None
+    security_name: str
+    security_type: str  # equity, etf, mutual_fund, bond, cash, derivative
+    cusip: Optional[str] = None
+    isin: Optional[str] = None
+    sector: Optional[str] = None
+    quantity: Decimal = Field(decimal_places=8)
+    institution_price: Decimal = Field(decimal_places=4)
+    institution_value: Decimal = Field(decimal_places=2)
+    cost_basis: Optional[Decimal] = Field(default=None, decimal_places=2)
+    currency: str = "USD"
+    close_price: Optional[Decimal] = Field(default=None, decimal_places=4)
+    close_price_as_of: Optional[datetime] = None
+    unrealized_gain_loss: Optional[Decimal] = Field(default=None, decimal_places=2)
+    unrealized_gain_loss_percent: Optional[Decimal] = Field(default=None, decimal_places=4)
+    sync_status: str = "synced"  # synced, pending, failed
+
+
+class HoldingCreate(HoldingBase):
+    """Schema for creating a new holding."""
+
+    user_id: Optional[int] = None
+
+
+class HoldingUpdate(BaseModel):
+    """Schema for updating a holding (all fields optional)."""
+
+    quantity: Optional[Decimal] = None
+    institution_price: Optional[Decimal] = None
+    institution_value: Optional[Decimal] = None
+    cost_basis: Optional[Decimal] = None
+    close_price: Optional[Decimal] = None
+    close_price_as_of: Optional[datetime] = None
+    unrealized_gain_loss: Optional[Decimal] = None
+    unrealized_gain_loss_percent: Optional[Decimal] = None
+    sync_status: Optional[str] = None
+
+
+class HoldingRead(HoldingBase):
+    """Schema for reading a holding (includes metadata)."""
+
+    id: int
+    user_id: Optional[int] = None
+    last_synced_at: datetime
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================================
 # Goal Schemas
 # ============================================================================
 

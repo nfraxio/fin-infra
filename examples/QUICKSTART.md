@@ -55,6 +55,12 @@ ALPHAVANTAGE_API_KEY=your_api_key
 # Crypto Data (CoinGecko - NO KEY REQUIRED)
 # Works out of the box, no configuration needed!
 
+# Investment Holdings (Plaid Investment API or SnapTrade)
+ENABLE_INVESTMENTS=true
+# Uses Plaid credentials above for 401k/IRA, or configure SnapTrade:
+# SNAPTRADE_CLIENT_ID=your_snaptrade_client_id
+# SNAPTRADE_CONSUMER_KEY=your_snaptrade_consumer_key
+
 # Optional: AI Features (Google Gemini)
 # GOOGLE_API_KEY=your_api_key
 
