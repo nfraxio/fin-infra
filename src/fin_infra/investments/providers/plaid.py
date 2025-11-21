@@ -360,6 +360,10 @@ class PlaidInvestmentProvider(InvestmentProvider):
 
     def _transform_security(self, plaid_security: Dict[str, Any]) -> Security:
         """Transform Plaid security data to Security model."""
+        # Handle close_price - Plaid may return None for securities without recent pricing
+        close_price_raw = plaid_security.get("close_price")
+        close_price = Decimal(str(close_price_raw)) if close_price_raw is not None else Decimal("0")
+        
         return Security(
             security_id=plaid_security["security_id"],
             cusip=plaid_security.get("cusip"),
@@ -369,7 +373,7 @@ class PlaidInvestmentProvider(InvestmentProvider):
             name=plaid_security.get("name"),
             type=self._normalize_security_type(plaid_security.get("type", "other")),
             sector=plaid_security.get("sector"),
-            close_price=Decimal(str(plaid_security.get("close_price", 0))),
+            close_price=close_price,
             close_price_as_of=plaid_security.get("close_price_as_of"),
             exchange=plaid_security.get("market_identifier_code"),
             currency=plaid_security.get("iso_currency_code", "USD"),
