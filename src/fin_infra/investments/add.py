@@ -7,13 +7,21 @@ transactions, accounts, allocation, and securities data.
 from __future__ import annotations
 
 from datetime import date
-from typing import TYPE_CHECKING, Optional, Literal
+from typing import TYPE_CHECKING, Optional, Literal, Annotated
 
-from fastapi import HTTPException, Query
+from fastapi import HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
+    from svc_infra.api.fastapi.auth.security import Principal
+
+# Import Identity for dependency injection
+try:
+    from svc_infra.api.fastapi.auth.security import Identity
+except ImportError:
+    # Fallback type for type checking if svc-infra not installed
+    Identity = None  # type: ignore
 
 from .ease import easy_investments
 from .models import (
@@ -180,15 +188,13 @@ def add_investments(
         summary="List Holdings",
         description="Fetch investment holdings with securities, quantities, and values",
     )
-    async def get_holdings(request: HoldingsRequest, identity: "Identity") -> list[Holding]:
+    async def get_holdings(request: HoldingsRequest, identity: Identity) -> list[Holding]:
         """
         Retrieve investment holdings for authenticated user's accounts.
 
         App authentication: Handled by user_router (identity.user guaranteed)
         Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        from svc_infra.api.fastapi.auth.security import Identity
-        
         # Get access token - prefer explicit, fallback to user's stored token
         if request.access_token:
             access_token = request.access_token
@@ -223,15 +229,13 @@ def add_investments(
         summary="List Transactions",
         description="Fetch investment transactions (buy, sell, dividend, etc.) within date range",
     )
-    async def get_transactions(request: TransactionsRequest, identity: "Identity") -> list[InvestmentTransaction]:
+    async def get_transactions(request: TransactionsRequest, identity: Identity) -> list[InvestmentTransaction]:
         """
         Retrieve investment transactions for authenticated user's accounts.
 
         App authentication: Handled by user_router (identity.user guaranteed)
         Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        from svc_infra.api.fastapi.auth.security import Identity
-        
         # Validate date range
         if request.start_date >= request.end_date:
             raise HTTPException(
@@ -273,15 +277,13 @@ def add_investments(
         summary="List Investment Accounts",
         description="Fetch investment accounts with aggregated holdings and performance",
     )
-    async def get_accounts(request: AccountsRequest, identity: "Identity") -> list[InvestmentAccount]:
+    async def get_accounts(request: AccountsRequest, identity: Identity) -> list[InvestmentAccount]:
         """
         Retrieve investment accounts for authenticated user.
 
         App authentication: Handled by user_router (identity.user guaranteed)
         Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        from svc_infra.api.fastapi.auth.security import Identity
-        
         if request.access_token:
             access_token = request.access_token
         elif request.user_id and request.user_secret:
@@ -312,15 +314,13 @@ def add_investments(
         summary="Asset Allocation",
         description="Calculate portfolio asset allocation by security type and sector",
     )
-    async def get_allocation(request: AllocationRequest, identity: "Identity") -> AssetAllocation:
+    async def get_allocation(request: AllocationRequest, identity: Identity) -> AssetAllocation:
         """
         Calculate asset allocation for authenticated user's holdings.
 
         App authentication: Handled by user_router (identity.user guaranteed)
         Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        from svc_infra.api.fastapi.auth.security import Identity
-        
         if request.access_token:
             access_token = request.access_token
         elif request.user_id and request.user_secret:
@@ -356,15 +356,13 @@ def add_investments(
         summary="Security Details",
         description="Fetch security information (ticker, name, type, price)",
     )
-    async def get_securities(request: SecuritiesRequest, identity: "Identity") -> list[Security]:
+    async def get_securities(request: SecuritiesRequest, identity: Identity) -> list[Security]:
         """
         Retrieve security details for authenticated user.
 
         App authentication: Handled by user_router (identity.user guaranteed)
         Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        from svc_infra.api.fastapi.auth.security import Identity
-        
         if request.access_token:
             access_token = request.access_token
         elif request.user_id and request.user_secret:
