@@ -143,16 +143,21 @@ def add_investments(
         - Returns provider for programmatic access
         - All endpoints appear in main /docs (no scoped docs)
 
-    Note:
-        Investments endpoints require user authentication (user_router) because:
-        1. Holdings/transactions contain sensitive financial data (like budgets, documents)
-        2. Ensures caller is logged into YOUR application before accessing data
-        3. Prevents unauthorized access with stolen provider tokens
-        4. Consistent with other user-owned financial data modules
+    Authentication Layers:
+        1. App Authentication (user_router): Handled by svc-infra
+           - Validates user's JWT/session cookie
+           - Ensures user is logged into YOUR application
+           - Provides identity.user with authenticated user
+        
+        2. Provider Access (endpoint logic): Handled by these endpoints
+           - Gets Plaid/SnapTrade access token for the provider
+           - Auto-resolves from identity.user.banking_providers
+           - Can be overridden with explicit token in request body
+           - Used to call external provider APIs (Plaid, SnapTrade)
         
         POST requests are used (not GET) because:
-        1. Credentials should not be in URL query parameters (security)
-        2. Request bodies are more suitable for sensitive data (tokens, secrets)
+        1. Provider credentials should not be in URL query parameters
+        2. Request bodies are more suitable for sensitive data
         3. Consistent with industry standards for financial APIs
     """
     # 1. Create or use provided investment provider
@@ -175,47 +180,42 @@ def add_investments(
         summary="List Holdings",
         description="Fetch investment holdings with securities, quantities, and values",
     )
-    async def get_holdings(request: HoldingsRequest) -> list[Holding]:
+    async def get_holdings(request: HoldingsRequest, identity: "Identity") -> list[Holding]:
         """
-        Retrieve investment holdings for a user's accounts.
+        Retrieve investment holdings for authenticated user's accounts.
 
-        Supports both Plaid (access_token) and SnapTrade (user_id + user_secret).
-        Returns holdings with security details, quantity, cost basis, current value.
-
-        Raises:
-            HTTPException: 401 if credentials invalid, 400 if validation fails
+        App authentication: Handled by user_router (identity.user guaranteed)
+        Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        try:
-            # Determine auth method and call provider
-            if request.access_token:
-                # Plaid authentication
-                holdings = await provider.get_holdings(
-                    access_token=request.access_token,
-                    account_ids=request.account_ids,
-                )
-            elif request.user_id and request.user_secret:
-                # SnapTrade authentication
-                holdings = await provider.get_holdings(
-                    access_token=f"{request.user_id}:{request.user_secret}",
-                    account_ids=request.account_ids,
-                )
-            else:
+        from svc_infra.api.fastapi.auth.security import Identity
+        
+        # Get access token - prefer explicit, fallback to user's stored token
+        if request.access_token:
+            access_token = request.access_token
+        elif request.user_id and request.user_secret:
+            access_token = f"{request.user_id}:{request.user_secret}"
+        else:
+            # Auto-resolve from authenticated user (user_router guarantees identity.user exists)
+            banking_providers = getattr(identity.user, 'banking_providers', {})
+            if not banking_providers or "plaid" not in banking_providers:
                 raise HTTPException(
                     status_code=400,
-                    detail="Must provide either access_token (Plaid) or user_id + user_secret (SnapTrade)",
+                    detail="No Plaid connection found. Please connect your accounts first."
                 )
-
-            return holdings
-
-        except HTTPException:
-            # Re-raise HTTPException (400, 401, etc.) without modification
-            raise
-        except ValueError as e:
-            # Invalid credentials or access token
-            raise HTTPException(status_code=401, detail=str(e))
-        except Exception as e:
-            # Generic errors
-            raise HTTPException(status_code=500, detail=f"Failed to fetch holdings: {str(e)}")
+            
+            access_token = banking_providers["plaid"].get("access_token")
+            if not access_token:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No access token found. Please reconnect your accounts."
+                )
+        
+        # Call provider with resolved token
+        holdings = await provider.get_holdings(
+            access_token=access_token,
+            account_ids=request.account_ids,
+        )
+        return holdings
 
     @router.post(
         "/transactions",
@@ -223,59 +223,49 @@ def add_investments(
         summary="List Transactions",
         description="Fetch investment transactions (buy, sell, dividend, etc.) within date range",
     )
-    async def get_transactions(request: TransactionsRequest) -> list[InvestmentTransaction]:
+    async def get_transactions(request: TransactionsRequest, identity: "Identity") -> list[InvestmentTransaction]:
         """
-        Retrieve investment transactions for a user's accounts.
+        Retrieve investment transactions for authenticated user's accounts.
 
-        Returns buy/sell/dividend transactions within the specified date range.
-
-        Raises:
-            HTTPException: 401 if credentials invalid, 400 if validation fails
+        App authentication: Handled by user_router (identity.user guaranteed)
+        Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        try:
-            # Validate date range
-            if request.start_date >= request.end_date:
-                raise HTTPException(
-                    status_code=400,
-                    detail="start_date must be before end_date",
-                )
-
-            # Determine auth method and call provider
-            if request.access_token:
-                # Plaid authentication
-                transactions = await provider.get_transactions(
-                    access_token=request.access_token,
-                    start_date=request.start_date,
-                    end_date=request.end_date,
-                    account_ids=request.account_ids,
-                )
-            elif request.user_id and request.user_secret:
-                # SnapTrade authentication
-                transactions = await provider.get_transactions(
-                    access_token=f"{request.user_id}:{request.user_secret}",
-                    start_date=request.start_date,
-                    end_date=request.end_date,
-                    account_ids=request.account_ids,
-                )
-            else:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Must provide either access_token (Plaid) or user_id + user_secret (SnapTrade)",
-                )
-
-            return transactions
-
-        except HTTPException:
-            # Re-raise HTTPException (400, 401, etc.) without modification
-            raise
-        except ValueError as e:
-            # Invalid credentials or date range
-            raise HTTPException(status_code=401, detail=str(e))
-        except Exception as e:
-            # Generic errors
+        from svc_infra.api.fastapi.auth.security import Identity
+        
+        # Validate date range
+        if request.start_date >= request.end_date:
             raise HTTPException(
-                status_code=500, detail=f"Failed to fetch transactions: {str(e)}"
+                status_code=400,
+                detail="start_date must be before end_date",
             )
+
+        # Get access token
+        if request.access_token:
+            access_token = request.access_token
+        elif request.user_id and request.user_secret:
+            access_token = f"{request.user_id}:{request.user_secret}"
+        else:
+            banking_providers = getattr(identity.user, 'banking_providers', {})
+            if not banking_providers or "plaid" not in banking_providers:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No Plaid connection found. Please connect your accounts first."
+                )
+            
+            access_token = banking_providers["plaid"].get("access_token")
+            if not access_token:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No access token found. Please reconnect your accounts."
+                )
+
+        transactions = await provider.get_transactions(
+            access_token=access_token,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            account_ids=request.account_ids,
+        )
+        return transactions
 
     @router.post(
         "/accounts",
@@ -283,43 +273,38 @@ def add_investments(
         summary="List Investment Accounts",
         description="Fetch investment accounts with aggregated holdings and performance",
     )
-    async def get_accounts(request: AccountsRequest) -> list[InvestmentAccount]:
+    async def get_accounts(request: AccountsRequest, identity: "Identity") -> list[InvestmentAccount]:
         """
-        Retrieve investment accounts with aggregated holdings.
+        Retrieve investment accounts for authenticated user.
 
-        Returns accounts with total value, cost basis, unrealized gain/loss.
-
-        Raises:
-            HTTPException: 401 if credentials invalid, 400 if validation fails
+        App authentication: Handled by user_router (identity.user guaranteed)
+        Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        try:
-            # Determine auth method and call provider
-            if request.access_token:
-                # Plaid authentication
-                accounts = await provider.get_investment_accounts(
-                    access_token=request.access_token,
-                )
-            elif request.user_id and request.user_secret:
-                # SnapTrade authentication
-                accounts = await provider.get_investment_accounts(
-                    access_token=f"{request.user_id}:{request.user_secret}",
-                )
-            else:
+        from svc_infra.api.fastapi.auth.security import Identity
+        
+        if request.access_token:
+            access_token = request.access_token
+        elif request.user_id and request.user_secret:
+            access_token = f"{request.user_id}:{request.user_secret}"
+        else:
+            banking_providers = getattr(identity.user, 'banking_providers', {})
+            if not banking_providers or "plaid" not in banking_providers:
                 raise HTTPException(
                     status_code=400,
-                    detail="Must provide either access_token (Plaid) or user_id + user_secret (SnapTrade)",
+                    detail="No Plaid connection found. Please connect your accounts first."
+                )
+            
+            access_token = banking_providers["plaid"].get("access_token")
+            if not access_token:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No access token found. Please reconnect your accounts."
                 )
 
-            return accounts
-
-        except ValueError as e:
-            # Invalid credentials
-            raise HTTPException(status_code=401, detail=str(e))
-        except Exception as e:
-            # Generic errors
-            raise HTTPException(
-                status_code=500, detail=f"Failed to fetch accounts: {str(e)}"
-            )
+        accounts = await provider.get_investment_accounts(
+            access_token=access_token,
+        )
+        return accounts
 
     @router.post(
         "/allocation",
@@ -327,48 +312,43 @@ def add_investments(
         summary="Asset Allocation",
         description="Calculate portfolio asset allocation by security type and sector",
     )
-    async def get_allocation(request: AllocationRequest) -> AssetAllocation:
+    async def get_allocation(request: AllocationRequest, identity: "Identity") -> AssetAllocation:
         """
-        Calculate asset allocation from holdings.
+        Calculate asset allocation for authenticated user's holdings.
 
-        Returns allocation percentages by security type (equity, bond, cash, etc.)
-        and sector (Technology, Healthcare, etc.).
-
-        Raises:
-            HTTPException: 401 if credentials invalid, 400 if validation fails
+        App authentication: Handled by user_router (identity.user guaranteed)
+        Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        try:
-            # Fetch holdings first
-            if request.access_token:
-                # Plaid authentication
-                holdings = await provider.get_holdings(
-                    access_token=request.access_token,
-                    account_ids=request.account_ids,
-                )
-            elif request.user_id and request.user_secret:
-                # SnapTrade authentication
-                holdings = await provider.get_holdings(
-                    access_token=f"{request.user_id}:{request.user_secret}",
-                    account_ids=request.account_ids,
-                )
-            else:
+        from svc_infra.api.fastapi.auth.security import Identity
+        
+        if request.access_token:
+            access_token = request.access_token
+        elif request.user_id and request.user_secret:
+            access_token = f"{request.user_id}:{request.user_secret}"
+        else:
+            banking_providers = getattr(identity.user, 'banking_providers', {})
+            if not banking_providers or "plaid" not in banking_providers:
                 raise HTTPException(
                     status_code=400,
-                    detail="Must provide either access_token (Plaid) or user_id + user_secret (SnapTrade)",
+                    detail="No Plaid connection found. Please connect your accounts first."
                 )
-
-            # Calculate allocation using base provider helper
-            allocation = provider.calculate_allocation(holdings)
-            return allocation
-
-        except ValueError as e:
-            # Invalid credentials
-            raise HTTPException(status_code=401, detail=str(e))
-        except Exception as e:
-            # Generic errors
-            raise HTTPException(
-                status_code=500, detail=f"Failed to calculate allocation: {str(e)}"
-            )
+            
+            access_token = banking_providers["plaid"].get("access_token")
+            if not access_token:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No access token found. Please reconnect your accounts."
+                )
+        
+        # Fetch holdings
+        holdings = await provider.get_holdings(
+            access_token=access_token,
+            account_ids=request.account_ids,
+        )
+        
+        # Calculate allocation using base provider helper
+        allocation = provider.calculate_allocation(holdings)
+        return allocation
 
     @router.post(
         "/securities",
@@ -376,45 +356,39 @@ def add_investments(
         summary="Security Details",
         description="Fetch security information (ticker, name, type, price)",
     )
-    async def get_securities(request: SecuritiesRequest) -> list[Security]:
+    async def get_securities(request: SecuritiesRequest, identity: "Identity") -> list[Security]:
         """
-        Retrieve security details for given security IDs.
+        Retrieve security details for authenticated user.
 
-        Returns security information including ticker, name, type, and current price.
-
-        Raises:
-            HTTPException: 401 if credentials invalid, 400 if validation fails
+        App authentication: Handled by user_router (identity.user guaranteed)
+        Provider access: Auto-resolved from user's stored Plaid token or explicit override
         """
-        try:
-            # Determine auth method and call provider
-            if request.access_token:
-                # Plaid authentication
-                securities = await provider.get_securities(
-                    access_token=request.access_token,
-                    security_ids=request.security_ids,
-                )
-            elif request.user_id and request.user_secret:
-                # SnapTrade authentication
-                securities = await provider.get_securities(
-                    access_token=f"{request.user_id}:{request.user_secret}",
-                    security_ids=request.security_ids,
-                )
-            else:
+        from svc_infra.api.fastapi.auth.security import Identity
+        
+        if request.access_token:
+            access_token = request.access_token
+        elif request.user_id and request.user_secret:
+            access_token = f"{request.user_id}:{request.user_secret}"
+        else:
+            banking_providers = getattr(identity.user, 'banking_providers', {})
+            if not banking_providers or "plaid" not in banking_providers:
                 raise HTTPException(
                     status_code=400,
-                    detail="Must provide either access_token (Plaid) or user_id + user_secret (SnapTrade)",
+                    detail="No Plaid connection found. Please connect your accounts first."
+                )
+            
+            access_token = banking_providers["plaid"].get("access_token")
+            if not access_token:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No access token found. Please reconnect your accounts."
                 )
 
-            return securities
-
-        except ValueError as e:
-            # Invalid credentials
-            raise HTTPException(status_code=401, detail=str(e))
-        except Exception as e:
-            # Generic errors
-            raise HTTPException(
-                status_code=500, detail=f"Failed to fetch securities: {str(e)}"
-            )
+        securities = await provider.get_securities(
+            access_token=access_token,
+            security_ids=request.security_ids,
+        )
+        return securities
 
     # 5. Mount router
     app.include_router(router, include_in_schema=include_in_schema)
