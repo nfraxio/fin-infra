@@ -136,13 +136,19 @@ def add_investments(
         SnapTrade: POST /investments/holdings with {"user_id": "...", "user_secret": "...", "account_ids": [...]}
 
     API Compliance:
-        - Uses svc-infra public_router (no database dependency)
+        - Uses svc-infra user_router (requires user authentication)
         - Stores provider on app.state.investment_provider
         - Returns provider for programmatic access
         - All endpoints appear in main /docs (no scoped docs)
 
     Note:
-        Investments endpoints use POST requests (not GET) because:
+        Investments endpoints require user authentication (user_router) because:
+        1. Holdings/transactions contain sensitive financial data (like budgets, documents)
+        2. Ensures caller is logged into YOUR application before accessing data
+        3. Prevents unauthorized access with stolen provider tokens
+        4. Consistent with other user-owned financial data modules
+        
+        POST requests are used (not GET) because:
         1. Credentials should not be in URL query parameters (security)
         2. Request bodies are more suitable for sensitive data (tokens, secrets)
         3. Consistent with industry standards for financial APIs
@@ -154,10 +160,10 @@ def add_investments(
     # 2. Store on app state
     app.state.investment_provider = provider
 
-    # 3. Import public_router from svc-infra
-    from svc_infra.api.fastapi.dual.public import public_router
+    # 3. Import user_router from svc-infra (requires authentication)
+    from svc_infra.api.fastapi.dual.protected import user_router
 
-    router = public_router(prefix=prefix, tags=["Investments"])
+    router = user_router(prefix=prefix, tags=["Investments"])
 
     # 4. Define endpoint handlers
 
