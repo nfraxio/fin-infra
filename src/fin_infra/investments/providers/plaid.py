@@ -402,11 +402,18 @@ class PlaidInvestmentProvider(InvestmentProvider):
         plaid_type = plaid_transaction.get("type", "other")
         transaction_type = self._normalize_transaction_type(plaid_type)
 
+        # Handle date field - Plaid SDK's to_dict() converts it to a date object
+        transaction_date_value = plaid_transaction["date"]
+        if isinstance(transaction_date_value, date):
+            transaction_date = transaction_date_value
+        else:
+            transaction_date = date.fromisoformat(transaction_date_value)
+
         return InvestmentTransaction(
             transaction_id=plaid_transaction["investment_transaction_id"],
             account_id=plaid_transaction["account_id"],
             security=security,
-            transaction_date=date.fromisoformat(plaid_transaction["date"]),
+            transaction_date=transaction_date,
             name=plaid_transaction.get("name", ""),
             transaction_type=transaction_type,
             subtype=plaid_transaction.get("subtype"),
