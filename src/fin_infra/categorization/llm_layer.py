@@ -1,7 +1,7 @@
 """
 LLM-based transaction categorization (Layer 4).
 
-Uses ai-infra.llm.CoreLLM with few-shot prompting and structured output
+Uses ai-infra.llm.LLM with few-shot prompting and structured output
 to categorize transactions that sklearn (Layer 3) has low confidence on.
 
 Caches predictions via svc-infra.cache to minimize API costs (85-90% hit rate).
@@ -20,9 +20,8 @@ from pydantic import BaseModel, Field
 
 # ai-infra imports
 try:
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
     from ai_infra.llm.providers import Providers
-    from ai_infra.llm.providers.models import Models
 except ImportError:
     raise ImportError("ai-infra not installed. Install with: pip install ai-infra")
 
@@ -104,7 +103,7 @@ class LLMCategorizer:
     """
     LLM-based transaction categorization (Layer 4).
 
-    Uses ai-infra.llm.CoreLLM with few-shot prompting and structured output.
+    Uses ai-infra.llm.LLM with few-shot prompting and structured output.
     Caches predictions via svc-infra.cache to minimize API costs.
 
     Args:
@@ -141,8 +140,8 @@ class LLMCategorizer:
         self.cache_ttl = cache_ttl
         self.enable_personalization = enable_personalization
 
-        # Initialize CoreLLM
-        self.llm = CoreLLM()
+        # Initialize LLM
+        self.llm = LLM()
 
         # Cost tracking (stored in Redis via svc-infra.cache in production)
         self.daily_cost = 0.0
