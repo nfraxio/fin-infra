@@ -362,4 +362,4 @@ After verification:
 3. **If cost above target**: Increase cache TTL, optimize prompts, consider cheaper models
 4. **If cache hit rate low**: Pre-warm cache, increase TTL, add merchant aliases
 
-For questions or issues, see `src/fin_infra/docs/recurring-detection-v2.md`.
+For questions or issues, see `docs/recurring-detection-v2.md`.

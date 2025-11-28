@@ -26,25 +26,25 @@ Alpha. Core functionality is stable, but the surface is intentionally small whil
 
 | Area | What it covers | Guide |
 | --- | --- | --- |
-| Getting Started | Overview and installation | [Getting Started](src/fin_infra/docs/getting-started.md) |
-| **API Integration** | **Building fintech APIs with fin-infra + svc-infra** | **[API Guide](src/fin_infra/docs/api.md)** |
-| **Persistence** | **Scaffold models/schemas/repositories, svc-infra integration, multi-tenancy, soft delete** | **[Persistence Guide](src/fin_infra/docs/persistence.md)** |
-| **Analytics** | **Cash flow, savings rate, spending insights, portfolio metrics, rebalancing, scenario modeling** | **[Analytics](src/fin_infra/docs/analytics.md)** |
-| **Budgets** | **Multi-type budget tracking with templates, alerts, and progress monitoring** | **[Budget Management](src/fin_infra/docs/budgets.md)** |
-| **Documents** | **Tax forms, bank statements, receipts with OCR extraction and AI analysis** | **[Document Management](src/fin_infra/docs/documents.md)** |
-| **Insights** | **Unified insights feed with priority-based aggregation from multiple sources** | **[Insights Feed](src/fin_infra/docs/insights.md)** |
-| **Investments** | **Investment holdings, portfolio data, real P/L calculations with cost basis tracking** | **[Investment Holdings](src/fin_infra/docs/investments.md)** |
-| **Crypto** | **Crypto market data, portfolio tracking, and AI-powered insights** | **[Crypto](src/fin_infra/docs/crypto.md)** |
-| Banking | Account aggregation, transactions, statements | [Banking](src/fin_infra/docs/banking.md) |
-| Market Data | Stocks, crypto, forex quotes and historical data | [Market Data](src/fin_infra/docs/market-data.md) |
-| Credit Scores | Credit reports and monitoring | [Credit](src/fin_infra/docs/credit.md) |
-| Brokerage | Trading accounts and portfolio data | [Brokerage](src/fin_infra/docs/brokerage.md) |
-| Tax Data | Tax documents, crypto gains, tax liability estimation, tax-loss harvesting | [Tax](src/fin_infra/docs/tax.md) |
-| Cashflows | NPV, IRR, loan calculations | [Cashflows](src/fin_infra/docs/cashflows.md) |
-| Observability | Metrics and route classification for financial endpoints | [Observability](src/fin_infra/docs/observability.md) |
-| **Compliance** | **PII boundaries, vendor ToS, GLBA/FCRA/PCI-DSS, data lifecycle** | **[Compliance](src/fin_infra/docs/compliance.md)** |
-| Contributing | Dev setup and quality gates | [Contributing](src/fin_infra/docs/contributing.md) |
-| Acceptance | Acceptance testing guide | [Acceptance](src/fin_infra/docs/acceptance.md) |
+| Getting Started | Overview and installation | [Getting Started](docs/getting-started.md) |
+| **API Integration** | **Building fintech APIs with fin-infra + svc-infra** | **[API Guide](docs/api.md)** |
+| **Persistence** | **Scaffold models/schemas/repositories, svc-infra integration, multi-tenancy, soft delete** | **[Persistence Guide](docs/persistence.md)** |
+| **Analytics** | **Cash flow, savings rate, spending insights, portfolio metrics, rebalancing, scenario modeling** | **[Analytics](docs/analytics.md)** |
+| **Budgets** | **Multi-type budget tracking with templates, alerts, and progress monitoring** | **[Budget Management](docs/budgets.md)** |
+| **Documents** | **Tax forms, bank statements, receipts with OCR extraction and AI analysis** | **[Document Management](docs/documents.md)** |
+| **Insights** | **Unified insights feed with priority-based aggregation from multiple sources** | **[Insights Feed](docs/insights.md)** |
+| **Investments** | **Investment holdings, portfolio data, real P/L calculations with cost basis tracking** | **[Investment Holdings](docs/investments.md)** |
+| **Crypto** | **Crypto market data, portfolio tracking, and AI-powered insights** | **[Crypto](docs/crypto.md)** |
+| Banking | Account aggregation, transactions, statements | [Banking](docs/banking.md) |
+| Market Data | Stocks, crypto, forex quotes and historical data | [Market Data](docs/market-data.md) |
+| Credit Scores | Credit reports and monitoring | [Credit](docs/credit.md) |
+| Brokerage | Trading accounts and portfolio data | [Brokerage](docs/brokerage.md) |
+| Tax Data | Tax documents, crypto gains, tax liability estimation, tax-loss harvesting | [Tax](docs/tax.md) |
+| Cashflows | NPV, IRR, loan calculations | [Cashflows](docs/cashflows.md) |
+| Observability | Metrics and route classification for financial endpoints | [Observability](docs/observability.md) |
+| **Compliance** | **PII boundaries, vendor ToS, GLBA/FCRA/PCI-DSS, data lifecycle** | **[Compliance](docs/compliance.md)** |
+| Contributing | Dev setup and quality gates | [Contributing](docs/contributing.md) |
+| Acceptance | Acceptance testing guide | [Acceptance](docs/acceptance.md) |
 
 ## Quick Start
 
@@ -151,7 +151,7 @@ http_server_requests_total{route="/banking/accounts|financial", method="GET"} 42
 sum(rate(http_server_requests_total{route=~".*\\|financial"}[5m]))
 ```
 
-See [Observability Guide](src/fin_infra/docs/observability.md) for more details.
+See [Observability Guide](docs/observability.md) for more details.
 
 ## Persistence
 
@@ -203,7 +203,7 @@ add_sql_resources(app, [
 # GET    /budgets/search        # Search budgets
 ```
 
-**See [Persistence Guide](src/fin_infra/docs/persistence.md) for the complete workflow.**
+**See [Persistence Guide](docs/persistence.md) for the complete workflow.**
 
 ## Architecture Overview
 
@@ -229,8 +229,8 @@ fin-infra/
 ```
 
 **Architecture Documentation:**
-- [Persistence Strategy ADR](src/fin_infra/docs/presistence-strategy.md) - Why fin-infra is stateless
-- [Persistence Guide](src/fin_infra/docs/persistence.md) - Complete scaffold workflow
+- [Persistence Strategy ADR](docs/presistence-strategy.md) - Why fin-infra is stateless
+- [Persistence Guide](docs/persistence.md) - Complete scaffold workflow
 
 ## Configuration
 
@@ -297,7 +297,7 @@ If the secret isn't configured, acceptance tests will still run and CoinGecko te
 
 - Keep APIs small and typed. Prefer Pydantic models for IO boundaries.
 - Add or update tests for any behavior changes. Keep `pytest` passing and `mypy` clean.
-- See [Contributing Guide](src/fin_infra/docs/contributing.md) for detailed development workflow.
+- See [Contributing Guide](docs/contributing.md) for detailed development workflow.
 
 ## License
 

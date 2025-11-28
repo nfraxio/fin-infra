@@ -545,7 +545,7 @@ def upgrade():
 
 - **Budget Module Code**: `src/fin_infra/budgets/`
 - **Tests**: `tests/unit/budgets/`, `tests/integration/test_budgets_api.py`
-- **Documentation**: `src/fin_infra/docs/budgets.md`
+- **Documentation**: `docs/budgets.md`
 - **svc-infra**: Backend infrastructure (API, DB, cache, jobs)
 - **Related ADRs**:
   - ADR-0018: Transaction Categorization

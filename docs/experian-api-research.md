@@ -339,4 +339,4 @@ async def test_experian_real_api_credit_score():
 - FCRA Compliance Guide: https://www.ftc.gov/enforcement/rules/rulemaking-regulatory-reform-proceedings/fair-credit-reporting-act
 - svc-infra HTTP Client: /Users/alikhatami/ide/infra/svc-infra/src/svc_infra/http/
 - svc-infra Cache: /Users/alikhatami/ide/infra/svc-infra/src/svc_infra/cache/
-- ADR-0012: /Users/alikhatami/ide/infra/fin-infra/src/fin_infra/docs/adr/0012-credit-score-monitoring.md
+- ADR-0012: /Users/alikhatami/ide/infra/fin-infra/docs/adr/0012-credit-score-monitoring.md

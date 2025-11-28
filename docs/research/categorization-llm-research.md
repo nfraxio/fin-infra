@@ -300,7 +300,7 @@ async def categorize_with_llm(merchant_name: str, ...) -> CategoryPrediction:
   - `07_retry.py`: Retry logic with exponential backoff
 
 ### Integration Strategy Doc
-- **Location**: `src/fin_infra/docs/research/ai-infra-integration-strategy.md`
+- **Location**: `docs/research/ai-infra-integration-strategy.md`
 - **Section**: "CoreLLM: Chat completion, agents, streaming, token management"
 
 ### Plans Reference
@@ -1809,4 +1809,4 @@ prediction = await engine.categorize("LOCAL BAKERY", user_id="user123")
 6. Acceptance tests (5 tests with real LLM APIs)
 7. Documentation update (categorization.md Section 8)
 
-**Documentation**: All research findings in `src/fin_infra/docs/research/categorization-llm-research.md` (2,500+ lines)
+**Documentation**: All research findings in `docs/research/categorization-llm-research.md` (2,500+ lines)

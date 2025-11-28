@@ -9,7 +9,7 @@
 ### 1. Research Phase ✅ COMPLETE
 
 Created comprehensive Experian API research document:
-- **File**: `src/fin_infra/docs/experian-api-research.md` (250+ lines)
+- **File**: `docs/experian-api-research.md` (250+ lines)
 - **Content**:
   - Developer Portal setup instructions
   - OAuth 2.0 authentication flow
@@ -322,7 +322,7 @@ score = await credit.get_credit_score("user123")
 ## Files Changed
 
 ### Created (New Files):
-1. `src/fin_infra/docs/experian-api-research.md` (250+ lines)
+1. `docs/experian-api-research.md` (250+ lines)
 2. `src/fin_infra/credit/experian/__init__.py` (20 lines)
 3. `src/fin_infra/credit/experian/auth.py` (150 lines)
 4. `src/fin_infra/credit/experian/client.py` (250 lines)

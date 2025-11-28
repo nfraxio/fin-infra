@@ -153,7 +153,7 @@ async def test_get_accounts():
 
 ### 3. Add Documentation
 
-Create `src/fin_infra/docs/providers/my-provider.md` with usage examples.
+Create `docs/providers/my-provider.md` with usage examples.
 
 ### 4. Update Easy Builder
 

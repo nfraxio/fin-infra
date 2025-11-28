@@ -340,13 +340,13 @@ advice = await analytics.spending_advice(
 
 ## References
 
-- **Analytics Documentation**: `src/fin_infra/docs/analytics.md`
+- **Analytics Documentation**: `docs/analytics.md`
 - **svc-infra API Docs**: `svc-infra/src/svc_infra/api/fastapi/README.md`
 - **svc-infra Cache Docs**: `svc-infra/src/svc_infra/cache/README.md`
 - **ai-infra LLM Docs**: `ai-infra/src/ai_infra/llm/README.md`
-- **Net Worth ADR**: `src/fin_infra/docs/adr/0020-net-worth-tracking.md`
-- **Categorization ADR**: `src/fin_infra/docs/adr/0018-transaction-categorization.md`
-- **LLM Insights ADR**: `src/fin_infra/docs/adr/0021-net-worth-llm-insights.md`
+- **Net Worth ADR**: `docs/adr/0020-net-worth-tracking.md`
+- **Categorization ADR**: `docs/adr/0018-transaction-categorization.md`
+- **LLM Insights ADR**: `docs/adr/0021-net-worth-llm-insights.md`
 
 ---
 

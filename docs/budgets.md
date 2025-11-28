@@ -1190,5 +1190,5 @@ async def get_cached_progress(budget_id: str):
 
 For questions, issues, or feature requests:
 - GitHub Issues: `fin-infra/issues`
-- Documentation: `src/fin_infra/docs/`
-- ADRs: `src/fin_infra/docs/adr/`
+- Documentation: `docs/`
+- ADRs: `docs/adr/`

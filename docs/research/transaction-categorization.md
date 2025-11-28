@@ -588,7 +588,7 @@ Plaid shares anonymized transaction data with category labels:
 - `src/fin_infra/categorization/add.py` (add_categorization() FastAPI helper)
 - `tests/unit/test_categorization.py` (unit tests)
 - `tests/acceptance/test_categorization_acceptance.py` (acceptance tests)
-- `src/fin_infra/docs/categorization.md` (documentation)
+- `docs/categorization.md` (documentation)
 
 **Dependencies**:
 ```toml

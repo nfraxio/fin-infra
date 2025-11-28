@@ -374,7 +374,7 @@ structured = self.llm.with_structured_output(...)  # ✅ Uses ai-infra
 
 ### 7.1 ADR-0021 Documents Conversation Scope
 
-**File**: `src/fin_infra/docs/adr/0021-net-worth-llm-insights.md`
+**File**: `docs/adr/0021-net-worth-llm-insights.md`
 
 **Key Section**:
 ```markdown

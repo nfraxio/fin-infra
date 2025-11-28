@@ -682,7 +682,7 @@ fin-infra is a stateless library. Applications are responsible for persistence.
 ## Implementation Plan
 
 ### Phase 1: Document Current State ✅ (COMPLETED)
-1. ✅ Create presistence-strategy.md (this document) at `src/fin_infra/docs/`
+1. ✅ Create presistence-strategy.md (this document) at `docs/`
 2. ✅ Document svc-infra scaffold pattern analysis
 3. ✅ Define concrete CLI structure following Typer conventions
 4. Next: Add docs/persistence.md with migration guide

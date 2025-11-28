@@ -1535,7 +1535,7 @@ cash_flow = await analytics.cash_flow(user_id="test_user")
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/Aliikhatami94/fin-infra/issues)
-- **Documentation**: [fin-infra docs](https://github.com/Aliikhatami94/fin-infra/tree/main/src/fin_infra/docs)
+- **Documentation**: [fin-infra docs](https://github.com/Aliikhatami94/fin-infra/tree/main/docs)
 - **Examples**: See `examples/demo_api/app.py` for complete integration
 
 ---
