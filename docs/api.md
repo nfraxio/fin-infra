@@ -583,7 +583,7 @@ add_observability(app, route_classifier=financial_route_classifier)
 ## Related Documentation
 
 - [fin-infra Documentation](../src/fin_infra/docs/)
-- [svc-infra Documentation](https://github.com/Aliikhatami94/svc-infra/tree/main/src/svc_infra/docs)
+- [svc-infra Documentation](https://github.com/Aliikhatami94/svc-infra/tree/main/docs)
 - [Demo API Example](../examples/demo_api/)
 - [Banking Integration](./banking.md)
 - [Market Data Integration](./market-data.md)

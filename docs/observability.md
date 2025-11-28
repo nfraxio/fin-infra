@@ -612,7 +612,7 @@ add_observability(app, route_classifier=financial_route_classifier)
 
 ## Related Documentation
 
-- [svc-infra Observability Guide](../../svc-infra/src/svc_infra/docs/ops.md)
+- [svc-infra Observability Guide](../../svc-infra/docs/ops.md)
 - [ADR-0009: Financial Observability](./adr/0009-financial-observability.md)
 - [Banking Integration](./banking.md) - Financial endpoints for route classification
 - [Market Data Integration](./market-data.md) - Financial endpoints for route classification

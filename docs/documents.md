@@ -346,7 +346,7 @@ def add_documents(app, storage, prefix="/documents"):
 - Legal app: `LegalDocument` extends `BaseDocument` with case_number, court_jurisdiction
 - E-commerce: `ProductDocument` extends `BaseDocument` with sku, category
 
-**Reference Implementation**: See svc-infra's generic documents at `src/svc_infra/docs/documents.md`
+**Reference Implementation**: See svc-infra's generic documents at `docs/documents.md`
 
 ---
 
@@ -679,7 +679,7 @@ async def upload_document(storage, user_id, file, document_type, ...):
 - **LocalBackend**: Railway volumes, filesystem storage
 - **S3Backend**: AWS S3, DigitalOcean Spaces, Wasabi, Backblaze B2
 
-**See**: [svc-infra Storage Guide](../../../svc-infra/src/svc_infra/docs/storage.md) for backend documentation
+**See**: [svc-infra Storage Guide](../../../svc-infra/docs/storage.md) for backend documentation
 
 ### Production Setup
 
@@ -1227,15 +1227,15 @@ client = TestClient(app, raise_server_exceptions=False)
 ## Related Documentation
 
 **Layered Architecture**:
-- [svc-infra Documents Guide](../../../svc-infra/src/svc_infra/docs/documents.md) - Generic Layer 1 base
-- [svc-infra Storage Guide](../../../svc-infra/src/svc_infra/docs/storage.md) - Backend abstraction (S3, local, memory)
+- [svc-infra Documents Guide](../../../svc-infra/docs/documents.md) - Generic Layer 1 base
+- [svc-infra Storage Guide](../../../svc-infra/docs/storage.md) - Backend abstraction (S3, local, memory)
 
 **Financial Features**:
 - [ADR 0027: Document Management Design](adr/0027-document-management-design.md) - Design decisions
 - [ai-infra LLM Guide](../../../ai-infra/docs/llm.md) - AI-powered analysis
 
 **Infrastructure**:
-- [svc-infra Caching Guide](../../../svc-infra/src/svc_infra/docs/cache.md) - OCR/analysis result caching
+- [svc-infra Caching Guide](../../../svc-infra/docs/cache.md) - OCR/analysis result caching
 - [fin-infra README](../README.md) - Package overview
 
 ---
