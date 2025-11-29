@@ -521,7 +521,6 @@ A: GDPR/CCPA allow exceptions for legal obligations (e.g., 7-year tax retention)
 
 ## References
 
-- **ADR 0011**: [Compliance Posture and PII Boundaries](adr/0011-compliance-posture.md)
 - **svc-infra data lifecycle**: `svc_infra.data` module
 - **svc-infra security**: `svc_infra.security` module
 - **GLBA**: https://www.ftc.gov/business-guidance/privacy-security/gramm-leach-bliley-act

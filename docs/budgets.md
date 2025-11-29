@@ -1175,7 +1175,6 @@ async def get_cached_progress(budget_id: str):
 
 - **Source Code**: `src/fin_infra/budgets/`
 - **Tests**: `tests/unit/budgets/`, `tests/integration/test_budgets_api.py`
-- **ADR**: [ADR-0024: Budget Management Design](adr/0024-budget-management-design.md)
 - **svc-infra**: Backend infrastructure (API, DB, cache, jobs)
 - **fin-infra**: Financial providers (banking, brokerage, market data)
 
@@ -1191,4 +1190,3 @@ async def get_cached_progress(budget_id: str):
 For questions, issues, or feature requests:
 - GitHub Issues: `fin-infra/issues`
 - Documentation: `docs/`
-- ADRs: `docs/adr/`

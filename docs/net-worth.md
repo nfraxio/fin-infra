@@ -1113,8 +1113,6 @@ V2 adds LLM-powered capabilities using [ai-infra's CoreLLM](../../ai_infra/docs/
 
 ### Design Choice: Natural Dialogue vs Structured Output
 
-See [ADR-0021: LLM Insights Architecture](./adr/0021-net-worth-llm-insights.md) for full rationale.
-
 **Key Decision**: Conversation uses `achat()` **WITHOUT** `output_schema` for natural dialogue, while insights/goals use `with_structured_output()` for predictable structure.
 
 ```python
@@ -1228,7 +1226,6 @@ print(f"Payoff Timeline: {plan.estimated_payoff_months} months")
 **Why Avalanche?**
 - Minimizes total interest paid
 - Mathematically optimal (pays highest APR first)
-- See [ADR-0021](./adr/0021-net-worth-llm-insights.md) for comparison vs snowball method
 
 **API Endpoint**: `GET /net-worth/insights?type=debt_reduction`
 
@@ -1796,12 +1793,7 @@ async def create_snapshots():
 - [Analytics](./analytics.md) - Net worth trends, growth projections, and insights
 
 ### LLM Features (V2)
-- [ADR-0021: LLM Insights Architecture](./adr/0021-net-worth-llm-insights.md) - Design decisions for V2
-- [LLM Quality Review Guide](./testing/llm-quality-review.md) - Manual testing process (20 users, 4.0+ target)
 - [Cost Measurement Script](../../examples/scripts/measure_llm_costs.py) - Simulate production costs
-
-### Architecture
-- [ADR-0020: Net Worth Architecture](./adr/0020-net-worth-architecture.md) - V1 design decisions
 
 ---
 

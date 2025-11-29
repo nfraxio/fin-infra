@@ -57,4 +57,4 @@ Troubleshooting
 
 Notes
 -----
-This doc is intentionally concise; for in-depth design rationale see `docs/adr/` (if present) or reach out to the maintainers.
+This doc is intentionally concise; for in-depth design rationale reach out to the maintainers.

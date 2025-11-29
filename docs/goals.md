@@ -1166,8 +1166,6 @@ poetry run pytest tests/unit/goals tests/integration/test_goals_api.py -v
 
 ## Architecture Decisions
 
-See ADR: `docs/adr/0025-goals-module-refactoring.md`
-
 **Key Decisions**
 1. **Plain APIRouter**: Use plain FastAPI router (not svc-infra user_router) to avoid database dependencies
 2. **In-Memory Storage**: Use dictionary stores for testing; production apps should use SQL/Mongo via svc-infra
@@ -1277,7 +1275,6 @@ print(f"Milestones: {goal['milestones']}")
 - **Analytics**: `docs/analytics.md` - Cash flow and savings rate for goal recommendations
 - **Budgets**: `docs/budgets.md` - Budget categories linked to savings goals
 - **Net Worth**: `docs/net-worth.md` - Net worth tracking for wealth milestone goals
-- **ADR**: `docs/adr/0025-goals-module-refactoring.md` - Architecture decisions
 
 ---
 

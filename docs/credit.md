@@ -849,7 +849,6 @@ Violations of FCRA can result in:
 - [FTC: Fair Credit Reporting Act (Full Text)](https://www.ftc.gov/legal-library/browse/statutes/fair-credit-reporting-act)
 - [CFPB: Credit Reports and Scores](https://www.consumerfinance.gov/consumer-tools/credit-reports-and-scores/)
 - [FTC: Summary of Rights Under FCRA](https://www.consumer.ftc.gov/articles/pdf-0096-fair-credit-reporting-act.pdf)
-- [ADR-0011: Compliance Posture](./adr/0011-compliance-posture.md)
 
 **Disclaimer**: This documentation is NOT legal advice. Consult with qualified legal counsel before deploying credit monitoring in production.
 
@@ -876,7 +875,6 @@ Violations of FCRA can result in:
 
 - [FTC: Fair Credit Reporting Act](https://www.ftc.gov/legal-library/browse/statutes/fair-credit-reporting-act)
 - [CFPB: Credit Reporting](https://www.consumerfinance.gov/consumer-tools/credit-reports-and-scores/)
-- [ADR-0011: Compliance Posture](./adr/0011-compliance-posture.md)
 - [Compliance Guide](./compliance.md)
 
 **Disclaimer**: This documentation is NOT legal advice. Consult with legal counsel before deploying credit monitoring in production.
@@ -1017,8 +1015,6 @@ EXPERIAN_API_KEY=sandbox_key poetry run pytest tests/acceptance/test_credit_expe
 
 ## Related Documentation
 
-- [ADR-0012: Credit Monitoring Architecture](./adr/0012-credit-monitoring.md)
-- [ADR-0011: Compliance Posture](./adr/0011-compliance-posture.md)
 - [Compliance Guide](./compliance.md)
 - [svc-infra Cache](../../svc-infra/docs/cache.md)
 - [svc-infra Webhooks](../../svc-infra/docs/webhooks.md)

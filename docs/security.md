@@ -735,7 +735,6 @@ async def log_pii_access(
 
 ## Related Documentation
 
-- [ADR-0008: Financial Security & PII](./adr/0008-financial-security-pii.md)
 - [svc-infra Security](../../../../svc-infra/src/svc_infra/security/)
 - [svc-infra Audit Logging](../../../../svc-infra/src/svc_infra/security/audit.py)
 - [Banking Provider Guide](./banking.md)

@@ -679,10 +679,6 @@ except NotImplementedError as e:
     tax = easy_tax(provider="mock")
 ```
 
-## Architecture Decisions
-
-See [ADR 0017: Tax Data Integration](./adr/0017-tax-data-integration.md) for provider selection, cost basis methods, and IRS compliance rationale.
-
 ## Related Documentation
 
 - [Banking Integration](./banking.md) - Link bank accounts for income verification

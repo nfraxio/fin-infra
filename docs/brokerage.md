@@ -129,7 +129,6 @@ brokerage = add_brokerage(app, provider=brokerage_provider)
 - [Market Data Integration](market-data.md) - Get real-time quotes for trading decisions
 - [Banking Integration](banking.md) - Link bank accounts for funding
 - [Crypto Data Integration](crypto-data.md) - Trade cryptocurrencies
-- [ADR-0006](adr/0006-brokerage-trade-execution.md) - Trade execution flow design (coming soon)
 
 ## Support & Resources
 

@@ -579,7 +579,6 @@ async def safe_convert(amount, from_curr, to_curr):
 
 ## Related Documentation
 
-- [ADR-0007: Data Normalization & Symbol Resolution](./adr/0007-data-normalization-symbol-resolution.md)
 - [Banking Provider Guide](./banking.md)
 - [Market Data Guide](./market-data.md)
 - [Crypto Data Guide](./crypto-data.md)

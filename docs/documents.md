@@ -1231,7 +1231,6 @@ client = TestClient(app, raise_server_exceptions=False)
 - [svc-infra Storage Guide](../../../svc-infra/docs/storage.md) - Backend abstraction (S3, local, memory)
 
 **Financial Features**:
-- [ADR 0027: Document Management Design](adr/0027-document-management-design.md) - Design decisions
 - [ai-infra LLM Guide](../../../ai-infra/docs/llm.md) - AI-powered analysis
 
 **Infrastructure**:
