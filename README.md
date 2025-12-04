@@ -1,309 +1,308 @@
+<div align="center">
+
 # fin-infra
 
+### Financial data infrastructure for fintech apps
+
 [![PyPI](https://img.shields.io/pypi/v/fin-infra.svg)](https://pypi.org/project/fin-infra/)
-[![Docs](https://img.shields.io/badge/docs-reference-blue)](.)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Downloads](https://static.pepy.tech/badge/fin-infra/month)](https://pepy.tech/project/fin-infra)
 
-Financial infrastructure toolkit for fintech applications. fin-infra provides production-ready building blocks for banking connections, market data, credit scores, tax data, brokerage integrations, and cashflow analysis—everything needed to build comprehensive personal finance management applications.
+**Banking, investments, market data, credit scores, and financial calculations in one toolkit.**
 
-## What is fin-infra?
+[Documentation](docs/) · [Examples](examples/) · [PyPI](https://pypi.org/project/fin-infra/)
 
-fin-infra is the **financial data layer** for fintech apps. While `svc-infra` handles generic backend operations (auth, API scaffolding, database, billing), `fin-infra` is purpose-built for financial applications where users need to:
+</div>
 
-- Connect bank accounts and pull transaction history
-- Link brokerage accounts and view portfolio holdings
-- Check credit scores and monitor credit reports
-- Access tax documents and data
-- View real-time market data (stocks, crypto, forex)
-- Perform financial calculations (NPV, IRR, loan amortization)
+---
 
-**Architecture**: fin-infra builds on top of svc-infra's generic modules to provide financial-specific features. For example, document management uses svc-infra's base CRUD operations (upload, list, get, delete) and adds OCR extraction for tax forms and AI-powered financial analysis. This layered approach eliminates duplication while maintaining clear domain separation.
+## Why fin-infra?
 
-## Status
+Building a fintech app means integrating Plaid, pulling market data, calculating portfolio returns, categorizing transactions... and doing it all securely.
 
-Alpha. Core functionality is stable, but the surface is intentionally small while we stabilize models and provider contracts.
-
-## Documentation
-
-| Area | What it covers | Guide |
-| --- | --- | --- |
-| **API Integration** | **Building fintech APIs with fin-infra + svc-infra** | **[API Guide](docs/api.md)** |
-| **Persistence** | **Scaffold models/schemas/repositories, svc-infra integration** | **[Persistence Guide](docs/persistence.md)** |
-| **Core vs Scaffold** | **Understanding what fin-infra provides vs what apps own** | **[Core vs Scaffold](docs/core-vs-scaffold.md)** |
-| **Analytics** | **Cash flow, savings rate, spending insights, portfolio metrics** | **[Analytics](docs/analytics.md)** |
-| **Budgets** | **Multi-type budget tracking with templates and alerts** | **[Budget Management](docs/budgets.md)** |
-| **Goals** | **Financial goal tracking with milestones and progress** | **[Goals](docs/goals.md)** |
-| **Documents** | **Tax forms, bank statements with OCR and AI analysis** | **[Document Management](docs/documents.md)** |
-| **Insights** | **Unified insights feed with priority aggregation** | **[Insights Feed](docs/insights.md)** |
-| **Investments** | **Holdings, portfolio data, real P/L with cost basis** | **[Investment Holdings](docs/investments.md)** |
-| Banking | Account aggregation, transactions, statements | [Banking](docs/banking.md) |
-| Market Data | Stocks, crypto, forex quotes and historical data | [Market Data](docs/market-data.md) |
-| Crypto | Crypto market data and AI-powered insights | [Crypto](docs/crypto.md) |
-| Credit Scores | Credit reports and monitoring | [Credit](docs/credit.md) |
-| Brokerage | Trading accounts and portfolio data | [Brokerage](docs/brokerage.md) |
-| Tax Data | Tax documents, crypto gains, tax-loss harvesting | [Tax](docs/tax.md), [Tax Data](docs/tax-data.md) |
-| Cashflows | NPV, IRR, loan calculations | [Cashflows](docs/cashflows.md) |
-| Net Worth | Net worth tracking and LLM insights | [Net Worth](docs/net-worth.md) |
-| Categorization | Transaction categorization | [Categorization](docs/categorization.md) |
-| Recurring Detection | Recurring transaction detection | [Recurring Detection](docs/recurring-detection.md) |
-| Normalization | Data normalization and symbol resolution | [Normalization](docs/normalization.md) |
-| Observability | Metrics and route classification | [Observability](docs/observability.md) |
-| **Compliance** | **PII boundaries, GLBA/FCRA/PCI-DSS, data lifecycle** | **[Compliance](docs/compliance.md)** |
-| Security | Financial security and PII handling | [Security](docs/security.md) |
-| Caching | Caching, rate limits, retries | [Caching](docs/caching-rate-limits-retries.md) |
-| Providers | Provider integrations overview | [Providers](docs/providers.md) |
-
-## Quick Start
-
-### Installation
-
-```bash
-# From PyPI (when published)
-pip install fin-infra
-
-# For backend infrastructure (auth, API, DB, cache, jobs), also install:
-pip install svc-infra
-
-# For development
-git clone https://github.com/your-org/fin-infra
-cd fin-infra
-poetry install
-```
-
-**Note**: fin-infra provides ONLY financial data integrations. For backend infrastructure (API framework, auth, database, caching, jobs), you need [svc-infra](https://github.com/Aliikhatami94/svc-infra). Applications typically use both packages together.
-
-### One-Call Setup
+**fin-infra** gives you production-ready financial infrastructure:
 
 ```python
 from fin_infra.banking import easy_banking
-from fin_infra.markets import easy_market, easy_crypto
-from fin_infra.credit import easy_credit
-from fin_infra.cashflows import npv, irr
+from fin_infra.markets import easy_market
 
-# Banking
+# Connect to banks via Plaid
 banking = easy_banking()
-accounts = await banking.get_accounts("access_token")
-transactions = await banking.get_transactions("account_id")
+accounts = await banking.get_accounts(access_token)
+transactions = await banking.get_transactions(account_id)
 
-# Investment Holdings
+# Get market data
+market = easy_market()
+quote = market.quote("AAPL")
+```
+
+## Quick Install
+
+```bash
+pip install fin-infra
+```
+
+## What's Included
+
+| Feature | What You Get | One-liner |
+|---------|-------------|-----------|
+| **Banking** | Plaid/Teller integration, accounts, transactions | `easy_banking()` |
+| **Investments** | Holdings, portfolio data, real P/L with cost basis | `easy_investments()` |
+| **Market Data** | Stocks, crypto, forex quotes and history | `easy_market()` |
+| **Credit** | Credit scores and monitoring | `easy_credit()` |
+| **Analytics** | Cash flow, savings rate, spending insights | Built-in |
+| **Budgets** | Multi-type budget tracking with templates | Scaffold included |
+| **Goals** | Financial goal tracking with milestones | Scaffold included |
+| **Cashflows** | NPV, IRR, loan amortization calculations | `npv()`, `irr()` |
+
+## 30-Second Examples
+
+### Connect Bank Accounts
+
+```python
+from fin_infra.banking import easy_banking
+
+banking = easy_banking(provider="plaid")
+
+# Get linked accounts
+accounts = await banking.get_accounts(access_token)
+for acc in accounts:
+    print(f"{acc.name}: ${acc.balance}")
+
+# Get transactions
+transactions = await banking.get_transactions(account_id)
+```
+
+### Portfolio Holdings with Real P/L
+
+```python
 from fin_infra.investments import easy_investments
 
 investments = easy_investments(provider="plaid")
-holdings = await investments.get_holdings(access_token="...")  # Real cost basis
-allocation = await investments.get_allocation(access_token="...")  # Asset allocation
 
-# Market Data
-market = easy_market()
-quote = market.quote("AAPL")
+# Get holdings with cost basis
+holdings = await investments.get_holdings(access_token)
+for h in holdings:
+    print(f"{h.symbol}: {h.quantity} shares, P/L: ${h.unrealized_gain}")
 
-crypto = easy_crypto()
-ticker = crypto.ticker("BTC/USDT")
-
-# Credit Scores
-credit = easy_credit()
-score = await credit.get_credit_score("user_123")
-
-# Cashflows
-cashflows = [-1000, 300, 300, 300, 300]
-net_value = npv(0.08, cashflows)
-rate_of_return = irr(cashflows)
+# Asset allocation
+allocation = await investments.get_allocation(access_token)
+print(allocation)  # {"stocks": 60, "bonds": 30, "cash": 10}
 ```
 
-### With FastAPI (fin-infra + svc-infra)
+### Real-Time Market Data
+
+```python
+from fin_infra.markets import easy_market, easy_crypto
+
+# Stock quotes
+market = easy_market()
+quote = market.quote("AAPL")
+print(f"AAPL: ${quote.price} ({quote.change_percent}%)")
+
+# Crypto
+crypto = easy_crypto()
+btc = crypto.ticker("BTC/USDT")
+print(f"BTC: ${btc.price}")
+```
+
+### Credit Scores
+
+```python
+from fin_infra.credit import easy_credit
+
+credit = easy_credit()
+score = await credit.get_credit_score(user_id)
+print(f"Credit Score: {score.value} ({score.rating})")
+```
+
+### Financial Calculations
+
+```python
+from fin_infra.cashflows import npv, irr, loan_payment
+
+# Net Present Value
+cashflows = [-100000, 30000, 30000, 30000, 30000]
+value = npv(rate=0.08, cashflows=cashflows)
+print(f"NPV: ${value:,.2f}")
+
+# Internal Rate of Return
+rate = irr(cashflows)
+print(f"IRR: {rate:.2%}")
+
+# Loan payments
+monthly = loan_payment(principal=250000, rate=0.065, years=30)
+print(f"Monthly payment: ${monthly:,.2f}")
+```
+
+## FastAPI Integration
+
+Use with [svc-infra](https://github.com/nfraxio/svc-infra) for a complete backend:
 
 ```python
 from fastapi import FastAPI
-from svc_infra.obs import add_observability
-from fin_infra.obs import financial_route_classifier
+from svc_infra.api.fastapi.ease import easy_service_app
 from fin_infra.banking import add_banking
+from fin_infra.investments import add_investments
 from fin_infra.markets import add_market_data
 
-# Create app with backend framework (svc-infra)
-app = FastAPI(title="Fintech API")
+# Create app with svc-infra (auth, database, etc.)
+app = easy_service_app(name="FinanceAPI", release="1.0.0")
 
-# Add financial capabilities (fin-infra)
+# Add financial capabilities
 add_banking(app, provider="plaid")
-from fin_infra.investments import add_investments
-add_investments(app, provider="plaid")  # Investment holdings & portfolio data
+add_investments(app, provider="plaid")
 add_market_data(app, provider="alphavantage")
 
-# Option 1: Basic observability (all routes auto-instrumented)
-add_observability(app)
-
-# Option 2: With route classification (recommended for production)
-# All routes auto-instrumented + categorized for filtering in Grafana
-add_observability(app, route_classifier=financial_route_classifier)
+# Automatic endpoints:
+# GET  /banking/accounts
+# GET  /banking/transactions
+# GET  /investments/holdings
+# GET  /investments/allocation
+# GET  /market/quote/{symbol}
 ```
 
-**What gets instrumented?**
+## Supported Providers
 
-Both options automatically instrument **ALL routes** in your app:
-- ✅ Financial routes: `/banking/*`, `/market/*`, `/crypto/*`
-- ✅ Non-financial routes: `/health`, `/docs`, `/admin/*`
+| Category | Providers |
+|----------|-----------|
+| **Banking** | Plaid, Teller |
+| **Investments** | Plaid |
+| **Market Data** | Alpha Vantage, Yahoo Finance |
+| **Crypto** | CoinGecko, Binance |
+| **Credit** | Experian |
 
-**The difference:** Route classification adds category labels (`|financial`, `|public`) for filtering metrics in Grafana.
+## Scaffold Models
 
-**Without classifier:**
-```promql
-# Metrics: route="/banking/accounts"
-http_server_requests_total{route="/banking/accounts", method="GET"} 42
-```
-
-**With classifier:**
-```promql
-# Metrics: route="/banking/accounts|financial" (can filter by |financial)
-http_server_requests_total{route="/banking/accounts|financial", method="GET"} 42
-
-# Filter all financial routes in Grafana:
-sum(rate(http_server_requests_total{route=~".*\\|financial"}[5m]))
-```
-
-See [Observability Guide](docs/observability.md) for more details.
-
-## Persistence
-
-fin-infra is a **stateless library** - applications own their database schema, migrations, and data storage.
-
-Generate production-ready models, schemas, and repositories for your application:
+Generate production-ready models for your app:
 
 ```bash
-# Scaffold budgets with multi-tenancy
+# Generate budget models
 fin-infra scaffold budgets --dest-dir app/models/ --include-tenant
 
-# Scaffold goals
+# Generate goal tracking
 fin-infra scaffold goals --dest-dir app/models/
 
-# Scaffold net-worth snapshots
-fin-infra scaffold net-worth --dest-dir app/models/ --include-soft-delete
+# Generate net worth snapshots
+fin-infra scaffold net-worth --dest-dir app/models/
 ```
 
 **What you get:**
-- ✅ SQLAlchemy models (with svc-infra's `ModelBase`)
-- ✅ Pydantic schemas (Create, Read, Update)
-- ✅ Repository pattern (full CRUD with async support)
-- ✅ Type hints and docstrings throughout
-- ✅ Production-ready patterns (UUID primary keys, timestamps, indexes)
+- SQLAlchemy models with proper indexes
+- Pydantic schemas (Create, Read, Update)
+- Repository pattern with async CRUD
+- Type hints throughout
 
-**Wire CRUD with ONE function call:**
+**Wire CRUD in one call:**
 
 ```python
 from svc_infra.api.fastapi.db.sql import add_sql_resources, SqlResource
 from app.models.budgets import Budget
 
-# ONE FUNCTION CALL → Full CRUD API
 add_sql_resources(app, [
     SqlResource(
         model=Budget,
         prefix="/budgets",
         search_fields=["name", "description"],
-        order_fields=["name", "created_at"],
-        soft_delete=False,
     )
 ])
-
-# Automatic endpoints:
-# POST   /budgets/              # Create budget
-# GET    /budgets/              # List budgets (paginated, searchable, orderable)
-# GET    /budgets/{id}          # Get budget by ID
-# PATCH  /budgets/{id}          # Update budget
-# DELETE /budgets/{id}          # Delete budget
-# GET    /budgets/search        # Search budgets
+# Creates: POST, GET, PATCH, DELETE /budgets/*
 ```
-
-**See [Persistence Guide](docs/persistence.md) for the complete workflow.**
-
-## Architecture Overview
-
-```
-fin-infra/
-├── src/fin_infra/
-│   ├── banking/            # Bank account aggregation
-│   │   ├── plaid/          # Plaid provider
-│   │   └── teller/         # Teller provider
-│   ├── brokerage/          # Trading account connections
-│   ├── credit/             # Credit score providers
-│   ├── markets/            # Market data (stocks/crypto)
-│   ├── tax/                # Tax data and documents
-│   ├── cashflows/          # Financial calculations
-│   ├── obs/                # Observability (route classification)
-│   ├── models/             # Pydantic data models
-│   ├── providers/          # Provider implementations
-│   └── docs/               # Packaged documentation
-├── tests/
-│   ├── unit/               # Fast unit tests
-│   └── acceptance/         # Provider integration tests
-└── examples/               # Example applications
-```
-
-**Architecture Documentation:**
-- [Core vs Scaffold](docs/core-vs-scaffold.md) - What fin-infra provides vs what apps own
-- [Persistence Guide](docs/persistence.md) - Complete scaffold workflow
 
 ## Configuration
 
-fin-infra uses environment variables for provider credentials:
-
 ```bash
-# Banking providers
+# Banking (Plaid)
 PLAID_CLIENT_ID=your_client_id
 PLAID_SECRET=your_secret
-PLAID_ENV=sandbox
+PLAID_ENV=sandbox  # or development, production
 
-# Market data providers
+# Market Data
 ALPHAVANTAGE_API_KEY=your_api_key
 
-# Credit providers (v2: OAuth 2.0)
+# Credit (Experian)
 EXPERIAN_CLIENT_ID=your_client_id
-EXPERIAN_CLIENT_SECRET=your_client_secret
-EXPERIAN_BASE_URL=https://sandbox-us-api.experian.com  # or production URL
+EXPERIAN_CLIENT_SECRET=your_secret
 ```
 
-## Development
+## Documentation
+
+| Module | Description |
+|--------|-------------|
+| **Data Integration** | |
+| [Banking](docs/banking.md) | Account aggregation, transactions |
+| [Investments](docs/investments.md) | Holdings, portfolio, P/L |
+| [Market Data](docs/market-data.md) | Stocks, crypto, forex |
+| [Credit](docs/credit.md) | Credit scores and reports |
+| **Analytics** | |
+| [Analytics](docs/analytics.md) | Cash flow, savings rate, insights |
+| [Net Worth](docs/net-worth.md) | Net worth tracking |
+| [Cashflows](docs/cashflows.md) | NPV, IRR, loan calculations |
+| **Features** | |
+| [Budgets](docs/budgets.md) | Budget management |
+| [Goals](docs/goals.md) | Financial goal tracking |
+| [Insights](docs/insights.md) | AI-powered insights |
+| [Categorization](docs/categorization.md) | Transaction categorization |
+| **Infrastructure** | |
+| [Persistence](docs/persistence.md) | Scaffold workflow |
+| [API Guide](docs/api.md) | Building fintech APIs |
+| [Compliance](docs/compliance.md) | GLBA, FCRA, PCI-DSS |
+
+## Architecture
+
+fin-infra is the **financial data layer**. Use with **svc-infra** for backend infrastructure:
+
+```
+Your App
+    |
+    +-- fin-infra (financial data)
+    |       Banking, investments, market data, credit
+    |
+    +-- svc-infra (backend infrastructure)
+            Auth, database, API framework, jobs, billing
+```
+
+This separation keeps financial logic clean and portable.
+
+## Running Examples
 
 ```bash
-# Install dependencies
+git clone https://github.com/nfraxio/fin-infra.git
+cd fin-infra
 poetry install
 
-# Format code
-make format
+# Market data (no auth needed)
+poetry run python -c "
+from fin_infra.markets import easy_market
+market = easy_market()
+print(market.quote('AAPL'))
+"
 
-# Run linting
-make lint
-
-# Type check
-make type
-
-# Run tests
-make unit      # Unit tests only
-make accept    # Acceptance tests
-make test      # All tests
+# Run all tests
+poetry run pytest -q
 ```
 
-## Acceptance Tests and CI
+## Related Packages
 
-Acceptance tests are marked with `@pytest.mark.acceptance` and are excluded by default.
+fin-infra is part of the **nfrax** infrastructure suite:
 
-### Running locally
-
-Export any required API keys (only Alpha Vantage is needed by default):
-- `ALPHAVANTAGE_API_KEY` – required for Alpha Vantage market data tests
-
-Run acceptance tests:
-```bash
-poetry run pytest -q -m acceptance
-```
-
-### GitHub Actions Secrets
-
-The acceptance workflow in `.github/workflows/acceptance.yml` expects:
-- `ALPHAVANTAGE_API_KEY` – add it under Repository Settings → Secrets and variables → Actions → New repository secret
-
-If the secret isn't configured, acceptance tests will still run and CoinGecko tests (public) will pass, but Alpha Vantage tests will be skipped.
-
-## Contributing
-
-- Keep APIs small and typed. Prefer Pydantic models for IO boundaries.
-- Add or update tests for any behavior changes. Keep `pytest` passing and `mypy` clean.
+| Package | Purpose |
+|---------|---------|
+| **[fin-infra](https://github.com/nfraxio/fin-infra)** | Financial infrastructure (banking, portfolio, insights) |
+| **[svc-infra](https://github.com/nfraxio/svc-infra)** | Backend infrastructure (auth, billing, jobs, webhooks) |
+| **[ai-infra](https://github.com/nfraxio/ai-infra)** | AI/LLM infrastructure (agents, tools, RAG, MCP) |
 
 ## License
 
-MIT
+MIT License - use it for anything.
+
+---
+
+<div align="center">
+
+**Built by [nfraxio](https://github.com/nfraxio)**
+
+[Star us on GitHub](https://github.com/nfraxio/fin-infra) | [View on PyPI](https://pypi.org/project/fin-infra/)
+
+</div>
