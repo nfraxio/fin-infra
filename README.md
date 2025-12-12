@@ -135,7 +135,7 @@ print(f"Monthly payment: ${monthly:,.2f}")
 
 ## FastAPI Integration
 
-Use with [svc-infra](https://github.com/nfraxio/svc-infra) for a complete backend:
+Use with [svc-infra](https://github.com/nfraxlab/svc-infra) for a complete backend:
 
 ```python
 from fastapi import FastAPI
@@ -265,7 +265,7 @@ This separation keeps financial logic clean and portable.
 ## Running Examples
 
 ```bash
-git clone https://github.com/nfraxio/fin-infra.git
+git clone https://github.com/nfraxlab/fin-infra.git
 cd fin-infra
 poetry install
 
@@ -286,9 +286,9 @@ fin-infra is part of the **nfrax** infrastructure suite:
 
 | Package | Purpose |
 |---------|---------|
-| **[fin-infra](https://github.com/nfraxio/fin-infra)** | Financial infrastructure (banking, portfolio, insights) |
-| **[svc-infra](https://github.com/nfraxio/svc-infra)** | Backend infrastructure (auth, billing, jobs, webhooks) |
-| **[ai-infra](https://github.com/nfraxio/ai-infra)** | AI/LLM infrastructure (agents, tools, RAG, MCP) |
+| **[fin-infra](https://github.com/nfraxlab/fin-infra)** | Financial infrastructure (banking, portfolio, insights) |
+| **[svc-infra](https://github.com/nfraxlab/svc-infra)** | Backend infrastructure (auth, billing, jobs, webhooks) |
+| **[ai-infra](https://github.com/nfraxlab/ai-infra)** | AI/LLM infrastructure (agents, tools, RAG, MCP) |
 
 ## License
 
@@ -298,8 +298,8 @@ MIT License - use it for anything.
 
 <div align="center">
 
-**Built by [nfraxio](https://github.com/nfraxio)**
+**Built by [nfraxlab](https://github.com/nfraxlab)**
 
-[Star us on GitHub](https://github.com/nfraxio/fin-infra) | [View on PyPI](https://pypi.org/project/fin-infra/)
+[Star us on GitHub](https://github.com/nfraxlab/fin-infra) | [View on PyPI](https://pypi.org/project/fin-infra/)
 
 </div>
