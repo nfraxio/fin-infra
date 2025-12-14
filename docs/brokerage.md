@@ -167,9 +167,20 @@ order = brokerage.submit_order(
 )
 
 print(f"Order ID: {order['id']}")
+print(f"Client Order ID: {order['client_order_id']}")  # Auto-generated UUID for idempotency
 print(f"Status: {order['status']}")  # new, accepted, filled, etc.
 print(f"Filled: {order['filled_qty']} shares")
 ```
+
+> **Idempotency**: Every order automatically gets a unique `client_order_id` (UUID) if not provided. This prevents duplicate orders on network retries. You can also provide your own:
+>
+> ```python
+> order = brokerage.submit_order(
+>     symbol="AAPL", qty=10, side="buy", type="market",
+>     time_in_force="day",
+>     client_order_id="my-unique-id-123"  # Your own idempotency key
+> )
+> ```
 
 #### Limit Order (Sell)
 ```python

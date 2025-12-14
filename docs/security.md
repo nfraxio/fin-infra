@@ -20,6 +20,7 @@ The `fin-infra` security module provides comprehensive protection for sensitive 
 - ✅ **Provider-Agnostic**: Works with all financial providers (Plaid, Alpaca, etc.)
 - ✅ **Key Rotation**: Support multiple encryption keys for zero-downtime rotation
 - ✅ **Reuses svc-infra**: Extends existing auth/logging without duplication
+- ✅ **Decimal Precision**: All money values use `Decimal` to prevent floating-point errors
 
 ---
 
@@ -81,6 +82,34 @@ logger.info("Processing SSN: 123-45-6789")
 logger.info("Processing SSN: 123-45-6789")
 # Output: Processing SSN: ***-**-6789  (PII SAFE!)
 ```
+
+---
+
+## Financial Precision
+
+**Critical**: All financial amounts MUST use `Decimal`, never `float`. Floating-point arithmetic causes rounding errors that compound in financial calculations.
+
+```python
+from decimal import Decimal
+from fin_infra.models import Transaction, Account
+
+# ✅ CORRECT: Use Decimal for all money values
+tx = Transaction(
+    id="tx-1",
+    account_id="acct-1",
+    amount=Decimal("123.45"),  # Precise
+    date="2024-01-01",
+    description="Purchase"
+)
+
+# ❌ WRONG: Float causes precision errors
+# 0.1 + 0.2 == 0.30000000000000004 in float!
+
+# fin-infra models automatically coerce float to Decimal for safety,
+# but you should always use Decimal explicitly in your code.
+```
+
+**Why this matters**: `$0.01 + $0.02 = $0.03` fails with float (`0.030000000000000004`). Over millions of transactions, these errors compound into significant discrepancies.
 
 ---
 

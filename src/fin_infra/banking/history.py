@@ -4,6 +4,9 @@ This module provides functionality to record and retrieve historical account bal
 snapshots over time. This enables balance trend analysis, sparklines, and time-series
 visualizations in fintech dashboards.
 
+⚠️ WARNING: This module uses IN-MEMORY storage by default. All data is LOST on restart.
+For production use, integrate with svc-infra SQL database or set FIN_INFRA_STORAGE_BACKEND.
+
 Features:
 - Record daily balance snapshots for accounts
 - Store snapshots in time-series optimized format
@@ -36,6 +39,8 @@ Integration with svc-infra:
 
 from __future__ import annotations
 
+import logging
+import os
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
@@ -50,8 +55,31 @@ __all__ = [
 ]
 
 
+_logger = logging.getLogger(__name__)
+
 # In-memory storage for testing (will be replaced with SQL database in production)
+# ⚠️ WARNING: All data is LOST on restart when using in-memory storage!
 _balance_snapshots: List[BalanceSnapshot] = []
+_production_warning_logged = False
+
+
+def _check_in_memory_warning() -> None:
+    """Log a warning if using in-memory storage in production."""
+    global _production_warning_logged
+    if _production_warning_logged:
+        return
+    
+    env = os.getenv("ENV", "development").lower()
+    storage_backend = os.getenv("FIN_INFRA_STORAGE_BACKEND", "memory").lower()
+    
+    if env in ("production", "staging") and storage_backend == "memory":
+        _logger.warning(
+            "⚠️ CRITICAL: Balance history using IN-MEMORY storage in %s environment! "
+            "All balance snapshots will be LOST on restart. "
+            "Set FIN_INFRA_STORAGE_BACKEND=sql for production persistence.",
+            env,
+        )
+        _production_warning_logged = True
 
 
 class BalanceSnapshot(BaseModel):
@@ -87,6 +115,8 @@ def record_balance_snapshot(
     This function stores a point-in-time balance record for trend analysis.
     In production, this would write to a SQL database via svc-infra.
 
+    ⚠️ WARNING: Uses in-memory storage by default. Data is LOST on restart!
+
     Args:
         account_id: Account identifier
         balance: Account balance at the snapshot time
@@ -103,6 +133,9 @@ def record_balance_snapshot(
         - In production, use unique constraint on (account_id, date) in SQL
         - Consider using svc-infra jobs for automatic daily snapshots
     """
+    # Check if in-memory storage is being used in production
+    _check_in_memory_warning()
+    
     snapshot = BalanceSnapshot(
         account_id=account_id,
         balance=balance,

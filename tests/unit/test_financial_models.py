@@ -137,7 +137,8 @@ class TestTransactionModel:
         )
         data = txn.model_dump()
         assert data["id"] == "txn_serial"
-        assert data["amount"] == 75.99
+        # Transaction.amount is now Decimal for financial precision
+        assert data["amount"] == Decimal("75.99")
         assert data["date"] == date(2025, 11, 4)
 
     def test_transaction_missing_required_fields(self):

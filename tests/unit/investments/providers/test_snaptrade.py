@@ -140,7 +140,7 @@ async def test_get_holdings_success(
     mock_positions_response.raise_for_status = Mock()
 
     # Mock client.get to return different responses based on URL
-    async def mock_get(url, params=None):
+    async def mock_get(url, params=None, headers=None):
         if "accounts" in url and "positions" not in url:
             return mock_accounts_response
         elif "positions" in url:
@@ -183,7 +183,7 @@ async def test_get_holdings_filtered_accounts(
     mock_positions_response.json.return_value = [mock_snaptrade_position]
     mock_positions_response.raise_for_status = Mock()
 
-    async def mock_get(url, params=None):
+    async def mock_get(url, params=None, headers=None):
         if "accounts" in url and "positions" not in url:
             return mock_accounts_response
         elif "positions" in url:
@@ -238,7 +238,7 @@ async def test_get_transactions_success(
     mock_transactions_response.json.return_value = [mock_snaptrade_transaction]
     mock_transactions_response.raise_for_status = Mock()
 
-    async def mock_get(url, params=None):
+    async def mock_get(url, params=None, headers=None):
         if "accounts" in url and "transactions" not in url:
             return mock_accounts_response
         elif "transactions" in url:
@@ -296,7 +296,7 @@ async def test_get_transactions_filtered_accounts(
     mock_transactions_response.json.return_value = [mock_snaptrade_transaction]
     mock_transactions_response.raise_for_status = Mock()
 
-    async def mock_get(url, params=None):
+    async def mock_get(url, params=None, headers=None):
         if "accounts" in url and "transactions" not in url:
             return mock_accounts_response
         elif "transactions" in url:
@@ -341,7 +341,7 @@ async def test_get_securities_success(
     mock_positions_response.json.return_value = [position_aapl, position_googl]
     mock_positions_response.raise_for_status = Mock()
 
-    async def mock_get(url, params=None):
+    async def mock_get(url, params=None, headers=None):
         if "accounts" in url and "positions" not in url:
             return mock_accounts_response
         elif "positions" in url:
@@ -381,7 +381,7 @@ async def test_get_securities_filtered(
     mock_positions_response.json.return_value = [position_aapl, position_googl]
     mock_positions_response.raise_for_status = Mock()
 
-    async def mock_get(url, params=None):
+    async def mock_get(url, params=None, headers=None):
         if "accounts" in url and "positions" not in url:
             return mock_accounts_response
         elif "positions" in url:
@@ -420,7 +420,7 @@ async def test_get_investment_accounts_success(
     mock_balances_response.json.return_value = mock_snaptrade_balances
     mock_balances_response.raise_for_status = Mock()
 
-    async def mock_get(url, params=None):
+    async def mock_get(url, params=None, headers=None):
         if "balances" in url:
             return mock_balances_response
         elif "positions" in url:

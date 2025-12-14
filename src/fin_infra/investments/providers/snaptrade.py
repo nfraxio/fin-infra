@@ -20,7 +20,6 @@ from ..models import (
     InvestmentAccount,
     InvestmentTransaction,
     Security,
-    SecurityType,
     TransactionType,
 )
 from .base import InvestmentProvider
@@ -96,6 +95,25 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
             timeout=30.0,
         )
 
+    def _auth_headers(self, user_id: str, user_secret: str) -> Dict[str, str]:
+        """Build authentication headers for SnapTrade API requests.
+        
+        SECURITY: User secrets are passed in headers, NOT URL params.
+        URL params are logged in access logs, browser history, and proxy logs.
+        Headers are not logged by default in most web servers.
+        
+        Args:
+            user_id: SnapTrade user ID
+            user_secret: SnapTrade user secret (sensitive!)
+            
+        Returns:
+            Dict with authentication headers
+        """
+        return {
+            "userId": user_id,
+            "userSecret": user_secret,
+        }
+
     async def get_holdings(
         self,
         access_token: str,
@@ -123,12 +141,12 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
             ...     print(f"{holding.security.ticker_symbol}: P&L ${pnl}")
         """
         user_id, user_secret = self._parse_access_token(access_token)
+        auth_headers = self._auth_headers(user_id, user_secret)
 
         try:
             # Get all accounts
             accounts_url = f"{self.base_url}/accounts"
-            params = {"userId": user_id, "userSecret": user_secret}
-            response = await self.client.get(accounts_url, params=params)
+            response = await self.client.get(accounts_url, headers=auth_headers)
             response.raise_for_status()
             accounts = await response.json()
 
@@ -143,8 +161,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
                 positions_url = (
                     f"{self.base_url}/accounts/{account_id}/positions"
                 )
-                pos_params = {"userId": user_id, "userSecret": user_secret}
-                pos_response = await self.client.get(positions_url, params=pos_params)
+                pos_response = await self.client.get(positions_url, headers=auth_headers)
                 pos_response.raise_for_status()
                 positions = await pos_response.json()
 
@@ -192,12 +209,12 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
             raise ValueError("start_date must be before end_date")
 
         user_id, user_secret = self._parse_access_token(access_token)
+        auth_headers = self._auth_headers(user_id, user_secret)
 
         try:
             # Get all accounts
             accounts_url = f"{self.base_url}/accounts"
-            params = {"userId": user_id, "userSecret": user_secret}
-            response = await self.client.get(accounts_url, params=params)
+            response = await self.client.get(accounts_url, headers=auth_headers)
             response.raise_for_status()
             accounts = await response.json()
 
@@ -212,13 +229,12 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
                 transactions_url = (
                     f"{self.base_url}/accounts/{account_id}/transactions"
                 )
+                # Date params are non-sensitive, only auth goes in headers
                 tx_params = {
-                    "userId": user_id,
-                    "userSecret": user_secret,
                     "startDate": start_date.isoformat(),
                     "endDate": end_date.isoformat(),
                 }
-                tx_response = await self.client.get(transactions_url, params=tx_params)
+                tx_response = await self.client.get(transactions_url, params=tx_params, headers=auth_headers)
                 tx_response.raise_for_status()
                 transactions = await tx_response.json()
 
@@ -297,12 +313,12 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
             ...     print(f"  P&L: {account.total_unrealized_gain_loss_percent:.2f}%")
         """
         user_id, user_secret = self._parse_access_token(access_token)
+        auth_headers = self._auth_headers(user_id, user_secret)
 
         try:
             # Get all accounts
             accounts_url = f"{self.base_url}/accounts"
-            params = {"userId": user_id, "userSecret": user_secret}
-            response = await self.client.get(accounts_url, params=params)
+            response = await self.client.get(accounts_url, headers=auth_headers)
             response.raise_for_status()
             accounts = await response.json()
 
@@ -315,8 +331,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
                 positions_url = (
                     f"{self.base_url}/accounts/{account_id}/positions"
                 )
-                pos_params = {"userId": user_id, "userSecret": user_secret}
-                pos_response = await self.client.get(positions_url, params=pos_params)
+                pos_response = await self.client.get(positions_url, headers=auth_headers)
                 pos_response.raise_for_status()
                 positions = await pos_response.json()
 
@@ -328,8 +343,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
 
                 # Get account balances
                 balances_url = f"{self.base_url}/accounts/{account_id}/balances"
-                bal_params = {"userId": user_id, "userSecret": user_secret}
-                bal_response = await self.client.get(balances_url, params=bal_params)
+                bal_response = await self.client.get(balances_url, headers=auth_headers)
                 bal_response.raise_for_status()
                 balances = await bal_response.json()
 
@@ -373,11 +387,11 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
             ...     print(f"Connected: {conn['brokerage_name']}")
         """
         user_id, user_secret = self._parse_access_token(access_token)
+        auth_headers = self._auth_headers(user_id, user_secret)
 
         try:
             url = f"{self.base_url}/connections"
-            params = {"userId": user_id, "userSecret": user_secret}
-            response = await self.client.get(url, params=params)
+            response = await self.client.get(url, headers=auth_headers)
             response.raise_for_status()
             return await response.json()
 

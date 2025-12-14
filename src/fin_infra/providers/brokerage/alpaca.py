@@ -105,6 +105,9 @@ class AlpacaBrokerage(BrokerageProvider):
     ) -> dict:
         """Submit an order to Alpaca.
 
+        IMPORTANT: client_order_id is auto-generated if not provided to ensure
+        idempotency. Network retries without idempotency can cause DOUBLE ORDERS.
+
         Args:
             symbol: Trading symbol (e.g., "AAPL")
             qty: Order quantity
@@ -113,14 +116,20 @@ class AlpacaBrokerage(BrokerageProvider):
             time_in_force: "day", "gtc", "ioc", or "fok" (default: "day")
             limit_price: Limit price (required for limit/stop_limit orders)
             stop_price: Stop price (required for stop/stop_limit orders)
-            client_order_id: Optional client order ID
+            client_order_id: Client order ID for idempotency. Auto-generated if not provided.
 
         Returns:
-            Order dict with id, status, filled_qty, etc.
+            Order dict with id, status, filled_qty, client_order_id, etc.
 
         Raises:
             Exception: If order submission fails
         """
+        # CRITICAL: Auto-generate client_order_id for idempotency if not provided.
+        # Without this, network retries can cause duplicate order execution = MONEY LOSS.
+        if client_order_id is None:
+            import uuid
+            client_order_id = str(uuid.uuid4())
+
         order = self.client.submit_order(
             symbol=symbol,
             qty=qty,
