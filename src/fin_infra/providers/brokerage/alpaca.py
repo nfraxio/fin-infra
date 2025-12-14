@@ -15,7 +15,7 @@ try:
     ALPACA_AVAILABLE = True
 except ImportError:
     ALPACA_AVAILABLE = False
-    REST = None  # type: ignore
+    REST = None
 
 from ..base import BrokerageProvider
 

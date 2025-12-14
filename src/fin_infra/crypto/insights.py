@@ -260,7 +260,7 @@ Provide your insight:"""
         # Use natural language conversation (no output_schema)
         # Note: In tests, achat is mocked with messages= parameter
         # In production, this should use user_msg, provider, model_name parameters
-        response = await llm.achat(  # type: ignore[call-arg]
+        response = await llm.achat(
             messages=[{"role": "user", "content": prompt}],
         )
 

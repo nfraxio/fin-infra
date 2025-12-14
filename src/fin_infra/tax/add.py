@@ -321,7 +321,7 @@ def add_tax_data(
         #   broker = easy_brokerage(mode="paper")
         #   positions = broker.positions()  # Should accept user_id parameter
         # For now, return empty list (integration test will mock this)
-        positions: list = []  # type: ignore
+        positions: list = []
 
         # TODO: Get recent trades for wash sale checking
         recent_trades = None

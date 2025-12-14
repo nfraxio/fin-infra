@@ -87,11 +87,11 @@ __all__ = [
 def __getattr__(name: str):
     """Lazy import for budgets module components."""
     if name == "easy_budgets":
-        from fin_infra.budgets.ease import easy_budgets  # type: ignore[attr-defined]
+        from fin_infra.budgets.ease import easy_budgets
 
         return easy_budgets
     elif name == "add_budgets":
-        from fin_infra.budgets.add import add_budgets  # type: ignore[attr-defined]
+        from fin_infra.budgets.add import add_budgets
 
         return add_budgets
     elif name in (
@@ -119,11 +119,11 @@ def __getattr__(name: str):
 
         return BudgetTracker
     elif name == "check_budget_alerts":
-        from fin_infra.budgets.alerts import check_budget_alerts  # type: ignore[attr-defined]
+        from fin_infra.budgets.alerts import check_budget_alerts
 
         return check_budget_alerts
     elif name == "apply_template":
-        from fin_infra.budgets.templates import apply_template  # type: ignore[attr-defined]
+        from fin_infra.budgets.templates import apply_template
 
         return apply_template
 

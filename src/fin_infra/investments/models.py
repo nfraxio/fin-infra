@@ -201,7 +201,7 @@ class Holding(BaseModel):
     unofficial_currency_code: Optional[str] = Field(None, description="For crypto/alt currencies")
     as_of_date: Optional[date] = Field(None, description="Date of pricing data")
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def unrealized_gain_loss(self) -> Optional[Decimal]:
         """Calculate unrealized gain/loss (current value - cost basis)."""
@@ -209,7 +209,7 @@ class Holding(BaseModel):
             return None
         return self.institution_value - self.cost_basis
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def unrealized_gain_loss_percent(self) -> Optional[Decimal]:
         """Calculate unrealized gain/loss percentage."""
@@ -350,7 +350,7 @@ class InvestmentAccount(BaseModel):
     # Holdings
     holdings: List[Holding] = Field(default_factory=list, description="List of holdings in account")
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def total_value(self) -> Decimal:
         """Calculate total account value (sum of holdings + cash)."""
@@ -358,20 +358,20 @@ class InvestmentAccount(BaseModel):
         cash_balance = self.balances.get("current") or Decimal(0)
         return holdings_value + cash_balance
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def total_cost_basis(self) -> Decimal:
         """Calculate total cost basis (sum of cost_basis across holdings)."""
         return sum(h.cost_basis for h in self.holdings if h.cost_basis is not None)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def total_unrealized_gain_loss(self) -> Decimal:
         """Calculate total unrealized P&L (value - cost_basis)."""
         holdings_value = sum(h.institution_value for h in self.holdings)
         return holdings_value - self.total_cost_basis
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def total_unrealized_gain_loss_percent(self) -> Optional[Decimal]:
         """Calculate total unrealized P&L percentage."""

@@ -288,7 +288,7 @@ This template fully integrates with **svc-infra** for backend infrastructure:
 
 Powered by **ai-infra** for LLM features:
 
-- ✅ **CoreLLM** - Multi-provider support (Google Gemini default)
+- ✅ **LLM** - Multi-provider support (Google Gemini default)
 - ✅ **FinancialPlanningConversation** - Multi-turn Q&A with context
 - ✅ **Structured Output** - Pydantic schema validation for categorization
 - ✅ **Cost Tracking** - Budget enforcement ($0.10/day, $2/month caps)

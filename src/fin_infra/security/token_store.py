@@ -10,12 +10,16 @@ from typing import Optional
 from sqlalchemy import Column, DateTime, String, Text, select, update
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 from .encryption import ProviderTokenEncryption
 from .models import ProviderTokenMetadata
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """Declarative base for provider token models."""
+
+    pass
 
 
 class ProviderToken(Base):

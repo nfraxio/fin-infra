@@ -701,7 +701,7 @@ print("✅ Tax data enabled (provider: mock)")
 #   /analytics/cash-flow - Income vs expenses with category breakdowns
 #   /analytics/savings-rate - Gross/net/discretionary savings calculations
 #   /analytics/spending-insights - Pattern detection, anomalies, trends
-#   /analytics/advice - AI-powered spending recommendations (ai-infra CoreLLM)
+#   /analytics/advice - AI-powered spending recommendations (ai-infra LLM)
 #   /analytics/portfolio - Performance, allocation, benchmarks
 #   /analytics/projections - Monte Carlo net worth forecasting
 #   /analytics/rebalance - Tax-optimized rebalancing suggestions
@@ -896,7 +896,7 @@ print("✅ Cashflows enabled (NPV, IRR, PMT, amortization)")
 #   GET /chat/history - Conversation history
 # Features: Multi-turn Q&A via ai-infra FinancialPlanningConversation,
 #           context-aware responses, budget recommendations, goal suggestions
-# AI: Uses ai-infra CoreLLM with conversation management
+# AI: Uses ai-infra LLM with conversation management
 # Cost: <$0.01/conversation with caching, budget limits enforced
 if settings.llm_configured:
     from fin_infra.chat.ease import easy_financial_conversation

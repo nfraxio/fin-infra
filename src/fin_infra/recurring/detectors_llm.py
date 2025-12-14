@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 try:
     from ai_infra.llm import LLM
 except ImportError:
-    LLM = None  # type: ignore
+    LLM = None
 
 logger = logging.getLogger(__name__)
 

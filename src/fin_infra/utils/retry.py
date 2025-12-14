@@ -28,7 +28,7 @@ async def retry_async(
     for i in range(attempts):
         try:
             return await func()
-        except tuple(retry_on) as exc:  # type: ignore[misc]
+        except tuple(retry_on) as exc:
             last_exc = exc
             if i == attempts - 1:
                 break

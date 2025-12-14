@@ -37,6 +37,8 @@ Usage:
 
 from __future__ import annotations
 
+from typing import Callable
+
 # Financial capability prefix patterns (extensible)
 FINANCIAL_ROUTE_PREFIXES = (
     "/banking",
@@ -110,9 +112,9 @@ def financial_route_classifier(route_path: str, method: str) -> str:
 
 
 def compose_classifiers(
-    *classifiers: callable,
+    *classifiers: Callable[[str], str],
     default: str = "public",
-) -> callable:
+) -> Callable[[str], str]:
     """
     Compose multiple route classifiers with fallback logic.
 
