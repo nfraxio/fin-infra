@@ -7,14 +7,14 @@ Provides 4 types of insights:
 3. Goal Recommendations: Validate financial goals and suggest paths
 4. Asset Allocation Advice: Portfolio rebalancing based on age/risk
 
-Uses ai-infra CoreLLM with structured output (Pydantic schemas).
+Uses ai-infra LLM with structured output (Pydantic schemas).
 Caches insights for 24h (target: 95%+ hit rate, $0.042/user/month cost).
 
 Example:
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
     from fin_infra.net_worth.insights import NetWorthInsightsGenerator
 
-    llm = CoreLLM()
+    llm = LLM()
     generator = NetWorthInsightsGenerator(
         llm=llm,
         provider="google",
@@ -379,7 +379,7 @@ class NetWorthInsightsGenerator:
     """
     Generate LLM-powered financial insights for net worth tracking.
 
-    Uses ai-infra CoreLLM with structured output (Pydantic schemas).
+    Uses ai-infra LLM with structured output (Pydantic schemas).
     Supports 4 insight types:
     1. Wealth trends (analyze net worth changes)
     2. Debt reduction (prioritize payoff by APR)
@@ -389,9 +389,9 @@ class NetWorthInsightsGenerator:
     Cost: ~$0.042/user/month (1 insight/day, 24h cache, Google Gemini)
 
     Example:
-        from ai_infra.llm import CoreLLM
+        from ai_infra.llm import LLM
 
-        llm = CoreLLM()
+        llm = LLM()
         generator = NetWorthInsightsGenerator(
             llm=llm,
             provider="google",
@@ -412,7 +412,7 @@ class NetWorthInsightsGenerator:
         Initialize insights generator.
 
         Args:
-            llm: ai-infra CoreLLM instance
+            llm: ai-infra LLM instance
             provider: LLM provider ("google", "openai", "anthropic")
             model_name: Model name (default: gemini-2.0-flash-exp)
         """

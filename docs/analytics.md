@@ -306,7 +306,7 @@ Generates personalized spending recommendations using LLM (via ai-infra).
 curl "http://localhost:8000/analytics/spending-advice?user_id=user_123"
 ```
 
-**Note**: Uses ai-infra CoreLLM with cost tracking. Falls back to rule-based insights if LLM fails.
+**Note**: Uses ai-infra LLM with cost tracking. Falls back to rule-based insights if LLM fails.
 
 ---
 
@@ -559,12 +559,12 @@ analytics = add_analytics(app)
 ### 2. With ai-infra (LLM Infrastructure)
 
 ```python
-from ai_infra.llm import CoreLLM
+from ai_infra.llm import LLM
 from ai_infra.conversation import FinancialPlanningConversation
 from fin_infra.analytics import easy_analytics
 
 # AI from ai-infra
-llm = CoreLLM(provider="openai", model="gpt-4")
+llm = LLM(provider="openai", model="gpt-4")
 
 # Analytics from fin-infra
 analytics = easy_analytics()
@@ -918,7 +918,7 @@ print(f"Found {len(transactions)} transactions")
 
 **Causes**:
 1. No LLM API key → Set `OPENAI_API_KEY` or `GOOGLE_GENAI_API_KEY`
-2. Invalid model name → Check ai-infra CoreLLM supported models
+2. Invalid model name → Check ai-infra LLM supported models
 3. Rate limit exceeded → Check LLM provider dashboard
 
 **Fix**:
@@ -928,8 +928,8 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Check ai-infra LLM setup
-from ai_infra.llm import CoreLLM
-llm = CoreLLM(provider="google_genai", model="gemini-2.0-flash-exp")
+from ai_infra.llm import LLM
+llm = LLM(provider="google_genai", model="gemini-2.0-flash-exp")
 response = await llm.achat(messages=[{"role": "user", "content": "test"}])
 print(response)
 

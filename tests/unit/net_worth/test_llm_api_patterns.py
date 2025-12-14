@@ -23,7 +23,7 @@ async def test_conversation_uses_achat_without_schema():
 
     For conversation patterns, see ai-infra documentation:
     - ai_infra.conversation.FinancialPlanningConversation (multi-turn Q&A)
-    - ai_infra.llm.CoreLLM (LLM inference)
+    - ai_infra.llm.LLM (LLM inference)
 
     fin-infra provides financial PROMPTS and SCHEMAS, but not conversation infrastructure.
     """

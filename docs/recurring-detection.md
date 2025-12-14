@@ -1397,6 +1397,69 @@ async def generate_all_summaries():
         await cache_summary(user.id, summary)
 ```
 
+---
+
+## LLM-Enhanced Features (Optional)
+
+The core recurring detection system above is fully algorithmic. For additional accuracy and insights, fin-infra provides **optional LLM-enhanced features** that can be enabled when `ai-infra` is available.
+
+### Overview
+
+V2 adds LLM-assisted capabilities:
+- **Merchant Normalization**: Clean up messy merchant names ("NFLX*SUB" → "Netflix")
+- **Variable Amount Detection**: Identify utility-style recurring charges with varying amounts
+- **Subscription Insights**: AI-generated summaries and savings recommendations
+
+These features are **optional** — the LLM wiring is behind `enable_llm` / `enable_cache` flags and falls back to deterministic logic when unavailable.
+
+### Quick Start
+
+```python
+from fin_infra.recurring.normalizers import MerchantNormalizer
+from fin_infra.recurring.detectors_llm import VariableDetectorLLM
+from fin_infra.recurring.insights import SubscriptionInsightsGenerator
+
+# Normalize merchant names
+norm = MerchantNormalizer(provider="google", enable_cache=False)
+result = await norm.normalize("NFLX*SUB")  # → "Netflix"
+
+# Detect variable recurring patterns
+det = VariableDetectorLLM(provider="google")
+amounts = [45.5, 52.3, 48.75]
+date_pattern = "Monthly (15th ±3 days)"
+pattern = await det.detect("City Electric", amounts, date_pattern)
+
+# Generate subscription insights
+gen = SubscriptionInsightsGenerator(provider="google", enable_cache=False)
+insights = await gen.generate([
+    {"merchant": "Netflix", "amount": 15.99, "cadence": "monthly"}
+])
+```
+
+### Design Notes
+
+- **Merchant Normalization**: Uses few-shot prompting with model-specific templates. Gracefully degrades to rule-based heuristics when LLM not available.
+- **Variable Detection**: Expects a list of numeric amounts plus a date pattern string (e.g., "Monthly (15th ±3 days)"). Returns a `VariableRecurringPattern` Pydantic model with `expected_range: Optional[tuple[float, float]]`.
+- **Insights Generator**: Accepts a list of subscriptions and returns `SubscriptionInsights` (summary, top_subscriptions, recommendations, total_monthly_cost, potential_savings).
+
+### LLM Testing
+
+- **Unit tests**: `tests/unit/test_recurring_normalizers.py`, `tests/unit/test_recurring_detectors_llm.py`, `tests/unit/test_recurring_insights.py` — run with `pytest tests/unit -q`.
+- **Acceptance tests**: `tests/acceptance/test_recurring_llm.py` — skipped unless `GOOGLE_API_KEY` (or other provider key) is set. Exercises real model calls.
+
+### Cost & Budgeting
+
+Each LLM call increments in-memory budget counters (`_daily_cost`, `_monthly_cost`) to protect costs:
+- **Defaults**: `$0.10/day`, `$2.00/month`
+- **Production**: Replace tracking with Redis or a shared store
+
+### Troubleshooting
+
+- **`AttributeError: ... does not have the attribute 'LLM'`**: Ensure `ai-infra` is installed or mocks are in place for tests
+- **Cache-related tests skipped**: Enable `svc-infra` cache shims in your environment; run as integration/acceptance with Redis
+
+---
+
 ## Related Documentation
 
 - [Transaction Categorization](categorization.md) - Categorize transactions by type

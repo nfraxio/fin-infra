@@ -1,7 +1,7 @@
 """
 Unit tests for recurring/detectors_llm.py (Layer 4 - LLM variable amount detection).
 
-Tests variable recurring pattern detection with mocked CoreLLM responses.
+Tests variable recurring pattern detection with mocked LLM responses.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -73,12 +73,12 @@ class TestVariableRecurringPattern:
 
 
 class TestVariableDetectorLLM:
-    """Test VariableDetectorLLM with mocked CoreLLM."""
+    """Test VariableDetectorLLM with mocked LLM."""
 
     @pytest.fixture
     def mock_llm(self):
-        """Mock CoreLLM for testing."""
-        with patch("fin_infra.recurring.detectors_llm.CoreLLM") as mock:
+        """Mock LLM for testing."""
+        with patch("fin_infra.recurring.detectors_llm.LLM") as mock:
             yield mock
 
     @pytest.fixture

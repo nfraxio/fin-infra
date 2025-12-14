@@ -66,7 +66,7 @@ async def test_generate_spending_insights_with_llm():
         "estimated_monthly_savings": 50.0,
     }
 
-    # Mock CoreLLM
+    # Mock LLM
     mock_llm = AsyncMock()
     mock_llm.achat = AsyncMock(return_value=mock_response)
 

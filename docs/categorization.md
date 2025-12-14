@@ -569,13 +569,13 @@ Get categorization statistics.
 ## V2: LLM-Powered Categorization ✅
 
 **Status**: ✅ Production Ready (v2.0)  
-**Integration**: ai-infra CoreLLM  
+**Integration**: ai-infra LLM  
 **Accuracy**: 95-97% (5-7% improvement over V1)  
 **Cost**: <$0.0002/transaction with caching  
 
 ### Overview
 
-V2 adds **Layer 4 (LLM Fallback)** using ai-infra's CoreLLM for edge cases where traditional methods fail. This improves accuracy from 90% (V1) to **95-97%** (V2) with minimal cost impact.
+V2 adds **Layer 4 (LLM Fallback)** using ai-infra's LLM for edge cases where traditional methods fail. This improves accuracy from 90% (V1) to **95-97%** (V2) with minimal cost impact.
 
 **How It Works**:
 1. **Layers 1-3** (exact → regex → sklearn) handle 95-99% of merchants

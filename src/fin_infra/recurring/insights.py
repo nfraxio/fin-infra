@@ -6,7 +6,7 @@ Provides on-demand insights for users:
 - Top subscriptions by cost
 - Cost-saving recommendations (bundle deals, unused subscriptions)
 
-Uses ai-infra CoreLLM with few-shot prompting.
+Uses ai-infra LLM with few-shot prompting.
 Caches results for 24 hours (80% hit rate expected) → <1ms latency.
 Triggered via GET /recurring/insights API endpoint (not automatic).
 """
@@ -21,9 +21,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # Lazy import for optional dependency (ai-infra)
 try:
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
 except ImportError:
-    CoreLLM = None  # type: ignore
+    LLM = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class SubscriptionInsights(BaseModel):
     """
     Natural language subscription insights.
 
-    Output schema for CoreLLM structured output.
+    Output schema for LLM structured output.
     """
 
     summary: str = Field(
@@ -150,7 +150,7 @@ class SubscriptionInsightsGenerator:
 
     Layer 5 of 4-layer hybrid architecture (on-demand, optional):
     1. Check cache first (80% hit rate, 24h TTL) → <1ms
-    2. Call CoreLLM if cache miss → 300-500ms
+    2. Call LLM if cache miss → 300-500ms
     3. Cache result for 24 hours
     4. Return SubscriptionInsights
 
@@ -187,13 +187,13 @@ class SubscriptionInsightsGenerator:
         self.max_cost_per_day = max_cost_per_day
         self.max_cost_per_month = max_cost_per_month
 
-        # Initialize CoreLLM
-        if CoreLLM is None:
+        # Initialize LLM
+        if LLM is None:
             raise ImportError(
                 "ai-infra required for insights generation. Install: pip install ai-infra"
             )
 
-        self.llm = CoreLLM()
+        self.llm = LLM()
 
         # Initialize cache if enabled
         self.cache = None
@@ -235,7 +235,7 @@ class SubscriptionInsightsGenerator:
         Flow:
         1. Check cache (80% hit rate, key: insights:{user_id}) → <1ms
         2. Check budget (daily/monthly caps)
-        3. Call CoreLLM if cache miss → 300-500ms
+        3. Call LLM if cache miss → 300-500ms
         4. Cache result (24h TTL)
         5. Return SubscriptionInsights
 
@@ -357,7 +357,7 @@ class SubscriptionInsightsGenerator:
         subscriptions: list[dict[str, Any]],
     ) -> SubscriptionInsights:
         """
-        Call CoreLLM for insights generation.
+        Call LLM for insights generation.
 
         Uses few-shot prompting with 3 examples.
         Structured output via Pydantic schema.

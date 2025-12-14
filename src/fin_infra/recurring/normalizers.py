@@ -7,7 +7,7 @@ Handles cryptic merchant names that fail pattern-based normalization:
 - Store numbers: #1234, store-specific identifiers
 - Legal entities: Inc, LLC, Corp, Ltd
 
-Uses ai-infra CoreLLM with few-shot prompting for 90-95% accuracy.
+Uses ai-infra LLM with few-shot prompting for 90-95% accuracy.
 Caches results for 7 days (95% hit rate expected) → <1ms latency.
 Falls back to RapidFuzz if LLM fails or disabled.
 """
@@ -22,9 +22,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # Lazy import for optional dependency (ai-infra)
 try:
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
 except ImportError:
-    CoreLLM = None  # type: ignore
+    LLM = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class MerchantNormalized(BaseModel):
     """
     Result of LLM merchant name normalization.
 
-    Output schema for CoreLLM structured output.
+    Output schema for LLM structured output.
     """
 
     canonical_name: str = Field(
@@ -129,7 +129,7 @@ class MerchantNormalizer:
 
     Layer 2 of 4-layer hybrid architecture:
     1. Check cache first (95% hit rate, 7-day TTL) → <1ms
-    2. Call CoreLLM if cache miss → 200-400ms
+    2. Call LLM if cache miss → 200-400ms
     3. Cache result for 7 days
     4. Return MerchantNormalized
 
@@ -172,13 +172,13 @@ class MerchantNormalizer:
         self.max_cost_per_day = max_cost_per_day
         self.max_cost_per_month = max_cost_per_month
 
-        # Initialize CoreLLM
-        if CoreLLM is None:
+        # Initialize LLM
+        if LLM is None:
             raise ImportError(
                 "ai-infra required for LLM normalization. Install: pip install ai-infra"
             )
 
-        self.llm = CoreLLM()
+        self.llm = LLM()
 
         # Initialize cache if enabled
         self.cache = None
@@ -220,7 +220,7 @@ class MerchantNormalizer:
         Flow:
         1. Check cache (95% hit rate) → <1ms
         2. Check budget (daily/monthly caps)
-        3. Call CoreLLM if cache miss → 200-400ms
+        3. Call LLM if cache miss → 200-400ms
         4. Validate confidence threshold
         5. Cache result (7-day TTL)
         6. Return MerchantNormalized
@@ -332,7 +332,7 @@ class MerchantNormalizer:
 
     async def _call_llm(self, merchant_name: str) -> MerchantNormalized:
         """
-        Call CoreLLM for merchant normalization.
+        Call LLM for merchant normalization.
 
         Uses few-shot prompting with 20 examples.
         Structured output via Pydantic schema.

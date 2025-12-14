@@ -1104,7 +1104,7 @@ progress = await tracker.check_goal_progress(user_id, goal)
 
 ### Overview
 
-V2 adds LLM-powered capabilities using [ai-infra's CoreLLM](../../ai_infra/docs/llm.md) for:
+V2 adds LLM-powered capabilities using [ai-infra's LLM](../../ai_infra/docs/llm.md) for:
 - **Financial Insights** (4 types): Wealth trends, debt reduction plans, goal recommendations, asset allocation advice
 - **Multi-turn Conversation**: Natural dialogue Q&A about finances (maintains context across turns)
 - **Goal Tracking**: Validate goals, track progress, suggest course corrections

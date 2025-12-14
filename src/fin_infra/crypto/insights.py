@@ -1,9 +1,9 @@
 """Crypto portfolio insights using ai-infra LLM.
 
 This module generates personalized insights for cryptocurrency holdings using
-ai-infra's CoreLLM for intelligent analysis and recommendations.
+ai-infra's LLM for intelligent analysis and recommendations.
 
-CRITICAL: Uses ai-infra.llm.CoreLLM (NEVER custom LLM clients).
+CRITICAL: Uses ai-infra.llm.LLM (NEVER custom LLM clients).
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
 
 
 class CryptoInsight(BaseModel):
@@ -56,13 +56,13 @@ class CryptoHolding(BaseModel):
 async def generate_crypto_insights(
     user_id: str,
     holdings: list[CryptoHolding],
-    llm: CoreLLM | None = None,
+    llm: LLM | None = None,
     total_portfolio_value: Decimal | None = None,
 ) -> list[CryptoInsight]:
     """
     Generate personalized crypto insights using ai-infra LLM.
 
-    Uses ai-infra.llm.CoreLLM for intelligent analysis based on:
+    Uses ai-infra.llm.LLM for intelligent analysis based on:
     - Portfolio concentration (diversification recommendations)
     - Performance trends (gains/losses)
     - Risk assessment (volatility, allocation %)
@@ -71,15 +71,15 @@ async def generate_crypto_insights(
     Args:
         user_id: User identifier
         holdings: List of crypto holdings
-        llm: CoreLLM instance (if None, uses default Google Gemini)
+        llm: LLM instance (if None, uses default Google Gemini)
         total_portfolio_value: Total portfolio value including non-crypto assets
 
     Returns:
         List of personalized CryptoInsight objects
 
     Example:
-        >>> from ai_infra.llm import CoreLLM
-        >>> llm = CoreLLM(provider="google_genai", model="gemini-2.0-flash-exp")
+        >>> from ai_infra.llm import LLM
+        >>> llm = LLM(provider="google_genai", model="gemini-2.0-flash-exp")
         >>> holdings = [
         ...     CryptoHolding(
         ...         symbol="BTC",
@@ -206,14 +206,14 @@ async def _generate_llm_insights(
     holdings: list[CryptoHolding],
     total_crypto_value: Decimal,
     total_portfolio_value: Decimal | None,
-    llm: CoreLLM,
+    llm: LLM,
 ) -> list[CryptoInsight]:
     """
-    Generate AI-powered insights using ai-infra CoreLLM.
+    Generate AI-powered insights using ai-infra LLM.
 
     Uses natural language conversation (NO output_schema) for personalized advice.
 
-    CRITICAL: Uses ai-infra.llm.CoreLLM (never custom LLM clients).
+    CRITICAL: Uses ai-infra.llm.LLM (never custom LLM clients).
     """
     insights = []
 

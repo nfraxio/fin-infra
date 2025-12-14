@@ -2,7 +2,7 @@
 AI-powered document analysis and insights.
 
 Uses rule-based analysis (simulated AI) for financial documents.
-Production: Use ai-infra CoreLLM for real AI-powered insights.
+Production: Use ai-infra LLM for real AI-powered insights.
 
 Quick Start:
     >>> from fin_infra.documents.analysis import analyze_document
@@ -14,7 +14,7 @@ Quick Start:
     >>> print(result.recommendations)
 
 Production Integration:
-    - Use ai-infra CoreLLM for all LLM calls (never custom clients)
+    - Use ai-infra LLM for all LLM calls (never custom clients)
     - Cache analysis results (24h TTL via svc-infra cache)
     - Track LLM costs per user (ai-infra cost tracking)
     - Add disclaimers for financial advice
@@ -68,7 +68,7 @@ async def analyze_document(
 
     Notes:
         - Current: Rule-based analysis (simulated AI)
-        - Production: Use ai-infra CoreLLM (never custom LLM clients)
+        - Production: Use ai-infra LLM (never custom LLM clients)
         - Production: Check cache before analysis (svc-infra cache, 24h TTL)
         - Production: Track LLM costs (ai-infra cost tracking)
         - Production: Add disclaimer: "Not a substitute for certified financial advisor"
@@ -218,7 +218,7 @@ def _analyze_tax_document(ocr_text: str, metadata: dict, document_id: str) -> "D
 
     Notes:
         - Current: Rule-based analysis (simulated AI)
-        - Production: Use ai-infra CoreLLM with financial tax prompt
+        - Production: Use ai-infra LLM with financial tax prompt
         - Production: Include tax bracket information
         - Production: Suggest W-4 adjustments if applicable
         - Production: Identify potential deductions or credits
@@ -318,7 +318,7 @@ def _analyze_bank_statement(ocr_text: str, metadata: dict, document_id: str) -> 
 
     Notes:
         - Current: Rule-based analysis (simulated AI)
-        - Production: Use ai-infra CoreLLM with spending analysis prompt
+        - Production: Use ai-infra LLM with spending analysis prompt
         - Production: Identify unusual transactions or patterns
         - Production: Compare to typical spending (if available)
         - Production: Suggest budget optimizations

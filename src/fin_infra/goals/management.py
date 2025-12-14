@@ -7,14 +7,14 @@ Provides 4 goal types with validation and progress tracking:
 3. Debt-Free Goal: Debt payoff schedule with APR calculations
 4. Wealth Milestone: Project growth to target net worth
 
-Uses ai-infra CoreLLM for validation + local math for calculations.
+Uses ai-infra LLM for validation + local math for calculations.
 Weekly progress check-ins via svc-infra.jobs scheduler ($0.0036/user/month).
 
 Example:
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
     from fin_infra.goals.management import FinancialGoalTracker
 
-    llm = CoreLLM()
+    llm = LLM()
     tracker = FinancialGoalTracker(
         llm=llm,
         provider="google",
@@ -475,9 +475,9 @@ class FinancialGoalTracker:
     Cost: ~$0.0009/validation, ~$0.0009/week for progress ($0.0036/user/month)
 
     Example:
-        from ai_infra.llm import CoreLLM
+        from ai_infra.llm import LLM
 
-        llm = CoreLLM()
+        llm = LLM()
         tracker = FinancialGoalTracker(llm=llm, provider="google")
 
         # Validate goal
@@ -503,7 +503,7 @@ class FinancialGoalTracker:
         Initialize goal tracker.
 
         Args:
-            llm: ai-infra CoreLLM instance
+            llm: ai-infra LLM instance
             provider: LLM provider ("google", "openai", "anthropic")
             model_name: Model name (default: gemini-2.0-flash-exp)
         """

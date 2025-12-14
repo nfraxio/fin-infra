@@ -249,7 +249,7 @@ fin-infra documents module is built as **Layer 2** on top of svc-infra's generic
      ▼             ▼              ▼
 ┌─────────┐   ┌─────────┐   ┌──────────┐
 │svc-infra│   │  Cache  │   │ai-infra  │
-│ Storage │   │  Dict   │   │ CoreLLM  │
+│ Storage │   │  Dict   │   │ LLM  │
 │ Backend │   │(→Redis) │   │(→GenAI)  │
 └─────────┘   └─────────┘   └──────────┘
 ```
@@ -295,7 +295,7 @@ fin-infra documents module is built as **Layer 2** on top of svc-infra's generic
 - Type-specific analyzers (tax, bank statement, receipt, generic)
 - Quality validation (confidence >= 0.7, non-empty fields)
 - Result caching (production: Redis with 24h TTL)
-- Production: Use ai-infra CoreLLM for AI-powered analysis
+- Production: Use ai-infra LLM for AI-powered analysis
 - Extracts financial metrics (wages, taxes, spending patterns)
 
 **Models** (`models.py`) - **Layer 2 Extensions**:
@@ -806,12 +806,12 @@ OCR results are cached to avoid redundant processing:
 **Generic:**
 - Basic "extracted successfully" message
 
-### Production Migration (ai-infra CoreLLM)
+### Production Migration (ai-infra LLM)
 
 ```python
-from ai_infra.llm import CoreLLM
+from ai_infra.llm import LLM
 
-llm = CoreLLM(provider="google_genai", model="gemini-2.0-flash-exp")
+llm = LLM(provider="google_genai", model="gemini-2.0-flash-exp")
 
 # Build financial context
 prompt = f"""
@@ -1031,7 +1031,7 @@ add_prefixed_docs(
 - [ ] Add error handling for provider failures
 
 **Analysis Migration:**
-- [ ] Replace rule-based logic with ai-infra CoreLLM
+- [ ] Replace rule-based logic with ai-infra LLM
 - [ ] Implement cost tracking per user
 - [ ] Enforce budget caps ($0.10/day, $2/month)
 - [ ] Add graceful degradation to rule-based fallback
@@ -1149,11 +1149,11 @@ print(f"File size: {len(file_bytes)} bytes")
 
 **Cause:** Rule-based analysis has limited intelligence
 
-**Solution:** Migrate to ai-infra CoreLLM for production:
+**Solution:** Migrate to ai-infra LLM for production:
 ```python
-from ai_infra.llm import CoreLLM
+from ai_infra.llm import LLM
 
-llm = CoreLLM(provider="google_genai", model="gemini-2.0-flash-exp")
+llm = LLM(provider="google_genai", model="gemini-2.0-flash-exp")
 # See "Production Migration" section for full implementation
 ```
 

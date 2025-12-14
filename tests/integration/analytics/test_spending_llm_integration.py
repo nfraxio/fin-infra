@@ -15,7 +15,7 @@ from fin_infra.analytics.spending import analyze_spending, generate_spending_ins
 
 
 class MockLLMProvider:
-    """Mock LLM provider for testing (mimics ai-infra CoreLLM API)."""
+    """Mock LLM provider for testing (mimics ai-infra LLM API)."""
 
     def __init__(self, response=None):
         self.response = response or self._default_response()
@@ -31,7 +31,7 @@ class MockLLMProvider:
         output_method=None,
         **kwargs,
     ):
-        """Mock achat method matching CoreLLM signature."""
+        """Mock achat method matching LLM signature."""
         self.calls.append(
             {
                 "user_msg": user_msg,

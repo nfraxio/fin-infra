@@ -424,7 +424,7 @@ if estimated_liability > 10000:
 
 **Generated from**: `crypto_holdings` parameter  
 **Category**: `InsightCategory.PORTFOLIO` (crypto-specific)  
-**Source**: `fin_infra.crypto.insights.generate_crypto_insights()` using ai-infra CoreLLM
+**Source**: `fin_infra.crypto.insights.generate_crypto_insights()` using ai-infra LLM
 
 **Logic** (See `crypto.md` for full details):
 1. **Rule-Based Insights**:
@@ -432,14 +432,14 @@ if estimated_liability > 10000:
    - **Performance**: "Ethereum has gained 15% this week - consider taking profits."
 
 2. **AI-Powered Insights** (if LLM provided):
-   - Uses `ai_infra.llm.CoreLLM` for intelligent portfolio analysis
+   - Uses `ai_infra.llm.LLM` for intelligent portfolio analysis
    - Natural language recommendations with financial disclaimers
    - Example: "Crypto represents 15% of your total portfolio, which is aggressive but manageable. Ensure you have 6 months emergency fund in stable assets."
 
 **Example**:
 ```python
 from fin_infra.crypto.insights import CryptoHolding
-from ai_infra.llm import CoreLLM
+from ai_infra.llm import LLM
 
 crypto_holdings = [
     CryptoHolding(
@@ -457,7 +457,7 @@ crypto_holdings = [
 ]
 
 # AI-powered insights (requires LLM)
-llm = CoreLLM()
+llm = LLM()
 feed = aggregate_insights(
     user_id="user_123",
     crypto_holdings=crypto_holdings,
@@ -897,7 +897,7 @@ def test_insights_endpoint():
 ## FAQ
 
 **Q: How do I enable AI-powered crypto insights?**  
-A: Pass a `CoreLLM` instance from ai-infra when calling `aggregate_insights()`. See `crypto.md` for details.
+A: Pass a `LLM` instance from ai-infra when calling `aggregate_insights()`. See `crypto.md` for details.
 
 **Q: Can I filter insights by category?**  
 A: Not directly in `aggregate_insights()`, but you can filter the returned `insights` list by `insight.category`.
@@ -931,7 +931,7 @@ A: No. Insights are generated on-demand from current data. Database persistence 
 - **Goals**: `goals.md` (goal tracking)
 - **Recurring Patterns**: `recurring.md` (subscription detection)
 - **svc-infra Cache**: `svc-infra/docs/cache.md` (caching strategies)
-- **ai-infra LLM**: `ai-infra/docs/llm.md` (CoreLLM usage)
+- **ai-infra LLM**: `ai-infra/docs/llm.md` (LLM usage)
 
 ---
 

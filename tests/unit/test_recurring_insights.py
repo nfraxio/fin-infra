@@ -1,7 +1,7 @@
 """
 Unit tests for recurring/insights.py (Layer 5 - LLM subscription insights generation).
 
-Tests subscription insights generation with mocked CoreLLM responses.
+Tests subscription insights generation with mocked LLM responses.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -104,12 +104,12 @@ class TestSubscriptionInsights:
 
 
 class TestSubscriptionInsightsGenerator:
-    """Test SubscriptionInsightsGenerator with mocked CoreLLM."""
+    """Test SubscriptionInsightsGenerator with mocked LLM."""
 
     @pytest.fixture
     def mock_llm(self):
-        """Mock CoreLLM for testing."""
-        with patch("fin_infra.recurring.insights.CoreLLM") as mock:
+        """Mock LLM for testing."""
+        with patch("fin_infra.recurring.insights.LLM") as mock:
             yield mock
 
     @pytest.fixture

@@ -10,10 +10,10 @@ NOT tied to net worth specifically - works across ALL fin-infra domains:
 
 Example:
     from fin_infra.conversation import FinancialPlanningConversation
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
     from svc_infra.cache import get_cache
 
-    llm = CoreLLM()
+    llm = LLM()
     cache = get_cache()
     conversation = FinancialPlanningConversation(
         llm=llm,
@@ -101,7 +101,7 @@ def add_financial_conversation(
 
     Integration:
         - Uses user_router (requires authentication)
-        - Powered by ai-infra CoreLLM (multi-provider support)
+        - Powered by ai-infra LLM (multi-provider support)
         - Uses svc-infra cache for conversation history (24h TTL)
         - Cost: ~$0.018/user/month with Google Gemini
 

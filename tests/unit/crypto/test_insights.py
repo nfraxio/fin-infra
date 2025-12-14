@@ -54,7 +54,7 @@ def doge_holding():
 
 @pytest.fixture
 def mock_llm():
-    """Mock ai-infra CoreLLM."""
+    """Mock ai-infra LLM."""
     llm = MagicMock()
     llm.model = "gemini-2.0-flash-exp"
 

@@ -13,8 +13,8 @@ Example:
     conversation = easy_financial_conversation(provider="openai")
 
     # Custom LLM instance
-    from ai_infra.llm import CoreLLM
-    llm = CoreLLM(temperature=0.3)
+    from ai_infra.llm import LLM
+    llm = LLM(temperature=0.3)
     conversation = easy_financial_conversation(llm=llm)
 """
 
@@ -33,12 +33,12 @@ def easy_financial_conversation(
     Easy builder for financial planning conversation.
 
     One-call setup with sensible defaults:
-    - LLM: ai-infra CoreLLM (Google Gemini default)
+    - LLM: ai-infra LLM (Google Gemini default)
     - Cache: svc-infra cache (24h TTL)
     - Provider: Google (cheapest, $0.018/user/month)
 
     Args:
-        llm: Optional ai-infra CoreLLM instance (auto-created if None)
+        llm: Optional ai-infra LLM instance (auto-created if None)
         cache: Optional svc-infra cache instance (auto-created if None)
         provider: LLM provider ("google", "openai", "anthropic")
         model_name: Optional model name override (uses provider defaults)
@@ -62,16 +62,16 @@ def easy_financial_conversation(
         conversation = easy_financial_conversation(provider="openai")
 
         # Custom LLM instance
-        from ai_infra.llm import CoreLLM
-        llm = CoreLLM(temperature=0.3)
+        from ai_infra.llm import LLM
+        llm = LLM(temperature=0.3)
         conversation = easy_financial_conversation(llm=llm)
     """
     # Auto-create LLM if not provided
     if llm is None:
         try:
-            from ai_infra.llm import CoreLLM
+            from ai_infra.llm import LLM
 
-            llm = CoreLLM()
+            llm = LLM()
         except ImportError:
             raise ImportError("ai-infra not installed. Install with: pip install ai-infra")
 

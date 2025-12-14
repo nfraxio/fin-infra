@@ -43,13 +43,13 @@ Production Notes:
 - Use svc-infra jobs to run daily TLH scans (cron: "0 9 * * 1-5" for weekday mornings)
 - Cache results with 24h TTL (market prices change daily)
 - Integrate with brokerage API for recent trades (wash sale checking)
-- Use ai-infra CoreLLM for intelligent replacement suggestions (sector analysis, correlation)
+- Use ai-infra LLM for intelligent replacement suggestions (sector analysis, correlation)
 - Add compliance logging for all TLH recommendations (audit trail)
 - Consider state tax rates in addition to federal (varies by state)
 
 Cost Considerations:
 - Market data: Use fin_infra.markets for current prices (~$0.01/quote)
-- LLM suggestions: Use ai-infra CoreLLM for replacements (~$0.001/suggestion)
+- LLM suggestions: Use ai-infra LLM for replacements (~$0.001/suggestion)
 - Target: <$0.05/user/month for TLH analysis
 """
 
@@ -230,7 +230,7 @@ def find_tlh_opportunities(
     Production Notes:
         - Use svc-infra cache with 24h TTL: @cache_read(ttl=86400)
         - Fetch recent_trades from brokerage API (last 90 days)
-        - Use ai-infra CoreLLM for intelligent replacement suggestions
+        - Use ai-infra LLM for intelligent replacement suggestions
         - Log all recommendations to svc-infra audit log
         - Consider state tax rates in addition to federal
     """
@@ -434,7 +434,7 @@ def _suggest_replacement(symbol: str, asset_class: str) -> str:
     Provides a similar exposure without triggering wash sale.
     Uses simple rules based on common symbols and asset classes.
 
-    Production: Use ai-infra CoreLLM for intelligent suggestions based on:
+    Production: Use ai-infra LLM for intelligent suggestions based on:
     - Sector/industry analysis
     - Correlation with original security
     - Market cap similarity
@@ -454,7 +454,7 @@ def _suggest_replacement(symbol: str, asset_class: str) -> str:
         'ARKK'  # Innovation ETF
     """
     # Simple rule-based suggestions (v1)
-    # TODO: Replace with ai-infra CoreLLM for intelligent suggestions
+    # TODO: Replace with ai-infra LLM for intelligent suggestions
     replacements = {
         # Tech stocks → sector ETFs
         "AAPL": "VGT",  # Tech ETF

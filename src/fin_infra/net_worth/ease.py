@@ -368,7 +368,7 @@ def easy_net_worth(
 
     if enable_llm:
         try:
-            from ai_infra.llm import CoreLLM
+            from ai_infra.llm import LLM
         except ImportError:
             raise ImportError(
                 "LLM features require ai-infra package. " "Install with: pip install ai-infra"
@@ -387,8 +387,8 @@ def easy_net_worth(
                 f"Unknown llm_provider: {llm_provider}. " f"Use 'google', 'openai', or 'anthropic'"
             )
 
-        # Create shared CoreLLM instance
-        llm = CoreLLM()
+        # Create shared LLM instance
+        llm = LLM()
 
         # Create LLM components (deferred import to avoid circular dependency)
         # These modules will be created in Section 17 V2 implementation

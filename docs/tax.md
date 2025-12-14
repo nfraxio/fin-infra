@@ -214,12 +214,12 @@ Built-in rule-based mappings for common securities:
 | ETH | BTC | Crypto (swap) |
 | Unknown | SPY | S&P 500 ETF (default) |
 
-**For production**: Use ai-infra CoreLLM for intelligent replacements:
+**For production**: Use ai-infra LLM for intelligent replacements:
 
 ```python
-from ai_infra.llm import CoreLLM
+from ai_infra.llm import LLM
 
-llm = CoreLLM(provider="google_genai", model="gemini-2.0-flash-exp")
+llm = LLM(provider="google_genai", model="gemini-2.0-flash-exp")
 
 prompt = f"""Suggest a replacement security for {symbol} that:
 1. Is NOT substantially identical under IRS wash sale rules

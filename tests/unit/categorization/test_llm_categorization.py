@@ -37,7 +37,7 @@ def mock_llm_response():
 
 @pytest.fixture
 def mock_core_llm():
-    """Mock ai-infra LLM (imported as LLM alias from CoreLLM)."""
+    """Mock ai-infra LLM (imported as LLM alias from LLM)."""
     with patch("fin_infra.categorization.llm_layer.LLM") as mock:
         yield mock
 
@@ -82,7 +82,7 @@ class TestLLMCategorizerBasic:
         # Categorize
         await categorizer.categorize("Amazon", user_id="user123")
 
-        # Verify CoreLLM.achat called with structured output
+        # Verify LLM.achat called with structured output
         mock_instance.achat.assert_called_once()
         call_kwargs = mock_instance.achat.call_args.kwargs
         assert call_kwargs["output_schema"] == CategoryPrediction
@@ -97,10 +97,10 @@ class TestLLMRetryLogic:
         """
         Test that LLM retries on transient failures.
 
-        NOTE: Retry logic is handled by ai-infra CoreLLM, not LLMCategorizer.
-        This test verifies that CoreLLM.achat is called with retry config.
+        NOTE: Retry logic is handled by ai-infra LLM, not LLMCategorizer.
+        This test verifies that LLM.achat is called with retry config.
         """
-        # Setup mock: succeed immediately (CoreLLM handles retries internally)
+        # Setup mock: succeed immediately (LLM handles retries internally)
         mock_instance = AsyncMock()
         mock_instance.achat.return_value = mock_llm_response
         mock_core_llm.return_value = mock_instance
@@ -111,7 +111,7 @@ class TestLLMRetryLogic:
         # Categorize (should succeed)
         result = await categorizer.categorize("Walmart", user_id="user123")
 
-        # Verify retry config passed to CoreLLM.achat
+        # Verify retry config passed to LLM.achat
         call_kwargs = mock_instance.achat.call_args.kwargs
         assert "extra" in call_kwargs
         assert "retry" in call_kwargs["extra"]
@@ -120,8 +120,8 @@ class TestLLMRetryLogic:
 
     @pytest.mark.asyncio
     async def test_llm_fail_after_max_retries(self, mock_core_llm):
-        """Test that LLM raises exception when CoreLLM fails after retries."""
-        # Setup mock: always fail (CoreLLM already tried retries)
+        """Test that LLM raises exception when LLM fails after retries."""
+        # Setup mock: always fail (LLM already tried retries)
         mock_instance = AsyncMock()
         mock_instance.achat.side_effect = Exception("Persistent failure")
         mock_core_llm.return_value = mock_instance

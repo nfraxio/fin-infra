@@ -7,7 +7,7 @@ Handles edge cases where statistical methods fail:
 - Gym fees with annual waived months or promotional discounts
 - Streaming services with rare price changes
 
-Uses ai-infra CoreLLM with few-shot prompting for 88% accuracy.
+Uses ai-infra LLM with few-shot prompting for 88% accuracy.
 Only called for ambiguous patterns (20-40% variance, ~10% of patterns).
 """
 
@@ -20,9 +20,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # Lazy import for optional dependency (ai-infra)
 try:
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
 except ImportError:
-    CoreLLM = None  # type: ignore
+    LLM = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class VariableRecurringPattern(BaseModel):
     """
     Result of LLM variable amount detection.
 
-    Output schema for CoreLLM structured output.
+    Output schema for LLM structured output.
     """
 
     is_recurring: bool = Field(
@@ -149,11 +149,11 @@ class VariableDetectorLLM:
     Layer 4 of 4-layer hybrid architecture:
     - Only called when variance is 20-40% (ambiguous, ~10% of patterns)
     - Statistical methods handle <20% variance (85% coverage)
-    - Uses CoreLLM to understand semantic variance (seasonal, spikes)
+    - Uses LLM to understand semantic variance (seasonal, spikes)
 
     Flow:
     1. Receive merchant name, amounts, date pattern
-    2. Call CoreLLM with few-shot prompt
+    2. Call LLM with few-shot prompt
     3. Return VariableRecurringPattern
     4. Update budget tracking
     """
@@ -182,13 +182,13 @@ class VariableDetectorLLM:
         self.max_cost_per_day = max_cost_per_day
         self.max_cost_per_month = max_cost_per_month
 
-        # Initialize CoreLLM
-        if CoreLLM is None:
+        # Initialize LLM
+        if LLM is None:
             raise ImportError(
                 "ai-infra required for LLM variable detection. Install: pip install ai-infra"
             )
 
-        self.llm = CoreLLM()
+        self.llm = LLM()
 
         # Budget tracking (in-memory for simplicity, should use Redis in production)
         self._daily_cost = 0.0
@@ -263,7 +263,7 @@ class VariableDetectorLLM:
         date_pattern: str,
     ) -> VariableRecurringPattern:
         """
-        Call CoreLLM for variable amount detection.
+        Call LLM for variable amount detection.
 
         Uses few-shot prompting with 5 examples.
         Structured output via Pydantic schema.

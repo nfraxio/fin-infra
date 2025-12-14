@@ -8,13 +8,13 @@
 
 ## Overview
 
-The cryptocurrency module provides market data, portfolio tracking, and AI-powered insights for crypto assets. It supports multiple market data providers (CoinGecko, Yahoo Finance, CCXT) and integrates with ai-infra's CoreLLM for intelligent portfolio analysis.
+The cryptocurrency module provides market data, portfolio tracking, and AI-powered insights for crypto assets. It supports multiple market data providers (CoinGecko, Yahoo Finance, CCXT) and integrates with ai-infra's LLM for intelligent portfolio analysis.
 
 ### Key Features
 
 - **Market Data**: Real-time quotes, historical prices, and market cap information
 - **Multi-Provider Support**: CoinGecko (primary), Yahoo Finance, CCXT (exchanges)
-- **Portfolio Insights**: AI-powered recommendations using ai-infra CoreLLM
+- **Portfolio Insights**: AI-powered recommendations using ai-infra LLM
 - **Symbol Normalization**: Automatic conversion between different symbol formats
 - **Caching**: Intelligent caching with svc-infra (60s TTL for quotes)
 - **REST API**: FastAPI integration with dual routers
@@ -57,7 +57,7 @@ print(f"Found: {results[0]['name']} ({results[0]['symbol']})")
 
 ```python
 from fin_infra.crypto.insights import generate_crypto_insights, CryptoHolding
-from ai_infra.llm import CoreLLM
+from ai_infra.llm import LLM
 from decimal import Decimal
 
 # Define portfolio holdings
@@ -77,7 +77,7 @@ holdings = [
 ]
 
 # Generate insights (with AI)
-llm = CoreLLM()
+llm = LLM()
 insights = await generate_crypto_insights(
     user_id="user_123",
     holdings=holdings,
@@ -216,11 +216,11 @@ for coin in results:
 
 **Status**: ✅ Production-ready (Phase 3)  
 **Module**: `fin_infra.crypto.insights`  
-**Dependencies**: ai-infra (CoreLLM)
+**Dependencies**: ai-infra (LLM)
 
 ### Overview
 
-Generate personalized cryptocurrency portfolio insights using ai-infra's CoreLLM. Combines **rule-based patterns** (allocation, performance) with **AI-powered recommendations** (risk assessment, strategic advice).
+Generate personalized cryptocurrency portfolio insights using ai-infra's LLM. Combines **rule-based patterns** (allocation, performance) with **AI-powered recommendations** (risk assessment, strategic advice).
 
 ### API Reference
 
@@ -228,7 +228,7 @@ Generate personalized cryptocurrency portfolio insights using ai-infra's CoreLLM
 
 ```python
 from fin_infra.crypto.insights import generate_crypto_insights, CryptoHolding
-from ai_infra.llm import CoreLLM
+from ai_infra.llm import LLM
 from decimal import Decimal
 
 insights = await generate_crypto_insights(
@@ -247,7 +247,7 @@ insights = await generate_crypto_insights(
             cost_basis=Decimal("25000"),
         ),
     ],
-    llm=CoreLLM(),  # Optional: enables AI insights
+    llm=LLM(),  # Optional: enables AI insights
     total_portfolio_value=Decimal("200000"),  # Optional: for allocation %
 )
 
@@ -259,7 +259,7 @@ for insight in insights:
 **Parameters**:
 - `user_id` (str): User identifier
 - `holdings` (list[CryptoHolding]): Portfolio holdings (required)
-- `llm` (CoreLLM | None): ai-infra LLM instance (optional, enables AI insights)
+- `llm` (LLM | None): ai-infra LLM instance (optional, enables AI insights)
 - `total_portfolio_value` (Decimal | None): Total portfolio value across all assets (optional)
 
 **Returns**: `list[CryptoInsight]` sorted by priority (high → medium → low)
@@ -367,7 +367,7 @@ Insight:
 
 ### AI-Powered Insights
 
-**Generated with CoreLLM** (intelligent, personalized):
+**Generated with LLM** (intelligent, personalized):
 
 #### AI Prompt Context
 
@@ -407,17 +407,17 @@ exposure. Not financial advice—consult a certified financial advisor.
 
 ### Mocking LLM Calls in Tests
 
-**CRITICAL**: Never call real LLM APIs in unit tests. Always mock CoreLLM.
+**CRITICAL**: Never call real LLM APIs in unit tests. Always mock LLM.
 
 ```python
 # tests/unit/crypto/test_insights.py
 from unittest.mock import AsyncMock, Mock
-from ai_infra.llm import CoreLLM
+from ai_infra.llm import LLM
 
 def test_generate_crypto_insights_with_llm():
     """Test AI-powered insights with mocked LLM."""
     # Create mock LLM
-    mock_llm = Mock(spec=CoreLLM)
+    mock_llm = Mock(spec=LLM)
     mock_response = Mock()
     mock_response.content = "Your crypto portfolio is well-diversified..."
     mock_llm.achat = AsyncMock(return_value=mock_response)
@@ -438,7 +438,7 @@ def test_generate_crypto_insights_with_llm():
 ```
 
 **Key Points**:
-- Use `unittest.mock.Mock(spec=CoreLLM)` to create type-safe mock
+- Use `unittest.mock.Mock(spec=LLM)` to create type-safe mock
 - Mock `achat` method with `AsyncMock(return_value=mock_response)`
 - Mock response should have `.content` attribute (string)
 - Verify LLM call with `assert_called_once()`
@@ -464,7 +464,7 @@ def test_generate_crypto_insights_with_llm():
 
 2. **Use cheaper models**: Gemini Flash (10x cheaper than GPT-4)
    ```python
-   llm = CoreLLM(provider="google_genai", model="gemini-2.0-flash-exp")
+   llm = LLM(provider="google_genai", model="gemini-2.0-flash-exp")
    ```
 
 3. **Batch users**: Generate insights in nightly jobs, not per-request
@@ -497,7 +497,7 @@ def test_generate_crypto_insights_with_llm():
 ```python
 from fin_infra.crypto import easy_crypto
 from fin_infra.crypto.insights import generate_crypto_insights, CryptoHolding
-from ai_infra.llm import CoreLLM
+from ai_infra.llm import LLM
 
 # Fetch real-time prices
 crypto = easy_crypto()
@@ -521,7 +521,7 @@ holdings = [
 ]
 
 # Generate insights
-llm = CoreLLM()
+llm = LLM()
 insights = await generate_crypto_insights(
     user_id="user_123",
     holdings=holdings,
@@ -730,9 +730,9 @@ def test_coingecko_ticker():
 @pytest.mark.slow
 def test_crypto_insights_end_to_end():
     """Test full insights generation with real LLM (skip in CI)."""
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
     
-    llm = CoreLLM()
+    llm = LLM()
     holdings = [...]
     
     insights = await generate_crypto_insights(user_id="test_user", holdings=holdings, llm=llm)
@@ -777,7 +777,7 @@ A: See `tax.md` for crypto-specific tax calculations (FIFO/LIFO, capital gains).
 - **[Analytics](./analytics.md)**: Portfolio rebalancing with crypto
 - **[Tax](./tax.md)**: Crypto tax calculations and reporting
 - **[Market Data](./markets.md)**: Stock market data (similar patterns)
-- **[ai-infra LLM](../../ai-infra/docs/llm.md)**: CoreLLM usage guide
+- **[ai-infra LLM](../../ai-infra/docs/llm.md)**: LLM usage guide
 - **[svc-infra Cache](../../svc-infra/docs/cache.md)**: Caching strategies
 
 ---

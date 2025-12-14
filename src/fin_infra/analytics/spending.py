@@ -12,7 +12,7 @@ Generic Applicability:
 
 Features:
 - Statistical analysis: Top merchants, category breakdowns, trends, anomalies
-- LLM-powered insights: Personalized recommendations using ai-infra CoreLLM
+- LLM-powered insights: Personalized recommendations using ai-infra LLM
 - Graceful degradation: Falls back to rule-based insights if LLM unavailable
 - Cost-effective: Structured output for predictable token usage (<$0.01/insight)
 
@@ -427,12 +427,12 @@ async def generate_spending_insights(
 ) -> "PersonalizedSpendingAdvice":
     """Generate personalized spending insights using LLM.
 
-    Uses ai-infra CoreLLM for structured output generation with financial context.
+    Uses ai-infra LLM for structured output generation with financial context.
 
     Args:
         spending_insight: Analyzed spending data from analyze_spending()
         user_context: Optional context (income, goals, budget, preferences)
-        llm_provider: Optional CoreLLM instance (defaults to Google Gemini)
+        llm_provider: Optional LLM instance (defaults to Google Gemini)
 
     Returns:
         PersonalizedSpendingAdvice with LLM-generated recommendations
@@ -468,14 +468,14 @@ async def generate_spending_insights(
 
     # Try to import ai-infra LLM (optional dependency)
     try:
-        from ai_infra.llm import CoreLLM
+        from ai_infra.llm import LLM
     except ImportError:
         # Graceful degradation: return rule-based insights
         return _generate_rule_based_insights(spending_insight, user_context)
 
     # Initialize LLM if not provided
     if llm_provider is None:
-        llm_provider = CoreLLM()
+        llm_provider = LLM()
 
     # Build financial context prompt
     prompt = _build_spending_insights_prompt(spending_insight, user_context)

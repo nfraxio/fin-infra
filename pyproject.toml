@@ -55,6 +55,7 @@ svc-infra = ">=0.1.0"  # Published version for CI/production
 yahooquery = ">=2.3.0"
 ccxt = ">=4.0.0"
 plaid-python = ">=25.0.0"
+ai-infra = ">=0.1.142"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8.0.0"

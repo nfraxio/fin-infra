@@ -114,7 +114,7 @@ class SpendingInsight(BaseModel):
 class PersonalizedSpendingAdvice(BaseModel):
     """LLM-generated personalized spending advice.
 
-    Uses ai-infra CoreLLM for structured output generation.
+    Uses ai-infra LLM for structured output generation.
     """
 
     model_config = ConfigDict(extra="forbid")

@@ -10,19 +10,19 @@ Provides conversational interface for financial Q&A:
 - Personalized advice (uses current net worth, goals, historical data)
 - Natural dialogue (flexible responses, not forced JSON structure)
 
-**Design Choice**: Uses `CoreLLM.achat()` for natural conversation (NOT `with_structured_output()`).
+**Design Choice**: Uses `LLM.achat()` for natural conversation (NOT `with_structured_output()`).
 Conversation should be flexible and natural, not rigidly structured. Other modules (insights,
 categorization, goals) correctly use structured output because they need predictable schemas.
 
-Uses ai-infra CoreLLM for natural conversation.
+Uses ai-infra LLM for natural conversation.
 Caches conversation context for 24h (target: $0.018/user/month cost).
 
 Example:
-    from ai_infra.llm import CoreLLM
+    from ai_infra.llm import LLM
     from svc_infra.cache import get_cache
     from fin_infra.conversation import FinancialPlanningConversation
 
-    llm = CoreLLM()
+    llm = LLM()
     cache = get_cache()
     conversation = FinancialPlanningConversation(
         llm=llm,
@@ -196,10 +196,10 @@ class FinancialPlanningConversation:
     Cost: ~$0.0054/conversation (10 turns with context caching)
 
     Example:
-        from ai_infra.llm import CoreLLM
+        from ai_infra.llm import LLM
         from svc_infra.cache import get_cache
 
-        llm = CoreLLM()
+        llm = LLM()
         cache = get_cache()
         conversation = FinancialPlanningConversation(
             llm=llm,
@@ -232,7 +232,7 @@ class FinancialPlanningConversation:
         Initialize conversation manager.
 
         Args:
-            llm: ai-infra CoreLLM instance
+            llm: ai-infra LLM instance
             cache: svc-infra cache instance (for context storage)
             provider: LLM provider ("google", "openai", "anthropic")
             model_name: Model name (default: gemini-2.0-flash-exp)

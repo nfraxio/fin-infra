@@ -1,7 +1,7 @@
 """
 Unit tests for recurring/normalizers.py (Layer 2 - LLM merchant normalization).
 
-Tests merchant name normalization with mocked CoreLLM responses.
+Tests merchant name normalization with mocked LLM responses.
 """
 
 import hashlib
@@ -63,12 +63,12 @@ class TestMerchantNormalized:
 
 
 class TestMerchantNormalizer:
-    """Test MerchantNormalizer with mocked CoreLLM."""
+    """Test MerchantNormalizer with mocked LLM."""
 
     @pytest.fixture
     def mock_llm(self):
-        """Mock CoreLLM for testing."""
-        with patch("fin_infra.recurring.normalizers.CoreLLM") as mock:
+        """Mock LLM for testing."""
+        with patch("fin_infra.recurring.normalizers.LLM") as mock:
             yield mock
 
     @pytest.fixture
