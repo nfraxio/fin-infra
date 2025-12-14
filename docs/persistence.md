@@ -214,7 +214,6 @@ fin-infra scaffold budgets --dest-dir app/models/budgets
 Available domains:
 - **budgets**: Monthly/yearly budgets with categories, rollover, tracking
 - **goals**: Financial goals with progress tracking, milestones, status
-- **net_worth**: Immutable snapshots with time-series queries, growth calculations
 
 ### 2. Run Scaffold Command with Flags
 
@@ -963,9 +962,6 @@ fin-infra scaffold budgets --dest-dir app/models/budgets --include-soft-delete
 
 # Goals (no tenant, no soft delete)
 fin-infra scaffold goals --dest-dir app/models/goals
-
-# Net worth (no tenant, with soft delete)
-fin-infra scaffold net_worth --dest-dir app/models/net_worth --include-soft-delete
 ```
 
 **Wire CRUD**:
@@ -974,14 +970,12 @@ from fastapi import FastAPI
 from svc_infra.api.fastapi.db.sql import add_sql_resources, SqlResource
 from app.models.budgets import Budget
 from app.models.goals import Goal
-from app.models.net_worth import NetWorthSnapshot
 
 app = FastAPI()
 
 add_sql_resources(app, [
     SqlResource(model=Budget, prefix="/budgets", search_fields=["name"], soft_delete=True),
     SqlResource(model=Goal, prefix="/goals", search_fields=["name"]),
-    SqlResource(model=NetWorthSnapshot, prefix="/net-worth", search_fields=["user_id"]),
 ])
 ```
 
@@ -1002,11 +996,6 @@ fin-infra scaffold budgets --dest-dir app/models/budgets \
 
 # Goals (with tenant)
 fin-infra scaffold goals --dest-dir app/models/goals --include-tenant
-
-# Net worth (with tenant and soft delete)
-fin-infra scaffold net_worth --dest-dir app/models/net_worth \
-    --include-tenant \
-    --include-soft-delete
 ```
 
 **Enable RLS**:
