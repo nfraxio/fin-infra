@@ -251,8 +251,7 @@ class CategorizationEngine:
             )
 
         except Exception as e:
-            # Log error and return None (will fallback to uncategorized)
-            print(f"ML prediction error: {e}")
+            logger.error("ML prediction error: %s", e)
             return None
 
     def _load_ml_model(self) -> None:
@@ -273,8 +272,10 @@ class CategorizationEngine:
         vectorizer_file = self.model_path / "vectorizer.joblib"
 
         if not model_file.exists() or not vectorizer_file.exists():
-            print(f"ML model not found at {self.model_path}")
-            print("Run training script to generate model files")
+            logger.warning(
+                "ML model not found at %s. Run training script to generate model files.",
+                self.model_path,
+            )
             return
 
         try:
@@ -282,12 +283,14 @@ class CategorizationEngine:
 
             self._ml_model = joblib.load(model_file)
             self._ml_vectorizer = joblib.load(vectorizer_file)
-            print(f"Loaded ML model from {self.model_path}")
+            logger.info("Loaded ML model from %s", self.model_path)
         except ImportError:
-            print("scikit-learn not installed. ML predictions disabled.")
-            print("Install with: pip install scikit-learn")
+            logger.warning(
+                "scikit-learn not installed. ML predictions disabled. "
+                "Install with: pip install scikit-learn"
+            )
         except Exception as e:
-            print(f"Error loading ML model: {e}")
+            logger.error("Error loading ML model: %s", e)
 
     def add_rule(
         self,

@@ -8,6 +8,7 @@ CRITICAL: Uses ai-infra.llm.LLM (NEVER custom LLM clients).
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -16,6 +17,8 @@ from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from ai_infra.llm import LLM
+
+logger = logging.getLogger(__name__)
 
 
 class CryptoInsight(BaseModel):
@@ -284,8 +287,6 @@ Provide your insight:"""
             )
         )
     except Exception as e:
-        # Graceful degradation - log error but don't fail
-        # In production, use svc-infra logging
-        print(f"Warning: LLM insight generation failed: {e}")
+        logger.warning("LLM insight generation failed: %s", e)
 
     return insights

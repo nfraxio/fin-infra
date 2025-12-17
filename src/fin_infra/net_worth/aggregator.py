@@ -30,6 +30,7 @@ print(f"Net Worth: ${snapshot.total_net_worth:,.2f}")
 """
 
 import asyncio
+import logging
 import uuid
 from datetime import datetime
 from typing import Any
@@ -46,6 +47,8 @@ from fin_infra.net_worth.models import (
     LiabilityDetail,
     NetWorthSnapshot,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class NetWorthAggregator:
@@ -219,8 +222,7 @@ class NetWorthAggregator:
 
         for i, result in enumerate(results):
             if isinstance(result, BaseException):
-                # Log error but continue (graceful degradation)
-                print(f"Provider {providers_used[i]} failed: {result}")
+                logger.warning("Provider %s failed: %s", providers_used[i], result)
                 continue
 
             # result is now tuple[list[AssetDetail], list[LiabilityDetail]]

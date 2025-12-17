@@ -10,6 +10,7 @@ Aggregates insights from multiple sources:
 - Cash flow projections
 """
 
+import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
 
 from .models import Insight, InsightFeed, InsightPriority, InsightCategory
 from .aggregator import aggregate_insights, get_user_insights
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "Insight",
@@ -125,4 +128,4 @@ def add_insights(
     # Mount router
     app.include_router(router, include_in_schema=True)
 
-    print("Insights feed enabled (unified financial insights)")
+    logger.info("Insights feed enabled")
