@@ -2,13 +2,21 @@
 
 These tests make real API calls and require:
 - Alpha Vantage: ALPHA_VANTAGE_API_KEY or ALPHAVANTAGE_API_KEY env var
-- Yahoo Finance: No API key needed (zero config)
+- Yahoo Finance: No API key needed (zero config), but requires yahooquery package
 """
 
 import os
 from decimal import Decimal
 
 import pytest
+
+# Check if yahooquery is available
+try:
+    from yahooquery import Ticker as _Ticker  # noqa: F401
+
+    HAS_YAHOOQUERY = True
+except ImportError:
+    HAS_YAHOOQUERY = False
 
 from fin_infra.markets import easy_market
 from fin_infra.providers.market.alphavantage import AlphaVantageMarketData
@@ -92,6 +100,7 @@ class TestAlphaVantageAcceptance:
         print(f"✓ Alpha Vantage search: Found {len(results)} results for 'Apple'")
 
 
+@pytest.mark.skipif(not HAS_YAHOOQUERY, reason="yahooquery not installed")
 class TestYahooFinanceAcceptance:
     """Acceptance tests for Yahoo Finance provider (zero config)."""
 
@@ -134,6 +143,7 @@ class TestYahooFinanceAcceptance:
 class TestEasyMarketAcceptance:
     """Acceptance tests for easy_market() builder."""
 
+    @pytest.mark.skipif(not HAS_YAHOOQUERY, reason="yahooquery not installed")
     def test_easy_market_yahoo_zero_config(self, monkeypatch):
         """Test that easy_market() defaults to Yahoo when no API key."""
         # Remove Alpha Vantage keys to force Yahoo
