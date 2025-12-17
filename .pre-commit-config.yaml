@@ -57,11 +57,17 @@ repos:
         args: ["--select=E,F"]
         additional_dependencies: [flake8-bugbear]
 
-  # --- Type checking (optional; can be slow) ---
+  # --- Type checking ---
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v1.13.0
     hooks:
       - id: mypy
-        args: ["--ignore-missing-imports", "--no-implicit-optional"]
-        additional_dependencies: [types-requests]
+        args: ["--config-file=pyproject.toml"]
+        additional_dependencies:
+          - pydantic>=2.0
+          - httpx>=0.27.0
+          - types-requests
+          - types-PyYAML
         exclude: ^tests/
+        pass_filenames: false
+        entry: mypy src/
