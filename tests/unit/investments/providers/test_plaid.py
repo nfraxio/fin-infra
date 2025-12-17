@@ -6,7 +6,18 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from fin_infra.investments.models import (
+# Check if plaid-python is available
+try:
+    import plaid  # noqa: F401
+    from plaid.api import plaid_api as _plaid_api  # noqa: F401
+
+    HAS_PLAID = True
+except ImportError:
+    HAS_PLAID = False
+
+pytestmark = pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
+
+from fin_infra.investments.models import (  # noqa: E402
     Holding,
     InvestmentAccount,
     InvestmentTransaction,
@@ -14,7 +25,7 @@ from fin_infra.investments.models import (
     SecurityType,
     TransactionType,
 )
-from fin_infra.investments.providers.plaid import PlaidInvestmentProvider
+from fin_infra.investments.providers.plaid import PlaidInvestmentProvider  # noqa: E402
 
 
 @pytest.fixture

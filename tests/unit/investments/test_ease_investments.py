@@ -5,6 +5,14 @@ from unittest.mock import patch
 
 import pytest
 
+# Check if plaid-python is available (required for most tests)
+try:
+    import plaid  # noqa: F401
+
+    HAS_PLAID = True
+except ImportError:
+    HAS_PLAID = False
+
 from fin_infra.investments.ease import easy_investments
 from fin_infra.investments.providers.base import InvestmentProvider
 from fin_infra.investments.providers.plaid import PlaidInvestmentProvider
@@ -14,6 +22,7 @@ from fin_infra.investments.providers.snaptrade import SnapTradeInvestmentProvide
 # Test auto-detection
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_auto_detect_plaid():
     """Test auto-detection of Plaid from environment."""
     with patch.dict(
@@ -46,6 +55,7 @@ def test_auto_detect_snaptrade():
         assert provider.consumer_key == "test_consumer_key"
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_auto_detect_priority_plaid_over_snaptrade():
     """Test Plaid has priority when both are set."""
     with patch.dict(
@@ -73,6 +83,7 @@ def test_auto_detect_no_credentials():
 # Test explicit provider selection
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_explicit_plaid_with_config():
     """Test explicit Plaid provider with config parameters."""
     provider = easy_investments(
@@ -86,6 +97,7 @@ def test_explicit_plaid_with_config():
     assert provider.secret == "explicit_secret"
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_explicit_plaid_with_env():
     """Test explicit Plaid provider using environment variables."""
     with patch.dict(
@@ -135,6 +147,7 @@ def test_explicit_snaptrade_with_env():
 # Test environment configuration
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_plaid_default_environment():
     """Test Plaid defaults to sandbox environment."""
     provider = easy_investments(
@@ -146,6 +159,7 @@ def test_plaid_default_environment():
     assert isinstance(provider, PlaidInvestmentProvider)
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_plaid_custom_environment():
     """Test Plaid with custom environment."""
     provider = easy_investments(
@@ -157,6 +171,7 @@ def test_plaid_custom_environment():
     assert isinstance(provider, PlaidInvestmentProvider)
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_plaid_environment_from_env_var():
     """Test Plaid environment from PLAID_ENVIRONMENT variable."""
     with patch.dict(
@@ -246,6 +261,7 @@ def test_snaptrade_missing_consumer_key():
 # Test config override precedence
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_config_overrides_env_plaid():
     """Test config parameters override environment variables for Plaid."""
     with patch.dict(
@@ -292,6 +308,7 @@ def test_config_overrides_env_snaptrade():
 # Test multi-provider scenarios
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_multiple_providers_can_coexist():
     """Test creating multiple provider instances."""
     # Create Plaid provider
@@ -316,6 +333,7 @@ def test_multiple_providers_can_coexist():
     assert snaptrade.client_id == "snap_id"
 
 
+@pytest.mark.skipif(not HAS_PLAID, reason="plaid-python not installed")
 def test_returns_investment_provider_interface():
     """Test that all providers return InvestmentProvider interface."""
     plaid = easy_investments(

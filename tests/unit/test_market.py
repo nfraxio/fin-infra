@@ -7,6 +7,22 @@ from unittest.mock import Mock, patch
 import pytest
 import httpx
 
+# Check if yahooquery is available
+try:
+    from yahooquery import Ticker as _Ticker  # noqa: F401
+
+    HAS_YAHOOQUERY = True
+except ImportError:
+    HAS_YAHOOQUERY = False
+
+# Check if pandas is available
+try:
+    import pandas as _pd  # noqa: F401
+
+    HAS_PANDAS = True
+except ImportError:
+    HAS_PANDAS = False
+
 from fin_infra.markets import easy_market
 from fin_infra.providers.market.alphavantage import AlphaVantageMarketData
 from fin_infra.providers.market.yahoo import YahooFinanceMarketData
@@ -23,6 +39,7 @@ class TestEasyMarket:
         assert isinstance(market, AlphaVantageMarketData)
         assert market.api_key == "test_key"
 
+    @pytest.mark.skipif(not HAS_YAHOOQUERY, reason="yahooquery not installed")
     def test_easy_market_auto_detects_yahoo_without_key(self, monkeypatch):
         """Should auto-detect Yahoo Finance when no API key."""
         monkeypatch.delenv("ALPHA_VANTAGE_API_KEY", raising=False)
@@ -30,6 +47,7 @@ class TestEasyMarket:
         market = easy_market()
         assert isinstance(market, YahooFinanceMarketData)
 
+    @pytest.mark.skipif(not HAS_YAHOOQUERY, reason="yahooquery not installed")
     def test_easy_market_explicit_provider(self):
         """Should use explicit provider when specified."""
         market = easy_market(provider="yahoo")
@@ -228,6 +246,7 @@ class TestAlphaVantageMarketData:
             provider.search("")
 
 
+@pytest.mark.skipif(not HAS_YAHOOQUERY, reason="yahooquery not installed")
 class TestYahooFinanceMarketData:
     """Test Yahoo Finance provider."""
 
@@ -269,6 +288,7 @@ class TestYahooFinanceMarketData:
         with pytest.raises(ValueError, match="Yahoo Finance error"):
             provider.quote("INVALID")
 
+    @pytest.mark.skipif(not HAS_PANDAS, reason="pandas not installed")
     @patch("fin_infra.providers.market.yahoo.Ticker")
     def test_history_success(self, mock_ticker_class):
         """Should return list of Candles."""
@@ -299,6 +319,7 @@ class TestYahooFinanceMarketData:
         assert candles[0].close == Decimal("151.25")
         assert candles[1].close == Decimal("149.75")
 
+    @pytest.mark.skipif(not HAS_PANDAS, reason="pandas not installed")
     @patch("fin_infra.providers.market.yahoo.Ticker")
     def test_history_empty_dataframe(self, mock_ticker_class):
         """Should return empty list for empty dataframe."""
