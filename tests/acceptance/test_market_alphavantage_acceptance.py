@@ -98,7 +98,12 @@ class TestYahooFinanceAcceptance:
     def test_quote(self):
         """Test real quote fetch from Yahoo Finance."""
         provider = YahooFinanceMarketData()
-        quote = provider.quote("AAPL")
+        try:
+            quote = provider.quote("AAPL")
+        except Exception as e:
+            if "timeout" in str(e).lower() or "timed out" in str(e).lower():
+                pytest.skip(f"Yahoo Finance API timeout (network issue): {e}")
+            raise
 
         assert isinstance(quote, Quote)
         assert quote.symbol == "AAPL"
@@ -108,7 +113,12 @@ class TestYahooFinanceAcceptance:
     def test_history(self):
         """Test real historical data fetch from Yahoo Finance."""
         provider = YahooFinanceMarketData()
-        candles = provider.history("AAPL", period="1mo")
+        try:
+            candles = provider.history("AAPL", period="1mo")
+        except Exception as e:
+            if "timeout" in str(e).lower() or "timed out" in str(e).lower():
+                pytest.skip(f"Yahoo Finance API timeout (network issue): {e}")
+            raise
 
         assert isinstance(candles, list)
         assert len(candles) > 0
@@ -134,7 +144,12 @@ class TestEasyMarketAcceptance:
         assert isinstance(market, YahooFinanceMarketData)
 
         # Verify it works
-        quote = market.quote("AAPL")
+        try:
+            quote = market.quote("AAPL")
+        except Exception as e:
+            if "timeout" in str(e).lower() or "timed out" in str(e).lower():
+                pytest.skip(f"Yahoo Finance API timeout (network issue): {e}")
+            raise
         assert isinstance(quote, Quote)
         assert quote.price > Decimal(0)
         print(f"✓ easy_market() zero-config: AAPL @ ${quote.price}")
