@@ -252,4 +252,4 @@ def add_cashflows(
     # Mount router
     app.include_router(router, include_in_schema=True)
 
-    print("✅ Cashflow calculations enabled (NPV, IRR, PMT, FV, PV)")
+    print("Cashflow calculations enabled (NPV, IRR, PMT, FV, PV)")

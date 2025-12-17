@@ -189,6 +189,6 @@ def add_financial_conversation(
     # Store on app.state for programmatic access
     app.state.financial_conversation = conversation
 
-    print(f"✅ Financial chat enabled (AI-powered Q&A with {provider})")
+    print(f"Financial chat enabled (AI-powered Q&A with {provider})")
 
     return conversation
