@@ -1,9 +1,33 @@
+"""Base provider ABCs for fin-infra.
+
+This module defines abstract base classes for all financial data providers.
+These are the canonical ABCs - use these instead of fin_infra.clients.
+
+Sync vs Async Pattern:
+    Most providers use SYNCHRONOUS methods for simplicity. The exceptions are:
+    - InvestmentProvider: Uses async methods (get_holdings, get_investment_accounts)
+
+    If you need async, wrap sync providers with asyncio.to_thread():
+        import asyncio
+        result = await asyncio.to_thread(provider.quote, "AAPL")
+
+Provider Categories:
+    - MarketDataProvider: Stock/equity quotes and historical data
+    - CryptoDataProvider: Cryptocurrency market data
+    - BankingProvider: Bank account aggregation (Plaid, Teller, MX)
+    - BrokerageProvider: Trading operations (Alpaca, Interactive Brokers)
+    - CreditProvider: Credit scores and reports
+    - TaxProvider: Tax documents and calculations
+    - IdentityProvider: Identity verification
+    - InvestmentProvider: Investment holdings (async)
+"""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Any, Iterable, Sequence
 
-from ..models import Quote, Candle
+from ..models import Candle, Quote
 
 
 class MarketDataProvider(ABC):

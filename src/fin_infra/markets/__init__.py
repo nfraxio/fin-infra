@@ -20,7 +20,10 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
 from ..providers.base import MarketDataProvider
-from ..clients.base import MarketDataClient
+
+# Deprecated: MarketDataClient alias for backward compatibility
+# Use MarketDataProvider instead
+MarketDataClient = MarketDataProvider  # type: ignore[misc]
 
 
 def easy_market(

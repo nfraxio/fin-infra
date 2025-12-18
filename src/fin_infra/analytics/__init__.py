@@ -7,6 +7,16 @@ This module provides comprehensive financial analytics capabilities including:
 - Portfolio analytics (returns, allocation, benchmarking)
 - Growth projections (net worth forecasting with scenarios)
 
+Feature Status:
+    ✅ STABLE: Core calculation functions (all analytics work with provided data)
+    ⚠️  INTEGRATION: Auto-fetching from providers requires setup:
+        - Banking provider for transaction data
+        - Brokerage provider for investment data
+        - Categorization for expense categorization
+
+    When providers aren't configured, functions accept data directly or return
+    sensible placeholder values for testing/development.
+
 Serves multiple use cases:
 - Personal finance apps (cash flow, savings tracking)
 - Wealth management platforms (portfolio analytics, projections)
