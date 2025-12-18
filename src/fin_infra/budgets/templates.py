@@ -16,7 +16,7 @@ Generic Design:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from fin_infra.budgets.models import Budget, BudgetPeriod, BudgetType
 
@@ -177,9 +177,9 @@ async def apply_template(
     template_name: str,
     total_income: float,
     tracker: BudgetTracker,
-    budget_name: Optional[str] = None,
-    start_date: Optional[datetime] = None,
-    custom_template: Optional[BudgetTemplate] = None,
+    budget_name: str | None = None,
+    start_date: datetime | None = None,
+    custom_template: BudgetTemplate | None = None,
 ) -> Budget:
     """Apply a budget template to create a new budget.
 

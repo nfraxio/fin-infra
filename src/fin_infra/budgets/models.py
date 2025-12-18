@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -296,7 +295,7 @@ class BudgetAlert(BaseModel):
     """
 
     budget_id: str = Field(..., description="Budget identifier")
-    category: Optional[str] = Field(None, description="Category triggering alert")
+    category: str | None = Field(None, description="Category triggering alert")
     alert_type: AlertType = Field(..., description="Type of alert")
     threshold: float = Field(..., description="Threshold that triggered alert")
     message: str = Field(..., description="Human-readable alert message")

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -72,7 +72,7 @@ class SavingsRateData(BaseModel):
     expenses: float = Field(..., description="Total expenses for period")
     period: Period = Field(..., description="Period type")
     definition: SavingsDefinition = Field(..., description="Calculation method used")
-    trend: Optional[TrendDirection] = Field(None, description="Trend over time")
+    trend: TrendDirection | None = Field(None, description="Trend over time")
 
 
 class SpendingAnomaly(BaseModel):
@@ -132,7 +132,7 @@ class PersonalizedSpendingAdvice(BaseModel):
     alerts: list[str] = Field(
         default_factory=list, description="Urgent spending issues requiring attention"
     )
-    estimated_monthly_savings: Optional[float] = Field(
+    estimated_monthly_savings: float | None = Field(
         None, description="Potential monthly savings if recommendations followed"
     )
 
@@ -183,7 +183,7 @@ class BenchmarkComparison(BaseModel):
     benchmark_return_percent: float = Field(..., description="Benchmark return percentage")
     benchmark_symbol: str = Field(..., description="Benchmark ticker (e.g., SPY)")
     alpha: float = Field(..., description="Portfolio alpha (excess return)")
-    beta: Optional[float] = Field(None, description="Portfolio beta (volatility vs benchmark)")
+    beta: float | None = Field(None, description="Portfolio beta (volatility vs benchmark)")
     period: str = Field(..., description="Comparison period (1y, 3y, 5y, etc.)")
 
 
@@ -213,6 +213,6 @@ class GrowthProjection(BaseModel):
     assumptions: dict[str, Any] = Field(
         default_factory=dict, description="Assumptions used (inflation, returns, etc.)"
     )
-    confidence_intervals: Optional[dict[str, tuple[float, float]]] = Field(
+    confidence_intervals: dict[str, tuple[float, float]] | None = Field(
         None, description="95% confidence intervals by scenario"
     )

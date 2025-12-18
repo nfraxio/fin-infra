@@ -1,7 +1,5 @@
 """Integration tests for document management API."""
 
-from typing import Optional
-
 import pytest
 
 try:
@@ -57,9 +55,7 @@ def app():
 
     # Route 2: List documents (MUST come before /{document_id} to avoid path conflict)
     @router.get("/list")
-    async def list_documents_route(
-        user_id: str, type: Optional[str] = None, year: Optional[int] = None
-    ):
+    async def list_documents_route(user_id: str, type: str | None = None, year: int | None = None):
         from fin_infra.documents.models import DocumentType
 
         doc_type = DocumentType(type) if type else None
@@ -88,7 +84,7 @@ def app():
     # Route 5: Extract text (OCR)
     @router.post("/{document_id}/ocr")
     async def extract_text(
-        document_id: str, provider: Optional[str] = None, force_refresh: bool = False
+        document_id: str, provider: str | None = None, force_refresh: bool = False
     ):
         return await manager.extract_text(
             document_id, provider=provider or "tesseract", force_refresh=force_refresh

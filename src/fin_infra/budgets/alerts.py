@@ -35,7 +35,7 @@ Example:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from fin_infra.budgets.models import (
     AlertSeverity,
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 async def check_budget_alerts(
     budget_id: str,
     tracker: BudgetTracker,
-    thresholds: Optional[dict[str, float]] = None,
+    thresholds: dict[str, float] | None = None,
 ) -> list[BudgetAlert]:
     """
     Check budget for alerts (overspending, approaching limits, unusual patterns).

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, field_validator
 
@@ -26,11 +25,11 @@ class Account(BaseModel):
     id: str
     name: str
     type: AccountType
-    mask: Optional[str] = None
+    mask: str | None = None
     currency: str = "USD"
-    institution: Optional[str] = None
-    balance_available: Optional[Decimal] = None
-    balance_current: Optional[Decimal] = None
+    institution: str | None = None
+    balance_available: Decimal | None = None
+    balance_current: Decimal | None = None
 
     @field_validator("balance_available", "balance_current", mode="before")
     @classmethod

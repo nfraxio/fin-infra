@@ -5,7 +5,6 @@ Easy integration of financial PII masking and token encryption.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import FastAPI
 
@@ -15,7 +14,7 @@ from .pii_filter import FinancialPIIFilter
 
 def add_financial_security(
     app: FastAPI,
-    encryption_key: Optional[bytes] = None,
+    encryption_key: bytes | None = None,
     enable_pii_filter: bool = True,
     enable_audit_log: bool = True,
     mask_emails: bool = False,

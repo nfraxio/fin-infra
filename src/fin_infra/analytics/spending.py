@@ -45,7 +45,6 @@ Examples:
 from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
-from typing import Optional
 
 from fin_infra.analytics.models import (
     PersonalizedSpendingAdvice,
@@ -60,7 +59,7 @@ async def analyze_spending(
     user_id: str,
     *,
     period: str = "30d",
-    categories: Optional[list[str]] = None,
+    categories: list[str] | None = None,
     banking_provider=None,
     categorization_provider=None,
 ) -> SpendingInsight:
@@ -426,7 +425,7 @@ def _generate_mock_transactions(days: int) -> list[Transaction]:
 async def generate_spending_insights(
     spending_insight: SpendingInsight,
     *,
-    user_context: Optional[dict] = None,
+    user_context: dict | None = None,
     llm_provider=None,
 ) -> "PersonalizedSpendingAdvice":
     """Generate personalized spending insights using LLM.
@@ -521,7 +520,7 @@ async def generate_spending_insights(
 
 def _build_spending_insights_prompt(
     spending_insight: SpendingInsight,
-    user_context: Optional[dict] = None,
+    user_context: dict | None = None,
 ) -> str:
     """Build LLM prompt with financial context.
 
@@ -621,7 +620,7 @@ Be specific, encouraging, and actionable. Focus on realistic savings, not extrem
 
 def _generate_rule_based_insights(
     spending_insight: SpendingInsight,
-    user_context: Optional[dict] = None,
+    user_context: dict | None = None,
 ) -> "PersonalizedSpendingAdvice":
     """Generate rule-based insights when LLM is unavailable.
 

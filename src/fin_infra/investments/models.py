@@ -20,7 +20,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -121,22 +121,20 @@ class Security(BaseModel):
 
     # Identifiers (at least one required for matching)
     security_id: str = Field(..., description="Provider-specific security ID")
-    cusip: Optional[str] = Field(None, description="CUSIP identifier (US securities)")
-    isin: Optional[str] = Field(None, description="ISIN identifier (international)")
-    sedol: Optional[str] = Field(None, description="SEDOL identifier (UK securities)")
-    ticker_symbol: Optional[str] = Field(None, description="Trading symbol (AAPL, GOOGL)")
+    cusip: str | None = Field(None, description="CUSIP identifier (US securities)")
+    isin: str | None = Field(None, description="ISIN identifier (international)")
+    sedol: str | None = Field(None, description="SEDOL identifier (UK securities)")
+    ticker_symbol: str | None = Field(None, description="Trading symbol (AAPL, GOOGL)")
 
     # Basic info
     name: str = Field(..., description="Security name")
     type: SecurityType = Field(..., description="Security type (equity, etf, bond, etc.)")
-    sector: Optional[str] = Field(
-        None, description="Sector classification (Technology, Healthcare)"
-    )
+    sector: str | None = Field(None, description="Sector classification (Technology, Healthcare)")
 
     # Market data
-    close_price: Optional[Decimal] = Field(None, ge=0, description="Latest closing price")
-    close_price_as_of: Optional[date] = Field(None, description="Date of close_price")
-    exchange: Optional[str] = Field(None, description="Exchange (NASDAQ, NYSE, etc.)")
+    close_price: Decimal | None = Field(None, ge=0, description="Latest closing price")
+    close_price_as_of: date | None = Field(None, description="Date of close_price")
+    exchange: str | None = Field(None, description="Exchange (NASDAQ, NYSE, etc.)")
     currency: str = Field("USD", description="Currency code (USD, EUR, etc.)")
 
 
@@ -198,26 +196,26 @@ class Holding(BaseModel):
     institution_value: Decimal = Field(
         ..., ge=0, description="Current market value (quantity × price)"
     )
-    cost_basis: Optional[Decimal] = Field(
+    cost_basis: Decimal | None = Field(
         None, ge=0, description="Total cost basis (original purchase price)"
     )
 
     # Additional data
     currency: str = Field("USD", description="Currency code")
-    unofficial_currency_code: Optional[str] = Field(None, description="For crypto/alt currencies")
-    as_of_date: Optional[date] = Field(None, description="Date of pricing data")
+    unofficial_currency_code: str | None = Field(None, description="For crypto/alt currencies")
+    as_of_date: date | None = Field(None, description="Date of pricing data")
 
     if TYPE_CHECKING:
 
         @property
-        def unrealized_gain_loss(self) -> Optional[Decimal]:
+        def unrealized_gain_loss(self) -> Decimal | None:
             """Calculate unrealized gain/loss (current value - cost basis)."""
             if self.cost_basis is None:
                 return None
             return self.institution_value - self.cost_basis
 
         @property
-        def unrealized_gain_loss_percent(self) -> Optional[Decimal]:
+        def unrealized_gain_loss_percent(self) -> Decimal | None:
             """Calculate unrealized gain/loss percentage."""
             if self.cost_basis is None or self.cost_basis == 0:
                 return None
@@ -228,7 +226,7 @@ class Holding(BaseModel):
 
         @computed_field
         @property
-        def unrealized_gain_loss(self) -> Optional[Decimal]:
+        def unrealized_gain_loss(self) -> Decimal | None:
             """Calculate unrealized gain/loss (current value - cost basis)."""
             if self.cost_basis is None:
                 return None
@@ -236,7 +234,7 @@ class Holding(BaseModel):
 
         @computed_field
         @property
-        def unrealized_gain_loss_percent(self) -> Optional[Decimal]:
+        def unrealized_gain_loss_percent(self) -> Decimal | None:
             """Calculate unrealized gain/loss percentage."""
             if self.cost_basis is None or self.cost_basis == 0:
                 return None
@@ -304,17 +302,17 @@ class InvestmentTransaction(BaseModel):
     transaction_type: TransactionType = Field(
         ..., alias="type", description="Transaction type (buy, sell, dividend)"
     )
-    subtype: Optional[str] = Field(None, description="Provider-specific subtype")
+    subtype: str | None = Field(None, description="Provider-specific subtype")
 
     # Amounts
     quantity: Decimal = Field(..., description="Number of shares (0 for fees/dividends)")
     amount: Decimal = Field(..., description="Transaction amount (negative for purchases)")
-    price: Optional[Decimal] = Field(None, ge=0, description="Price per share")
-    fees: Optional[Decimal] = Field(None, ge=0, description="Transaction fees")
+    price: Decimal | None = Field(None, ge=0, description="Price per share")
+    fees: Decimal | None = Field(None, ge=0, description="Transaction fees")
 
     # Additional data
     currency: str = Field("USD", description="Currency code")
-    unofficial_currency_code: Optional[str] = Field(None, description="For crypto/alt currencies")
+    unofficial_currency_code: str | None = Field(None, description="For crypto/alt currencies")
 
 
 class InvestmentAccount(BaseModel):
@@ -371,10 +369,10 @@ class InvestmentAccount(BaseModel):
     account_id: str = Field(..., description="Account identifier")
     name: str = Field(..., description="Account name (Fidelity 401k)")
     type: str = Field(..., description="Account type (investment)")
-    subtype: Optional[str] = Field(None, description="Account subtype (401k, ira, brokerage)")
+    subtype: str | None = Field(None, description="Account subtype (401k, ira, brokerage)")
 
     # Balances
-    balances: dict[str, Optional[Decimal]] = Field(
+    balances: dict[str, Decimal | None] = Field(
         ..., description="Current, available, and limit balances"
     )
 
@@ -405,7 +403,7 @@ class InvestmentAccount(BaseModel):
             return holdings_value - self.total_cost_basis
 
         @property
-        def total_unrealized_gain_loss_percent(self) -> Optional[Decimal]:
+        def total_unrealized_gain_loss_percent(self) -> Decimal | None:
             """Calculate total unrealized P&L percentage."""
             if self.total_cost_basis == 0:
                 return None
@@ -439,7 +437,7 @@ class InvestmentAccount(BaseModel):
 
         @computed_field
         @property
-        def total_unrealized_gain_loss_percent(self) -> Optional[Decimal]:
+        def total_unrealized_gain_loss_percent(self) -> Decimal | None:
             """Calculate total unrealized P&L percentage."""
             if self.total_cost_basis == 0:
                 return None

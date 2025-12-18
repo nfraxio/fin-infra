@@ -4,7 +4,6 @@ Pydantic models for transaction categorization.
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,7 +33,7 @@ class CategoryPrediction(BaseModel):
         default_factory=list,
         description="Alternative predictions (category, confidence)",
     )
-    reasoning: Optional[str] = Field(None, description="Explanation of prediction (for LLM)")
+    reasoning: str | None = Field(None, description="Explanation of prediction (for LLM)")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -100,7 +99,7 @@ class CategorizationRequest(BaseModel):
     """Request to categorize a merchant."""
 
     merchant_name: str = Field(..., description="Merchant name to categorize")
-    user_id: Optional[str] = Field(None, description="User ID for personalized overrides")
+    user_id: str | None = Field(None, description="User ID for personalized overrides")
     include_alternatives: bool = Field(default=False, description="Include alternative predictions")
     min_confidence: float = Field(
         default=0.0,
@@ -152,7 +151,7 @@ class CategoryStats(BaseModel):
     total_categories: int = Field(..., description="Total number of categories")
     categories_by_group: dict[str, int] = Field(..., description="Category counts by group")
     total_rules: int = Field(..., description="Total number of rules")
-    cache_hit_rate: Optional[float] = Field(None, description="Cache hit rate (0-1)")
+    cache_hit_rate: float | None = Field(None, description="Cache hit rate (0-1)")
 
     model_config = ConfigDict(
         json_schema_extra={

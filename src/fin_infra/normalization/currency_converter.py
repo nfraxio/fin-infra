@@ -2,7 +2,6 @@
 
 import logging
 from datetime import date as DateType
-from typing import Optional
 
 from fin_infra.exceptions import CurrencyNotSupportedError, ExchangeRateAPIError
 from fin_infra.normalization.models import CurrencyConversionResult
@@ -25,7 +24,7 @@ class CurrencyConverter:
     Supports 160+ currencies including crypto (BTC, ETH).
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """
         Initialize currency converter.
 
@@ -39,7 +38,7 @@ class CurrencyConverter:
         amount: float,
         from_currency: str,
         to_currency: str,
-        date: Optional[DateType] = None,
+        date: DateType | None = None,
     ) -> float:
         """
         Convert amount from one currency to another.
@@ -79,7 +78,7 @@ class CurrencyConverter:
         self,
         from_currency: str,
         to_currency: str,
-        date: Optional[DateType] = None,
+        date: DateType | None = None,
     ) -> float:
         """
         Get exchange rate between two currencies.
@@ -142,7 +141,7 @@ class CurrencyConverter:
         amount: float,
         from_currency: str,
         to_currency: str,
-        date: Optional[DateType] = None,
+        date: DateType | None = None,
     ) -> CurrencyConversionResult:
         """
         Convert amount with detailed result information.

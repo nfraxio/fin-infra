@@ -5,7 +5,6 @@ Database operations for encrypted provider tokens.
 """
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import Column, DateTime, String, Text, select, update
 from sqlalchemy.dialects.postgresql import UUID
@@ -48,8 +47,8 @@ async def store_provider_token(
     provider: str,
     token: str,
     encryption: ProviderTokenEncryption,
-    expires_at: Optional[datetime] = None,
-    key_id: Optional[str] = None,
+    expires_at: datetime | None = None,
+    key_id: str | None = None,
 ) -> ProviderTokenMetadata:
     """
     Store encrypted provider token in database.

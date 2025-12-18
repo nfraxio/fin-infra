@@ -1,7 +1,6 @@
 """Symbol resolver for converting between ticker formats."""
 
 import logging
-from typing import Optional
 
 from fin_infra.exceptions import SymbolNotFoundError
 from fin_infra.normalization.models import SymbolMetadata
@@ -231,9 +230,9 @@ class SymbolResolver:
     def add_mapping(
         self,
         ticker: str,
-        cusip: Optional[str] = None,
-        isin: Optional[str] = None,
-        metadata: Optional[dict] = None,
+        cusip: str | None = None,
+        isin: str | None = None,
+        metadata: dict | None = None,
     ):
         """
         Add or override a symbol mapping (useful for custom symbols).

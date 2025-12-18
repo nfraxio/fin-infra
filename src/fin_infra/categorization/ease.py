@@ -5,7 +5,7 @@ Provides one-line setup with sensible defaults.
 """
 
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 from .engine import CategorizationEngine
 
@@ -21,10 +21,10 @@ def easy_categorization(
     taxonomy: str = "mx",
     enable_ml: bool = False,
     confidence_threshold: float = 0.6,
-    model_path: Optional[Path] = None,
+    model_path: Path | None = None,
     # LLM-specific parameters (V2)
     llm_provider: Literal["google", "openai", "anthropic", "none"] = "google",
-    llm_model: Optional[str] = None,
+    llm_model: str | None = None,
     llm_confidence_threshold: float = 0.6,
     llm_cache_ttl: int = 86400,  # 24 hours
     llm_max_cost_per_day: float = 0.10,  # $0.10/day

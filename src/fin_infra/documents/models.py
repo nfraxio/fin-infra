@@ -31,7 +31,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 from svc_infra.documents import Document as BaseDocument
@@ -111,8 +110,8 @@ class FinancialDocument(BaseDocument):
 
     # Financial-specific fields
     type: DocumentType = Field(..., description="Document type category (financial-specific)")
-    tax_year: Optional[int] = Field(None, description="Tax year for tax documents (e.g., 2024)")
-    form_type: Optional[str] = Field(None, description="Tax form type (W-2, 1099-INT, 1040, etc.)")
+    tax_year: int | None = Field(None, description="Tax year for tax documents (e.g., 2024)")
+    form_type: str | None = Field(None, description="Tax form type (W-2, 1099-INT, 1040, etc.)")
 
 
 # Backward compatibility: alias for existing code

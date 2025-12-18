@@ -8,7 +8,6 @@ These tests verify that cash flow analysis integrates correctly with:
 
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from typing import Optional
 
 import pytest
 
@@ -36,7 +35,7 @@ class MockBankingProvider:
         user_id: str,
         start_date: datetime,
         end_date: datetime,
-        accounts: Optional[list[str]] = None,
+        accounts: list[str] | None = None,
     ) -> list[Transaction]:
         """Fetch transactions for the given period."""
         # Filter by date range

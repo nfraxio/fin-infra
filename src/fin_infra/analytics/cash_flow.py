@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from ..models import Transaction
 from .models import CashFlowAnalysis
@@ -17,7 +17,7 @@ async def calculate_cash_flow(
     user_id: str,
     start_date: str | datetime,
     end_date: str | datetime,
-    accounts: Optional[list[str]] = None,
+    accounts: list[str] | None = None,
     *,
     banking_provider=None,
     categorization_provider=None,
@@ -117,7 +117,7 @@ async def calculate_cash_flow(
 async def forecast_cash_flow(
     user_id: str,
     months: int = 6,
-    assumptions: Optional[dict[str, Any]] = None,
+    assumptions: dict[str, Any] | None = None,
     *,
     recurring_provider=None,
 ) -> list[CashFlowAnalysis]:

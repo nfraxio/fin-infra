@@ -6,7 +6,6 @@ Track access to sensitive financial data for compliance.
 
 import logging
 from datetime import datetime
-from typing import Optional
 
 from .models import PIIAccessLog
 
@@ -23,10 +22,10 @@ async def log_pii_access(
     pii_type: str,
     action: str,
     resource: str,
-    ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
     success: bool = True,
-    error_message: Optional[str] = None,
+    error_message: str | None = None,
 ) -> PIIAccessLog:
     """
     Log PII access for audit trail.
@@ -86,9 +85,9 @@ async def log_pii_access(
 
 
 def get_audit_logs(
-    user_id: Optional[str] = None,
-    pii_type: Optional[str] = None,
-    action: Optional[str] = None,
+    user_id: str | None = None,
+    pii_type: str | None = None,
+    action: str | None = None,
     limit: int = 100,
 ) -> list[PIIAccessLog]:
     """

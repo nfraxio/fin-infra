@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, field_validator
@@ -15,7 +15,7 @@ class Transaction(BaseModel):
 
     id: str
     account_id: str
-    date: date
+    date: datetime.date
     amount: Decimal
     currency: str = "USD"
     description: str | None = None

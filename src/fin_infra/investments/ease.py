@@ -8,13 +8,13 @@ and SnapTrade (retail brokerages) for maximum coverage.
 from __future__ import annotations
 
 import os
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from .providers.base import InvestmentProvider
 
 
 def easy_investments(
-    provider: Optional[Literal["plaid", "snaptrade"]] = None,
+    provider: Literal["plaid", "snaptrade"] | None = None,
     **config: Any,
 ) -> InvestmentProvider:
     """Create investment provider with auto-configuration.

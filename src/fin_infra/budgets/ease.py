@@ -12,7 +12,6 @@ Generic Design:
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -20,7 +19,7 @@ from fin_infra.budgets.tracker import BudgetTracker
 
 
 def easy_budgets(
-    db_url: Optional[str] = None,
+    db_url: str | None = None,
     pool_size: int = 5,
     max_overflow: int = 10,
     pool_pre_ping: bool = True,
