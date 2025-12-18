@@ -90,9 +90,14 @@ class TestDecimalPrecision:
         total = sum(amounts)
         assert total == Decimal("1.00")
 
-        # With floats, this would be: 0.9999999999999857
-        float_total = sum(0.01 for _ in range(100))
-        assert float_total != 1.0  # Float fails!
+        # Float precision issues are demonstrated with slightly different values
+        # 0.1 + 0.2 != 0.3 in floats (classic example)
+        float_result = 0.1 + 0.2
+        assert float_result != 0.3  # Float precision issue!
+
+        # Decimal handles this correctly
+        decimal_result = Decimal("0.1") + Decimal("0.2")
+        assert decimal_result == Decimal("0.3")
 
     def test_currency_conversion_precision(self):
         """Test precision is maintained in currency-like calculations."""
