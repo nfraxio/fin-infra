@@ -10,7 +10,7 @@ For production, consider Alpha Vantage or other official providers.
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 from decimal import Decimal
 from datetime import datetime, timezone
 

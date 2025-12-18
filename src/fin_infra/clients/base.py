@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 from ..models import Account, Quote, Transaction
 

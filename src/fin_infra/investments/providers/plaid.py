@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 try:
     from plaid.api import plaid_api
@@ -131,8 +131,8 @@ class PlaidInvestmentProvider(InvestmentProvider):
         return cast(str, hosts.get(environment.lower(), plaid.Environment.Sandbox))
 
     async def get_holdings(
-        self, access_token: str, account_ids: Optional[List[str]] = None
-    ) -> List[Holding]:
+        self, access_token: str, account_ids: Optional[list[str]] = None
+    ) -> list[Holding]:
         """Fetch investment holdings from Plaid.
 
         Retrieves holdings with security details, quantity, cost basis, and current value.
@@ -189,8 +189,8 @@ class PlaidInvestmentProvider(InvestmentProvider):
         access_token: str,
         start_date: date,
         end_date: date,
-        account_ids: Optional[List[str]] = None,
-    ) -> List[InvestmentTransaction]:
+        account_ids: Optional[list[str]] = None,
+    ) -> list[InvestmentTransaction]:
         """Fetch investment transactions from Plaid.
 
         Retrieves buy/sell/dividend transactions within the specified date range.
@@ -252,7 +252,7 @@ class PlaidInvestmentProvider(InvestmentProvider):
         except ApiException as e:
             raise self._transform_error(e)
 
-    async def get_securities(self, access_token: str, security_ids: List[str]) -> List[Security]:
+    async def get_securities(self, access_token: str, security_ids: list[str]) -> list[Security]:
         """Fetch security details from Plaid holdings.
 
         Note: Plaid doesn't have a dedicated securities endpoint.
@@ -290,7 +290,7 @@ class PlaidInvestmentProvider(InvestmentProvider):
         except ApiException as e:
             raise self._transform_error(e)
 
-    async def get_investment_accounts(self, access_token: str) -> List[InvestmentAccount]:
+    async def get_investment_accounts(self, access_token: str) -> list[InvestmentAccount]:
         """Fetch investment accounts with aggregated holdings.
 
         Returns accounts with total value, cost basis, and unrealized P&L.
@@ -321,7 +321,7 @@ class PlaidInvestmentProvider(InvestmentProvider):
             }
 
             # Group holdings by account
-            accounts_map: Dict[str, Dict[str, Any]] = {}
+            accounts_map: dict[str, dict[str, Any]] = {}
             for plaid_holding in response.holdings:
                 holding_dict = plaid_holding.to_dict()
                 account_id = holding_dict["account_id"]
@@ -373,7 +373,7 @@ class PlaidInvestmentProvider(InvestmentProvider):
 
     # Helper methods for data transformation
 
-    def _transform_security(self, plaid_security: Dict[str, Any]) -> Security:
+    def _transform_security(self, plaid_security: dict[str, Any]) -> Security:
         """Transform Plaid security data to Security model."""
         # Handle close_price - Plaid may return None for securities without recent pricing
         close_price_raw = plaid_security.get("close_price")
@@ -394,7 +394,7 @@ class PlaidInvestmentProvider(InvestmentProvider):
             currency=plaid_security.get("iso_currency_code", "USD"),
         )
 
-    def _transform_holding(self, plaid_holding: Dict[str, Any], security: Security) -> Holding:
+    def _transform_holding(self, plaid_holding: dict[str, Any], security: Security) -> Holding:
         """Transform Plaid holding data to Holding model."""
         return Holding(
             account_id=plaid_holding["account_id"],
@@ -410,7 +410,7 @@ class PlaidInvestmentProvider(InvestmentProvider):
         )
 
     def _transform_transaction(
-        self, plaid_transaction: Dict[str, Any], security: Security
+        self, plaid_transaction: dict[str, Any], security: Security
     ) -> InvestmentTransaction:
         """Transform Plaid investment transaction to InvestmentTransaction model."""
         # Map Plaid transaction type to our enum

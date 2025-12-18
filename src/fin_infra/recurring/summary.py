@@ -33,7 +33,7 @@ Integration with svc-infra:
 
 from __future__ import annotations
 
-from typing import List, Dict, Optional
+from typing import Optional
 from datetime import datetime
 from collections import defaultdict
 
@@ -121,16 +121,16 @@ class RecurringSummary(BaseModel):
     user_id: str = Field(..., description="User identifier")
     total_monthly_cost: float = Field(..., description="Total monthly recurring expenses")
     total_monthly_income: float = Field(0.0, description="Total monthly recurring income")
-    subscriptions: List[RecurringItem] = Field(
+    subscriptions: list[RecurringItem] = Field(
         default_factory=list, description="List of recurring expense items"
     )
-    recurring_income: List[RecurringItem] = Field(
+    recurring_income: list[RecurringItem] = Field(
         default_factory=list, description="List of recurring income items"
     )
-    by_category: Dict[str, float] = Field(
+    by_category: dict[str, float] = Field(
         default_factory=dict, description="Monthly cost grouped by category"
     )
-    cancellation_opportunities: List[CancellationOpportunity] = Field(
+    cancellation_opportunities: list[CancellationOpportunity] = Field(
         default_factory=list, description="Potential subscriptions to cancel"
     )
     generated_at: str = Field(
@@ -165,8 +165,8 @@ def _calculate_monthly_cost(amount: float, cadence: str) -> float:
 
 
 def _identify_cancellation_opportunities(
-    subscriptions: List[RecurringItem],
-) -> List[CancellationOpportunity]:
+    subscriptions: list[RecurringItem],
+) -> list[CancellationOpportunity]:
     """Identify potential cancellation opportunities from subscriptions.
 
     Looks for:
@@ -183,7 +183,7 @@ def _identify_cancellation_opportunities(
     opportunities = []
 
     # Group by category
-    by_category: Dict[str, List[RecurringItem]] = defaultdict(list)
+    by_category: dict[str, list[RecurringItem]] = defaultdict(list)
     for sub in subscriptions:
         by_category[sub.category].append(sub)
 
@@ -253,8 +253,8 @@ def _identify_cancellation_opportunities(
 
 def get_recurring_summary(
     user_id: str,
-    patterns: List[RecurringPattern],
-    category_map: Optional[Dict[str, str]] = None,
+    patterns: list[RecurringPattern],
+    category_map: Optional[dict[str, str]] = None,
 ) -> RecurringSummary:
     """Generate a comprehensive recurring transaction summary for a user.
 
@@ -283,7 +283,7 @@ def get_recurring_summary(
     """
     subscriptions = []
     recurring_income = []
-    by_category: Dict[str, float] = defaultdict(float)
+    by_category: dict[str, float] = defaultdict(float)
 
     for pattern in patterns:
         # Determine amount (use fixed amount or average of range)

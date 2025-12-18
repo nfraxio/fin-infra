@@ -15,7 +15,7 @@ Expected performance:
 
 import hashlib
 import logging
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, Optional, cast
 from pydantic import BaseModel, Field
 
 # ai-infra imports
@@ -40,7 +40,7 @@ class CategoryPrediction(BaseModel):
 
 
 # Few-shot examples (20 diverse merchants covering all major categories)
-FEW_SHOT_EXAMPLES: List[Tuple[str, str, str]] = [
+FEW_SHOT_EXAMPLES: list[tuple[str, str, str]] = [
     # Food & Dining (5 examples)
     ("STARBUCKS #1234", "Coffee Shops", "Popular coffee shop chain"),
     ("MCDONALD'S", "Fast Food", "Fast food restaurant"),

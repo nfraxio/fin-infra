@@ -31,7 +31,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 from svc_infra.documents import Document as BaseDocument
@@ -145,7 +145,7 @@ class OCRResult(BaseModel):
     confidence: float = Field(
         ..., description="Overall OCR confidence score (0.0-1.0)", ge=0.0, le=1.0
     )
-    fields_extracted: Dict[str, str] = Field(
+    fields_extracted: dict[str, str] = Field(
         default_factory=dict,
         description="Structured fields extracted from document (names, amounts, dates)",
     )
@@ -181,10 +181,10 @@ class DocumentAnalysis(BaseModel):
 
     document_id: str = Field(..., description="Document that was analyzed")
     summary: str = Field(..., description="High-level document summary")
-    key_findings: List[str] = Field(
+    key_findings: list[str] = Field(
         default_factory=list, description="Important facts extracted from document"
     )
-    recommendations: List[str] = Field(
+    recommendations: list[str] = Field(
         default_factory=list, description="Action items or suggestions based on document content"
     )
     analysis_date: datetime = Field(

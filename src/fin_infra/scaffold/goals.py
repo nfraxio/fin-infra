@@ -17,7 +17,7 @@ Typical usage:
 """
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from svc_infra.utils import (
     render_template,
@@ -29,7 +29,7 @@ from svc_infra.utils import (
 def _generate_substitutions(
     include_tenant: bool = False,
     include_soft_delete: bool = False,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Generate template substitutions for goals domain.
 
@@ -49,7 +49,7 @@ def _generate_substitutions(
     Returns:
         Dict mapping variable names to their substitution values
     """
-    subs: Dict[str, str] = {
+    subs: dict[str, str] = {
         "Entity": "Goal",
         "entity": "goal",
         "table_name": "goals",
@@ -173,7 +173,7 @@ def scaffold_goals_core(
     models_filename: str = "goal.py",
     schemas_filename: str = "goal_schemas.py",
     repository_filename: str = "goal_repository.py",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Scaffold goals domain files: models, schemas, repository (optional), and __init__.py.
 

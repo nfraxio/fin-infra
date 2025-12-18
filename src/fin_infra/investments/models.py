@@ -20,7 +20,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -374,12 +374,12 @@ class InvestmentAccount(BaseModel):
     subtype: Optional[str] = Field(None, description="Account subtype (401k, ira, brokerage)")
 
     # Balances
-    balances: Dict[str, Optional[Decimal]] = Field(
+    balances: dict[str, Optional[Decimal]] = Field(
         ..., description="Current, available, and limit balances"
     )
 
     # Holdings
-    holdings: List[Holding] = Field(default_factory=list, description="List of holdings in account")
+    holdings: list[Holding] = Field(default_factory=list, description="List of holdings in account")
 
     if TYPE_CHECKING:
 
@@ -487,11 +487,11 @@ class AssetAllocation(BaseModel):
         },
     )
 
-    by_security_type: Dict[SecurityType, float] = Field(
+    by_security_type: dict[SecurityType, float] = Field(
         default_factory=dict,
         description="Percentage breakdown by security type (equity, bond, etc.)",
     )
-    by_sector: Dict[str, float] = Field(
+    by_sector: dict[str, float] = Field(
         default_factory=dict,
         description="Percentage breakdown by sector (Technology, Healthcare, etc.)",
     )

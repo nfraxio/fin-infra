@@ -19,7 +19,7 @@ Typical usage:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 # Use svc-infra's scaffold utilities to avoid duplication
 from svc_infra.utils import render_template, write, ensure_init_py
@@ -34,7 +34,7 @@ def scaffold_budgets_core(
     models_filename: Optional[str] = None,
     schemas_filename: Optional[str] = None,
     repository_filename: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate budget persistence code from templates.
 
     Args:
@@ -72,7 +72,7 @@ def scaffold_budgets_core(
     subs = _generate_substitutions(include_tenant, include_soft_delete)
 
     # Track all file operations
-    files: List[Dict[str, Any]] = []
+    files: list[dict[str, Any]] = []
 
     # Render and write models
     models_content = render_template("fin_infra.budgets.scaffold_templates", "models.py.tmpl", subs)
@@ -114,7 +114,7 @@ def scaffold_budgets_core(
 def _generate_substitutions(
     include_tenant: bool,
     include_soft_delete: bool,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Generate template variable substitutions for budgets.
 
     Args:

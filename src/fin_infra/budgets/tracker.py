@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
@@ -206,7 +206,7 @@ class BudgetTracker:
         self,
         user_id: str,
         type: Optional[str] = None,
-    ) -> List[Budget]:
+    ) -> list[Budget]:
         """
         Get all budgets for a user.
 

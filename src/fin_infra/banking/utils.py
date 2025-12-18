@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Literal
+from typing import Any, Optional, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..providers.base import BankingProvider
@@ -179,7 +179,7 @@ def validate_provider_token(provider: str, access_token: str) -> bool:
     return validator(access_token)
 
 
-def parse_banking_providers(banking_providers: Dict[str, Any]) -> BankingConnectionStatus:
+def parse_banking_providers(banking_providers: dict[str, Any]) -> BankingConnectionStatus:
     """
     Parse banking_providers JSON field into structured status.
 
@@ -257,7 +257,7 @@ def parse_banking_providers(banking_providers: Dict[str, Any]) -> BankingConnect
     return status
 
 
-def sanitize_connection_status(status: BankingConnectionStatus) -> Dict[str, Any]:
+def sanitize_connection_status(status: BankingConnectionStatus) -> dict[str, Any]:
     """
     Sanitize connection status for API responses (removes access tokens).
 
@@ -298,10 +298,10 @@ def sanitize_connection_status(status: BankingConnectionStatus) -> Dict[str, Any
 
 
 def mark_connection_unhealthy(
-    banking_providers: Dict[str, Any],
+    banking_providers: dict[str, Any],
     provider: str,
     error_message: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Mark a provider connection as unhealthy (for error handling).
 
@@ -335,9 +335,9 @@ def mark_connection_unhealthy(
 
 
 def mark_connection_healthy(
-    banking_providers: Dict[str, Any],
+    banking_providers: dict[str, Any],
     provider: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Mark a provider connection as healthy (after successful sync).
 
@@ -368,7 +368,7 @@ def mark_connection_healthy(
 
 
 def get_primary_access_token(
-    banking_providers: Dict[str, Any],
+    banking_providers: dict[str, Any],
 ) -> tuple[Optional[str], Optional[str]]:
     """
     Get the primary access token and provider name.
@@ -437,7 +437,7 @@ async def test_connection_health(
             return False, error_msg
 
 
-def should_refresh_token(banking_providers: Dict[str, Any], provider: str) -> bool:
+def should_refresh_token(banking_providers: dict[str, Any], provider: str) -> bool:
     """
     Check if a provider token should be refreshed.
 

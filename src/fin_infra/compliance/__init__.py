@@ -21,7 +21,8 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Callable, TYPE_CHECKING, cast
+from typing import Any, TYPE_CHECKING, cast
+from collections.abc import Callable
 
 if TYPE_CHECKING:
     from fastapi import FastAPI, Request, Response

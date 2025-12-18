@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 import httpx
 
@@ -93,7 +93,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
             timeout=30.0,
         )
 
-    def _auth_headers(self, user_id: str, user_secret: str) -> Dict[str, str]:
+    def _auth_headers(self, user_id: str, user_secret: str) -> dict[str, str]:
         """Build authentication headers for SnapTrade API requests.
 
         SECURITY: User secrets are passed in headers, NOT URL params.
@@ -115,8 +115,8 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
     async def get_holdings(
         self,
         access_token: str,
-        account_ids: Optional[List[str]] = None,
-    ) -> List[Holding]:
+        account_ids: Optional[list[str]] = None,
+    ) -> list[Holding]:
         """Fetch investment holdings from SnapTrade.
 
         Note: SnapTrade uses user_id + user_secret, passed as access_token in format "user_id:user_secret"
@@ -178,8 +178,8 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
         access_token: str,
         start_date: date,
         end_date: date,
-        account_ids: Optional[List[str]] = None,
-    ) -> List[InvestmentTransaction]:
+        account_ids: Optional[list[str]] = None,
+    ) -> list[InvestmentTransaction]:
         """Fetch investment transactions from SnapTrade.
 
         Args:
@@ -246,7 +246,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
         except Exception as e:
             raise ValueError(f"SnapTrade API error: {str(e)}")
 
-    async def get_securities(self, access_token: str, security_ids: List[str]) -> List[Security]:
+    async def get_securities(self, access_token: str, security_ids: list[str]) -> list[Security]:
         """Fetch security details from SnapTrade positions.
 
         Note: SnapTrade doesn't have a dedicated securities endpoint.
@@ -284,7 +284,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
         except Exception as e:
             raise ValueError(f"SnapTrade API error: {str(e)}")
 
-    async def get_investment_accounts(self, access_token: str) -> List[InvestmentAccount]:
+    async def get_investment_accounts(self, access_token: str) -> list[InvestmentAccount]:
         """Fetch investment accounts with aggregated holdings.
 
         Returns accounts with total value, cost basis, and unrealized P&L.
@@ -358,7 +358,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
         except Exception as e:
             raise ValueError(f"SnapTrade API error: {str(e)}")
 
-    async def list_connections(self, access_token: str) -> List[Dict[str, Any]]:
+    async def list_connections(self, access_token: str) -> list[dict[str, Any]]:
         """List brokerage connections for a user.
 
         Returns which brokerages the user has connected (E*TRADE, Robinhood, etc.).
@@ -388,7 +388,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
         except Exception as e:
             raise ValueError(f"SnapTrade API error: {str(e)}")
 
-    def get_brokerage_capabilities(self, brokerage_name: str) -> Dict[str, Any]:
+    def get_brokerage_capabilities(self, brokerage_name: str) -> dict[str, Any]:
         """Get capabilities for a specific brokerage.
 
         Important: Robinhood is READ-ONLY (no trading support).
@@ -480,7 +480,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
         except ValueError:
             raise ValueError("Invalid access_token format. Expected 'user_id:user_secret'")
 
-    def _transform_holding(self, snaptrade_position: Dict[str, Any], account_id: str) -> Holding:
+    def _transform_holding(self, snaptrade_position: dict[str, Any], account_id: str) -> Holding:
         """Transform SnapTrade position data to Holding model."""
         symbol_data = snaptrade_position.get("symbol", {})
 
@@ -510,7 +510,7 @@ class SnapTradeInvestmentProvider(InvestmentProvider):
         )
 
     def _transform_transaction(
-        self, snaptrade_tx: Dict[str, Any], account_id: str
+        self, snaptrade_tx: dict[str, Any], account_id: str
     ) -> InvestmentTransaction:
         """Transform SnapTrade transaction to InvestmentTransaction model."""
         symbol_data = snaptrade_tx.get("symbol", {})

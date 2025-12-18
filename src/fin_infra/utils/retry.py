@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import random
-from typing import Awaitable, Callable, Iterable, TypeVar
+from typing import TypeVar
+from collections.abc import Awaitable, Callable, Iterable
 
 from fin_infra.exceptions import RetryError
 

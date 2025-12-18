@@ -29,7 +29,7 @@ add_goals(app)
 
 import logging
 from datetime import datetime
-from typing import Any, List, Optional, cast
+from typing import Any, Optional, cast
 
 from fastapi import FastAPI, HTTPException, status, Query, Body
 from pydantic import BaseModel, Field
@@ -89,7 +89,7 @@ class CreateGoalRequest(BaseModel):
     description: Optional[str] = Field(None, description="Goal description")
     current_amount: Optional[float] = Field(0.0, ge=0, description="Current amount")
     auto_contribute: Optional[bool] = Field(False, description="Auto-contribute enabled")
-    tags: Optional[List[str]] = Field(None, description="Goal tags")
+    tags: Optional[list[str]] = Field(None, description="Goal tags")
 
 
 class UpdateGoalRequest(BaseModel):
@@ -102,7 +102,7 @@ class UpdateGoalRequest(BaseModel):
     current_amount: Optional[float] = Field(None, ge=0)
     status: Optional[GoalStatus] = None
     auto_contribute: Optional[bool] = None
-    tags: Optional[List[str]] = None
+    tags: Optional[list[str]] = None
 
 
 class AddMilestoneRequest(BaseModel):
@@ -238,14 +238,14 @@ def add_goals(
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    @router.get("", response_model=List[dict])
+    @router.get("", response_model=list[dict])
     async def list_goals_endpoint(
         user_id: Optional[str] = Query(
             None, description="User identifier (optional, returns all if not provided)"
         ),
         goal_type: Optional[str] = Query(None, description="Filter by goal type"),
         status_filter: Optional[str] = Query(None, alias="status", description="Filter by status"),
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         List all goals for a user with optional filters.
 
@@ -442,8 +442,8 @@ def add_goals(
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    @router.get("/{goal_id}/milestones", response_model=List[dict])
-    async def list_milestones_endpoint(goal_id: str) -> List[dict]:
+    @router.get("/{goal_id}/milestones", response_model=list[dict])
+    async def list_milestones_endpoint(goal_id: str) -> list[dict]:
         """
         List all milestones for a goal.
 
@@ -540,8 +540,8 @@ def add_goals(
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    @router.get("/{goal_id}/funding", response_model=List[dict])
-    async def list_funding_sources_endpoint(goal_id: str) -> List[dict]:
+    @router.get("/{goal_id}/funding", response_model=list[dict])
+    async def list_funding_sources_endpoint(goal_id: str) -> list[dict]:
         """
         List all funding sources for a goal.
 

@@ -7,7 +7,7 @@ Encrypt/decrypt financial provider API tokens at rest.
 import base64
 import json
 import os
-from typing import Any, Dict, Optional, cast
+from typing import Any, Optional, cast
 
 from cryptography.fernet import Fernet, InvalidToken
 
@@ -64,7 +64,7 @@ class ProviderTokenEncryption:
             raise ValueError(f"Invalid encryption key: {e}") from e
 
     def encrypt(
-        self, token: str, context: Optional[Dict[str, Any]] = None, key_id: Optional[str] = None
+        self, token: str, context: Optional[dict[str, Any]] = None, key_id: Optional[str] = None
     ) -> str:
         """
         Encrypt provider token with optional context.
@@ -104,7 +104,7 @@ class ProviderTokenEncryption:
     def decrypt(
         self,
         encrypted_token: str,
-        context: Optional[Dict[str, Any]] = None,
+        context: Optional[dict[str, Any]] = None,
         verify_context: bool = True,
     ) -> str:
         """
@@ -154,7 +154,7 @@ class ProviderTokenEncryption:
             raise ValueError(f"Decryption failed: {e}") from e
 
     def rotate_key(
-        self, encrypted_token: str, new_key: bytes, context: Optional[Dict[str, Any]] = None
+        self, encrypted_token: str, new_key: bytes, context: Optional[dict[str, Any]] = None
     ) -> str:
         """
         Re-encrypt token with new key (for key rotation).

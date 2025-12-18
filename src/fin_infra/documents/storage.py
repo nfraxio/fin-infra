@@ -36,7 +36,7 @@ Quick Start:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 try:
     from svc_infra.documents import (
@@ -242,7 +242,7 @@ def list_documents(
     tax_year: Optional[int] = None,
     limit: int = 100,
     offset: int = 0,
-) -> List["FinancialDocument"]:
+) -> list["FinancialDocument"]:
     """
     List user's financial documents with optional filters (delegates to svc-infra).
 

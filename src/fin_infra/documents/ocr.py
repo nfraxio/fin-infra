@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from svc_infra.storage.base import StorageBackend
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from .models import OCRResult
 
 # In-memory OCR cache (production: use svc-infra cache)
-_ocr_cache: Dict[str, "OCRResult"] = {}
+_ocr_cache: dict[str, "OCRResult"] = {}
 
 
 async def extract_text(

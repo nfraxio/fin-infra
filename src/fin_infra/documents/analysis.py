@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from svc_infra.storage.base import StorageBackend
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from .models import DocumentAnalysis
 
 # In-memory analysis cache (production: use svc-infra cache)
-_analysis_cache: Dict[str, "DocumentAnalysis"] = {}
+_analysis_cache: dict[str, "DocumentAnalysis"] = {}
 
 
 async def analyze_document(

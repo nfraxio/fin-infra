@@ -25,7 +25,8 @@ Provider Categories:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, Sequence
+from typing import Any
+from collections.abc import Iterable, Sequence
 
 from ..models import Candle, Quote
 

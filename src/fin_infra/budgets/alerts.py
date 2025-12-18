@@ -35,7 +35,7 @@ Example:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from fin_infra.budgets.models import (
     AlertSeverity,
@@ -52,7 +52,7 @@ async def check_budget_alerts(
     budget_id: str,
     tracker: BudgetTracker,
     thresholds: Optional[dict[str, float]] = None,
-) -> List[BudgetAlert]:
+) -> list[BudgetAlert]:
     """
     Check budget for alerts (overspending, approaching limits, unusual patterns).
 
@@ -111,7 +111,7 @@ async def check_budget_alerts(
     # Get budget progress
     progress = await tracker.get_budget_progress(budget_id)
 
-    alerts: List[BudgetAlert] = []
+    alerts: list[BudgetAlert] = []
 
     # Check each category for alerts
     for category in progress.categories:

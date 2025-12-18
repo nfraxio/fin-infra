@@ -22,14 +22,12 @@ Example:
     >>> # Raises ValueError if total allocation > 100%
 """
 
-from typing import Dict, List
-
 from fin_infra.goals.models import FundingSource
 from fin_infra.goals.management import get_goal
 
 # In-memory storage for funding allocations
 # Structure: {account_id: {goal_id: allocation_percent}}
-_FUNDING_STORE: Dict[str, Dict[str, float]] = {}
+_FUNDING_STORE: dict[str, dict[str, float]] = {}
 
 
 def link_account_to_goal(
@@ -108,7 +106,7 @@ def link_account_to_goal(
     )
 
 
-def get_goal_funding_sources(goal_id: str) -> List[FundingSource]:
+def get_goal_funding_sources(goal_id: str) -> list[FundingSource]:
     """
     Get all accounts funding a specific goal.
 
@@ -154,7 +152,7 @@ def get_goal_funding_sources(goal_id: str) -> List[FundingSource]:
     return funding_sources
 
 
-def get_account_allocations(account_id: str) -> Dict[str, float]:
+def get_account_allocations(account_id: str) -> dict[str, float]:
     """
     Get all goal allocations for a specific account.
 

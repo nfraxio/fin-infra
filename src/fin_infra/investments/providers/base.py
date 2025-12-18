@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import date
-from typing import List, Optional
+from typing import Optional
 
 # Import will work once models.py is fully implemented in Task 3
 # For now, using TYPE_CHECKING to avoid circular imports
@@ -30,8 +30,8 @@ class InvestmentProvider(ABC):
 
     @abstractmethod
     async def get_holdings(
-        self, access_token: str, account_ids: Optional[List[str]] = None
-    ) -> List[Holding]:
+        self, access_token: str, account_ids: Optional[list[str]] = None
+    ) -> list[Holding]:
         """Fetch holdings for investment accounts.
 
         Args:
@@ -54,8 +54,8 @@ class InvestmentProvider(ABC):
         access_token: str,
         start_date: date,
         end_date: date,
-        account_ids: Optional[List[str]] = None,
-    ) -> List[InvestmentTransaction]:
+        account_ids: Optional[list[str]] = None,
+    ) -> list[InvestmentTransaction]:
         """Fetch investment transactions within date range.
 
         Args:
@@ -77,7 +77,7 @@ class InvestmentProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_securities(self, access_token: str, security_ids: List[str]) -> List[Security]:
+    async def get_securities(self, access_token: str, security_ids: list[str]) -> list[Security]:
         """Fetch security details (ticker, name, type, current price).
 
         Args:
@@ -95,7 +95,7 @@ class InvestmentProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_investment_accounts(self, access_token: str) -> List[InvestmentAccount]:
+    async def get_investment_accounts(self, access_token: str) -> list[InvestmentAccount]:
         """Fetch investment accounts with aggregated holdings.
 
         Args:
@@ -113,7 +113,7 @@ class InvestmentProvider(ABC):
 
     # Helper methods (concrete - shared across all providers)
 
-    def calculate_allocation(self, holdings: List[Holding]) -> AssetAllocation:
+    def calculate_allocation(self, holdings: list[Holding]) -> AssetAllocation:
         """Calculate asset allocation by security type and sector.
 
         Groups holdings by security type (equity, bond, ETF, etc.) and calculates
@@ -183,7 +183,7 @@ class InvestmentProvider(ABC):
             cash_percent=cash_percent,
         )
 
-    def calculate_portfolio_metrics(self, holdings: List[Holding]) -> dict:
+    def calculate_portfolio_metrics(self, holdings: list[Holding]) -> dict:
         """Calculate total value, cost basis, unrealized gain/loss.
 
         Aggregates holdings to calculate portfolio-level metrics.

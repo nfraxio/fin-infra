@@ -42,7 +42,7 @@ from __future__ import annotations
 import logging
 import os
 from datetime import date, datetime, timedelta
-from typing import List, Optional
+from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -59,7 +59,7 @@ _logger = logging.getLogger(__name__)
 
 # In-memory storage for testing (will be replaced with SQL database in production)
 # ⚠️ WARNING: All data is LOST on restart when using in-memory storage!
-_balance_snapshots: List[BalanceSnapshot] = []
+_balance_snapshots: list[BalanceSnapshot] = []
 _production_warning_logged = False
 
 
@@ -157,7 +157,7 @@ def get_balance_history(
     days: int = 90,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-) -> List[BalanceSnapshot]:
+) -> list[BalanceSnapshot]:
     """Get balance history for an account.
 
     Retrieves balance snapshots for the specified account within a date range.
@@ -216,8 +216,8 @@ def get_balance_history(
 
 def get_balance_snapshots(
     account_id: str,
-    dates: List[date],
-) -> List[BalanceSnapshot]:
+    dates: list[date],
+) -> list[BalanceSnapshot]:
     """Get balance snapshots for specific dates.
 
     Args:

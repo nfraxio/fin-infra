@@ -37,7 +37,7 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 # Financial capability prefix patterns (extensible)
 FINANCIAL_ROUTE_PREFIXES = (
