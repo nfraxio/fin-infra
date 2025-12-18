@@ -4,11 +4,12 @@ Integration tests for scaffold workflow.
 Tests the full workflow: scaffold → compile → type check → import.
 """
 
-import pytest
-import tempfile
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+import pytest
 
 from fin_infra.scaffold.budgets import scaffold_budgets_core
 from fin_infra.scaffold.goals import scaffold_goals_core

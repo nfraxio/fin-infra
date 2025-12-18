@@ -3,10 +3,10 @@
 Tests add_recurring_detection() helper and all mounted endpoints with TestClient.
 """
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import pytest
-from datetime import datetime
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -21,10 +21,11 @@ def app():
     Uses public_router to bypass database dependency for testing.
     Production uses user_router with authentication.
     """
+    from fastapi import Query
     from svc_infra.api.fastapi.dual.public import public_router
+
     from fin_infra.recurring import easy_recurring_detection
     from fin_infra.recurring.summary import RecurringSummary, get_recurring_summary
-    from fastapi import Query
 
     app = FastAPI(title="Test Recurring API")
 
@@ -82,7 +83,7 @@ def create_test_pattern(
     occurrences: int = 10,
 ) -> "RecurringPattern":
     """Helper to create a test RecurringPattern with all required fields."""
-    from fin_infra.recurring.models import RecurringPattern, CadenceType, PatternType
+    from fin_infra.recurring.models import CadenceType, PatternType, RecurringPattern
 
     return RecurringPattern(
         merchant_name=merchant_name,

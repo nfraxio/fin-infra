@@ -1,8 +1,8 @@
+from fin_infra.providers.banking.teller_client import TellerClient
+from fin_infra.providers.credit.experian import ExperianCredit
+from fin_infra.providers.identity.stripe_identity import StripeIdentity
 from fin_infra.providers.market.alphavantage import AlphaVantageMarketData
 from fin_infra.providers.market.coingecko import CoinGeckoCryptoData
-from fin_infra.providers.banking.teller_client import TellerClient
-from fin_infra.providers.identity.stripe_identity import StripeIdentity
-from fin_infra.providers.credit.experian import ExperianCredit
 
 
 def test_default_providers_construct():

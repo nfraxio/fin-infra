@@ -1,7 +1,6 @@
 """Unit tests for financial document storage operations."""
 
 import pytest
-
 from svc_infra.storage.backends.memory import MemoryBackend
 
 from fin_infra.documents.models import DocumentType

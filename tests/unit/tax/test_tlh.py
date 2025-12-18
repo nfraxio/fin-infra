@@ -1,6 +1,6 @@
 """Unit tests for tax-loss harvesting logic."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -9,13 +9,12 @@ from fin_infra.models.brokerage import Position
 from fin_infra.tax.tlh import (
     TLHOpportunity,
     TLHScenario,
+    _assess_wash_sale_risk,
+    _generate_tlh_recommendations,
+    _suggest_replacement,
     find_tlh_opportunities,
     simulate_tlh_scenario,
-    _assess_wash_sale_risk,
-    _suggest_replacement,
-    _generate_tlh_recommendations,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -93,7 +92,7 @@ def sample_short_position() -> Position:
 @pytest.fixture
 def recent_trades() -> list[dict]:
     """Sample recent trades for wash sale checking."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return [
         {
             "symbol": "AAPL",
@@ -447,7 +446,7 @@ def test_simulate_tlh_scenario_empty_opportunities():
 
 def test_simulate_tlh_scenario_wash_sale_risk_summary():
     """Test scenario correctly summarizes wash sale risk levels."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     recent_trades = [
         {"symbol": "AAPL", "date": now - timedelta(days=5), "side": "buy"},  # High
         {"symbol": "MSFT", "date": now - timedelta(days=25), "side": "buy"},  # Medium
@@ -497,28 +496,28 @@ def test_assess_wash_sale_risk_no_purchase():
 
 def test_assess_wash_sale_risk_very_old_purchase():
     """Test wash sale risk with very old purchase (>60 days)."""
-    old_date = datetime.now(timezone.utc) - timedelta(days=70)
+    old_date = datetime.now(UTC) - timedelta(days=70)
     risk = _assess_wash_sale_risk("AAPL", old_date)
     assert risk == "none"
 
 
 def test_assess_wash_sale_risk_low():
     """Test wash sale risk with purchase 31-60 days ago (low risk)."""
-    date = datetime.now(timezone.utc) - timedelta(days=45)
+    date = datetime.now(UTC) - timedelta(days=45)
     risk = _assess_wash_sale_risk("AAPL", date)
     assert risk == "low"
 
 
 def test_assess_wash_sale_risk_medium():
     """Test wash sale risk with purchase 16-30 days ago (medium risk)."""
-    date = datetime.now(timezone.utc) - timedelta(days=25)
+    date = datetime.now(UTC) - timedelta(days=25)
     risk = _assess_wash_sale_risk("AAPL", date)
     assert risk == "medium"
 
 
 def test_assess_wash_sale_risk_high():
     """Test wash sale risk with recent purchase (0-15 days, high risk)."""
-    date = datetime.now(timezone.utc) - timedelta(days=10)
+    date = datetime.now(UTC) - timedelta(days=10)
     risk = _assess_wash_sale_risk("AAPL", date)
     assert risk == "high"
 
@@ -526,7 +525,7 @@ def test_assess_wash_sale_risk_high():
 def test_assess_wash_sale_risk_boundary_30_days():
     """Test wash sale risk boundary at 30 days."""
     # Exactly 30 days ago should be medium risk
-    date = datetime.now(timezone.utc) - timedelta(days=30)
+    date = datetime.now(UTC) - timedelta(days=30)
     risk = _assess_wash_sale_risk("AAPL", date)
     assert risk == "medium"
 
@@ -534,7 +533,7 @@ def test_assess_wash_sale_risk_boundary_30_days():
 def test_assess_wash_sale_risk_boundary_60_days():
     """Test wash sale risk boundary at 60 days."""
     # Exactly 60 days ago should be low risk
-    date = datetime.now(timezone.utc) - timedelta(days=60)
+    date = datetime.now(UTC) - timedelta(days=60)
     risk = _assess_wash_sale_risk("AAPL", date)
     assert risk == "low"
 

@@ -1,6 +1,6 @@
 import os
-import pytest
 
+import pytest
 
 pytestmark = pytest.mark.acceptance
 
@@ -180,9 +180,9 @@ async def test_cost_per_request() -> None:
 
     Validates that costs stay under budget (<$0.003/user/year target).
     """
-    from fin_infra.recurring.normalizers import MerchantNormalizer
     from fin_infra.recurring.detectors_llm import VariableDetectorLLM
     from fin_infra.recurring.insights import SubscriptionInsightsGenerator
+    from fin_infra.recurring.normalizers import MerchantNormalizer
 
     # Create instances
     normalizer = MerchantNormalizer(

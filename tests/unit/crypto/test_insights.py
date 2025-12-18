@@ -12,7 +12,6 @@ from fin_infra.crypto.insights import (
     generate_crypto_insights,
 )
 
-
 # ---- Fixtures ----
 
 

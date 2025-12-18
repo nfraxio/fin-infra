@@ -1,9 +1,10 @@
 """Integration tests for banking API endpoints with filtering."""
 
 from datetime import date
-from fastapi.testclient import TestClient
-from fastapi import FastAPI
+
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 from fin_infra.banking import add_banking
 from fin_infra.providers.base import BankingProvider
@@ -442,7 +443,8 @@ class TestBalanceHistoryEndpoint:
     def client(self):
         """Create test client with mock banking provider."""
         from datetime import timedelta
-        from fin_infra.banking.history import record_balance_snapshot, _balance_snapshots
+
+        from fin_infra.banking.history import _balance_snapshots, record_balance_snapshot
 
         # Clear any existing snapshots
         _balance_snapshots.clear()
@@ -611,7 +613,8 @@ class TestBalanceHistoryEndpoint:
     def test_get_history_trend_threshold(self, client):
         """Test that trend detection uses 5% threshold for stable."""
         from datetime import timedelta
-        from fin_infra.banking.history import record_balance_snapshot, _balance_snapshots
+
+        from fin_infra.banking.history import _balance_snapshots, record_balance_snapshot
 
         # Clear and add snapshots with 4% increase (should be stable)
         _balance_snapshots.clear()

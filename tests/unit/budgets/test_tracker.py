@@ -1,11 +1,12 @@
 """Unit tests for BudgetTracker class."""
 
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
+from fin_infra.budgets.models import BudgetPeriod, BudgetType
 from fin_infra.budgets.tracker import BudgetTracker
-from fin_infra.budgets.models import BudgetType, BudgetPeriod
 
 
 @pytest.fixture

@@ -1,8 +1,9 @@
 """Unit tests for investment models."""
 
-import pytest
 from datetime import date
 from decimal import Decimal
+
+import pytest
 
 from fin_infra.investments.models import (
     AssetAllocation,
@@ -101,7 +102,7 @@ class TestSecurity:
 
     def test_security_negative_price_validation(self):
         """Test that negative prices are rejected."""
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(ValueError):  # Pydantic ValidationError
             Security(
                 security_id="sec_789",
                 name="Invalid Security",
@@ -192,7 +193,7 @@ class TestHolding:
 
     def test_holding_negative_quantity_validation(self, sample_security):
         """Test that negative quantity is rejected."""
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(ValueError):  # Pydantic ValidationError
             Holding(
                 account_id="acct_123",
                 security=sample_security,
@@ -452,9 +453,9 @@ class TestAssetAllocation:
         assert allocation2.cash_percent == 100.0
 
         # Invalid: negative
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(ValueError):  # Pydantic ValidationError
             AssetAllocation(cash_percent=-5.0)
 
         # Invalid: over 100
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(ValueError):  # Pydantic ValidationError
             AssetAllocation(cash_percent=105.0)

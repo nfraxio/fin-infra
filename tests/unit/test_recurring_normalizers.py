@@ -10,9 +10,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from fin_infra.recurring.normalizers import (
+    MERCHANT_NORMALIZATION_SYSTEM_PROMPT,
     MerchantNormalized,
     MerchantNormalizer,
-    MERCHANT_NORMALIZATION_SYSTEM_PROMPT,
 )
 
 

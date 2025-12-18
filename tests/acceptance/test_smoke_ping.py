@@ -1,12 +1,12 @@
 import pytest
 
-
 pytestmark = [pytest.mark.acceptance]
 
 
 def test_smoke_ping():
     try:
         from fastapi.testclient import TestClient  # type: ignore
+
         from .app import make_app  # type: ignore
     except Exception as e:  # ImportError or others
         pytest.skip(f"acceptance demo app deps missing: {e}")

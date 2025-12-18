@@ -1,8 +1,8 @@
 import os
+
 import pytest
 
 from fin_infra.providers.banking.teller_client import TellerClient
-
 
 pytestmark = [pytest.mark.acceptance]
 

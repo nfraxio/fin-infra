@@ -1,14 +1,15 @@
 """Unit tests for budget alerts."""
 
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from fin_infra.budgets.alerts import (
-    check_budget_alerts,
-    _create_overspending_alert,
     _create_approaching_limit_alert,
+    _create_overspending_alert,
     _create_unusual_spending_alert,
+    check_budget_alerts,
 )
 from fin_infra.budgets.models import (
     AlertSeverity,

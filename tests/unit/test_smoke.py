@@ -8,7 +8,7 @@ def test_imports_and_version() -> None:
 
 
 def test_models_exist() -> None:
-    from fin_infra.models import Account, Transaction, Quote, AccountType
+    from fin_infra.models import Account, AccountType, Quote, Transaction
 
     assert AccountType.checking.value == "checking"
     _ = Account(id="a1", name="Checking", type=AccountType.checking)
@@ -21,6 +21,6 @@ def test_models_exist() -> None:
 
 
 def test_clients_exist() -> None:
-    from fin_infra.clients import BankingClient, MarketDataClient, CreditClient
+    from fin_infra.clients import BankingClient, CreditClient, MarketDataClient
 
     assert BankingClient and MarketDataClient and CreditClient

@@ -19,7 +19,6 @@ from svc_infra.cache.tags import invalidate_tags
 
 from fin_infra.credit.experian.auth import ExperianAuthManager
 
-
 # Initialize cache once for all tests (uses in-memory backend for tests)
 init_cache(url="mem://", prefix="test")
 

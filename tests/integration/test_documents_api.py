@@ -1,7 +1,8 @@
 """Integration tests for document management API."""
 
-import pytest
 from typing import Optional
+
+import pytest
 
 try:
     from fastapi import FastAPI
@@ -17,6 +18,7 @@ def app():
     """Create FastAPI app with document routes (no auth for testing)."""
     from svc_infra.api.fastapi.dual.public import public_router
     from svc_infra.storage import MemoryBackend
+
     from fin_infra.documents.ease import easy_documents
 
     app = FastAPI()
@@ -66,8 +68,9 @@ def app():
     # Route 3: Get document
     @router.get("/{document_id}")
     async def get_document_route(document_id: str):
-        from fin_infra.documents.storage import get_document
         from fastapi import HTTPException
+
+        from fin_infra.documents.storage import get_document
 
         doc = get_document(document_id)
         if doc is None:

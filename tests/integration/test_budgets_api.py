@@ -3,8 +3,9 @@
 Tests add_budgets() helper and all mounted endpoints with TestClient.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -29,8 +30,8 @@ def app():
     add_budgets(app, tracker=tracker)
 
     # Override svc-infra dependencies for testing
+    from svc_infra.api.fastapi.auth.security import Principal, _current_principal
     from svc_infra.api.fastapi.db.sql.session import get_session
-    from svc_infra.api.fastapi.auth.security import _current_principal, Principal
 
     class MockUser:
         id: str = "test_user"

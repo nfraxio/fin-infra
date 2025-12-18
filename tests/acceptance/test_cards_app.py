@@ -1,6 +1,7 @@
 """Test app to verify landing page cards for banking and market data."""
 
 import os
+
 import pytest
 
 # Skip entire module if Teller certificates not available
@@ -17,6 +18,7 @@ if (
     )
 
 from svc_infra.api.fastapi.ease import easy_service_app  # noqa: E402
+
 from fin_infra.banking import add_banking  # noqa: E402
 from fin_infra.markets import add_market_data  # noqa: E402
 

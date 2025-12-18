@@ -13,10 +13,11 @@ Environment Variables:
 """
 
 import os
+
 import pytest
 
 from fin_infra.credit import easy_credit
-from fin_infra.models.credit import CreditScore, CreditReport
+from fin_infra.models.credit import CreditReport, CreditScore
 
 # Skip all tests if Experian credentials not available
 skip_reason = "Experian credentials not found (set EXPERIAN_CLIENT_ID and EXPERIAN_CLIENT_SECRET)"

@@ -17,12 +17,11 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from fin_infra.investments import easy_investments
 from fin_infra.analytics.portfolio import (
-    portfolio_metrics_with_holdings,
     calculate_day_change_with_snapshot,
+    portfolio_metrics_with_holdings,
 )
-
+from fin_infra.investments import easy_investments
 
 pytestmark = [pytest.mark.acceptance]
 
@@ -263,7 +262,7 @@ class TestAnalyticsAPIWithHoldings:
         add_investments(app, provider="plaid", prefix="/investments")
 
         # Override svc-infra auth
-        from svc_infra.api.fastapi.auth.security import _current_principal, Principal
+        from svc_infra.api.fastapi.auth.security import Principal, _current_principal
 
         class MockUser:
             id: str = "user_integration_123"
@@ -350,7 +349,7 @@ The investments module enhances analytics with real portfolio data:
 
 BEFORE (balance-only):
   from fin_infra.analytics import easy_analytics
-  
+
   analytics = easy_analytics()
   metrics = await analytics.portfolio_metrics(user_id="user123")
   # Uses account balances only
@@ -359,20 +358,20 @@ BEFORE (balance-only):
 AFTER (with real holdings):
   from fin_infra.investments import easy_investments
   from fin_infra.analytics.portfolio import portfolio_metrics_with_holdings
-  
+
   # 1. Fetch real holdings
   investments = easy_investments(provider="plaid")
   holdings = await investments.get_holdings(access_token=user_token)
-  
+
   # 2. Calculate metrics with real data
   metrics = portfolio_metrics_with_holdings(holdings)
-  
+
   # Now you have:
   # ✓ Real cost basis from provider
   # ✓ Accurate P/L calculations
   # ✓ Real asset allocation from securities
   # ✓ Unrealized gains/losses
-  
+
   print(f"Total value: ${metrics.total_value:,.2f}")
   print(f"Total return: ${metrics.total_return:,.2f} ({metrics.total_return_percent:.2f}%)")
 
@@ -380,11 +379,11 @@ FASTAPI INTEGRATION:
   from fastapi import FastAPI
   from fin_infra.analytics import add_analytics
   from fin_infra.investments import add_investments
-  
+
   app = FastAPI()
   add_analytics(app, prefix="/analytics")
   add_investments(app, prefix="/investments")
-  
+
   # Clients can now:
   # 1. GET /investments/holdings (fetch holdings)
   # 2. Calculate metrics client-side or server-side
@@ -395,17 +394,17 @@ USE CASES:
      - Fetch holdings daily
      - Calculate day-over-day changes
      - Show real P/L and allocation
-  
+
   2. Rebalancing Recommendations
      - Get current allocation from holdings
      - Compare to target allocation
      - Generate trade recommendations
-  
+
   3. Tax Reporting
      - Get cost basis from holdings
      - Calculate realized/unrealized gains
      - Generate tax forms
-  
+
   4. Multi-Account View
      - Combine holdings from multiple providers
      - Unified portfolio metrics
@@ -414,10 +413,10 @@ USE CASES:
 PERSISTENCE (optional):
   # Store daily snapshots for historical analysis
   from datetime import date
-  
+
   today = date.today()
   holdings = await investments.get_holdings(access_token=token)
-  
+
   # Save to database (app's responsibility)
   for holding in holdings:
       db.save_snapshot(
@@ -429,7 +428,7 @@ PERSISTENCE (optional):
           value=holding.institution_value,
           cost_basis=holding.cost_basis,
       )
-  
+
   # Later: Calculate day/month/year changes
   yesterday_holdings = db.get_snapshot(user_id, date=yesterday)
   day_change = calculate_day_change_with_snapshot(holdings, yesterday_holdings)

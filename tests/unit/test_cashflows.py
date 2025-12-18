@@ -16,8 +16,9 @@ import math
 
 import pytest
 
-from fin_infra.cashflows import npv, irr, pmt, fv, pv
-from fin_infra.cashflows.core import npv as core_npv, irr as core_irr
+from fin_infra.cashflows import fv, irr, npv, pmt, pv
+from fin_infra.cashflows.core import irr as core_irr
+from fin_infra.cashflows.core import npv as core_npv
 
 
 class TestNPVBasic:

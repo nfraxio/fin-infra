@@ -12,18 +12,19 @@ Tests cover:
 - API integration
 """
 
-import pytest
 from datetime import datetime, timedelta
 
+import pytest
+
 from fin_infra.recurring import (
-    easy_recurring_detection,
-    normalize_merchant,
-    get_canonical_merchant,
-    is_generic_merchant,
     CadenceType,
     PatternType,
+    easy_recurring_detection,
+    get_canonical_merchant,
+    is_generic_merchant,
+    normalize_merchant,
 )
-from fin_infra.recurring.detector import Transaction, PatternDetector
+from fin_infra.recurring.detector import PatternDetector, Transaction
 
 
 class TestMerchantNormalization:

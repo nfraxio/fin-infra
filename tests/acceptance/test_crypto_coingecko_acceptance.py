@@ -1,8 +1,7 @@
 import pytest
 
+from fin_infra.models import Candle, Quote
 from fin_infra.providers.market.coingecko import CoinGeckoCryptoData
-from fin_infra.models import Quote, Candle
-
 
 pytestmark = [pytest.mark.acceptance]
 

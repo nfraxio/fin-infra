@@ -3,8 +3,9 @@
 Tests portfolio metrics calculation, benchmark comparison, and helper functions.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
 
 from fin_infra.analytics.models import (
     AssetAllocation,
@@ -12,16 +13,15 @@ from fin_infra.analytics.models import (
     PortfolioMetrics,
 )
 from fin_infra.analytics.portfolio import (
+    _calculate_asset_allocation,
+    _calculate_day_change,
+    _calculate_mtd_return,
+    _calculate_ytd_return,
+    _generate_mock_holdings,
+    _parse_benchmark_period,
     calculate_portfolio_metrics,
     compare_to_benchmark,
-    _parse_benchmark_period,
-    _calculate_ytd_return,
-    _calculate_mtd_return,
-    _calculate_day_change,
-    _calculate_asset_allocation,
-    _generate_mock_holdings,
 )
-
 
 # ============================================================================
 # Test calculate_portfolio_metrics()

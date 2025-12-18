@@ -10,6 +10,7 @@ Run with: pytest tests/integration/test_market_data.py -v
 from __future__ import annotations
 
 import os
+from datetime import UTC
 from decimal import Decimal
 
 import pytest
@@ -46,8 +47,8 @@ class TestYahooFinanceProvider:
 
     def test_quote_single_stock(self):
         """Test fetching a single stock quote."""
-        from fin_infra.providers.market.yahoo import YahooFinanceMarketData
         from fin_infra.models import Quote
+        from fin_infra.providers.market.yahoo import YahooFinanceMarketData
 
         provider = YahooFinanceMarketData()
         quote = provider.quote("AAPL")
@@ -59,8 +60,8 @@ class TestYahooFinanceProvider:
 
     def test_quote_multiple_stocks(self):
         """Test fetching quotes for multiple stocks."""
-        from fin_infra.providers.market.yahoo import YahooFinanceMarketData
         from fin_infra.models import Quote
+        from fin_infra.providers.market.yahoo import YahooFinanceMarketData
 
         provider = YahooFinanceMarketData()
 
@@ -80,8 +81,8 @@ class TestYahooFinanceProvider:
 
     def test_historical_data(self):
         """Test fetching historical OHLCV data."""
-        from fin_infra.providers.market.yahoo import YahooFinanceMarketData
         from fin_infra.models import Candle
+        from fin_infra.providers.market.yahoo import YahooFinanceMarketData
 
         provider = YahooFinanceMarketData()
         candles = provider.history("AAPL", period="1mo")
@@ -125,8 +126,8 @@ class TestAlphaVantageProvider:
 
     def test_quote_single_stock(self):
         """Test fetching a single stock quote."""
-        from fin_infra.providers.market.alphavantage import AlphaVantageMarketData
         from fin_infra.models import Quote
+        from fin_infra.providers.market.alphavantage import AlphaVantageMarketData
 
         provider = AlphaVantageMarketData()
 
@@ -144,8 +145,8 @@ class TestAlphaVantageProvider:
 
     def test_historical_data(self):
         """Test fetching historical data."""
-        from fin_infra.providers.market.alphavantage import AlphaVantageMarketData
         from fin_infra.models import Candle
+        from fin_infra.providers.market.alphavantage import AlphaVantageMarketData
 
         provider = AlphaVantageMarketData()
 
@@ -253,14 +254,15 @@ class TestMarketDataModels:
 
     def test_quote_model_serialization(self):
         """Test Quote model can be serialized to JSON."""
+        from datetime import datetime
+
         from fin_infra.models import Quote
-        from datetime import datetime, timezone
 
         quote = Quote(
             symbol="AAPL",
             price=Decimal("175.50"),
             currency="USD",
-            as_of=datetime.now(timezone.utc),
+            as_of=datetime.now(UTC),
             change=Decimal("2.30"),
             change_pct=Decimal("1.33"),
         )
@@ -272,8 +274,9 @@ class TestMarketDataModels:
 
     def test_candle_model_serialization(self):
         """Test Candle model can be serialized to JSON."""
-        from fin_infra.models import Candle
         import time
+
+        from fin_infra.models import Candle
 
         candle = Candle(
             ts=int(time.time()),

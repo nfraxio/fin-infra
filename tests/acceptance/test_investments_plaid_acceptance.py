@@ -28,22 +28,21 @@ Plaid Sandbox Limitations:
 """
 
 import os
-from decimal import Decimal
 from datetime import date, timedelta
+from decimal import Decimal
 
 import pytest
 
 from fin_infra.investments import easy_investments
 from fin_infra.investments.models import (
-    Holding,
-    Security,
-    InvestmentTransaction,
-    InvestmentAccount,
     AssetAllocation,
+    Holding,
+    InvestmentAccount,
+    InvestmentTransaction,
+    Security,
     SecurityType,
     TransactionType,
 )
-
 
 pytestmark = [pytest.mark.acceptance]
 
@@ -144,7 +143,7 @@ class TestPlaidInvestmentsAcceptance:
                 pytest.skip("No holdings in sandbox account")
 
             # Get unique account IDs
-            account_ids = list(set(h.account_id for h in all_holdings))
+            account_ids = list({h.account_id for h in all_holdings})
             if len(account_ids) == 0:
                 pytest.skip("No account IDs found")
 
@@ -331,7 +330,7 @@ class TestPlaidInvestmentsAcceptance:
         orig_secret = os.environ.pop("PLAID_SECRET", None)
 
         try:
-            with pytest.raises(ValueError, match="PLAID_CLIENT_ID.*required"):
+            with pytest.raises(ValueError, match=r"PLAID_CLIENT_ID.*required"):
                 easy_investments(provider="plaid")
 
             print("✓ Error handling: Missing credentials raises ValueError")
@@ -439,9 +438,9 @@ class TestPlaidSandboxSetup:
            'secret': 'your_sandbox_secret',
        }
    )
-   
+
    client = plaid_api.PlaidApi(ApiClient(configuration))
-   
+
    # Create sandbox public token
    response = client.sandbox_public_token_create(
        SandboxPublicTokenCreateRequest(
@@ -450,13 +449,13 @@ class TestPlaidSandboxSetup:
        )
    )
    public_token = response['public_token']
-   
+
    # Exchange for access token
    exchange_response = client.item_public_token_exchange(
        ItemPublicTokenExchangeRequest(public_token=public_token)
    )
    access_token = exchange_response['access_token']
-   
+
    # Save it
    print(f"export PLAID_SANDBOX_ACCESS_TOKEN={access_token}")
    ```
@@ -469,7 +468,7 @@ class TestPlaidSandboxSetup:
    - Username: user_bad (failed authentication - for error testing)
    - Password: pass_good (for user_good)
    - Institution: First Platypus Bank (ins_109508)
-   
+
 7. Sandbox limitations:
    - Holdings data is synthetic (not real market prices)
    - Transaction history is limited

@@ -3,13 +3,14 @@
 Tests cash flow calculation and forecasting with mocked dependencies.
 """
 
-import pytest
 from datetime import datetime
 
+import pytest
+
 from fin_infra.analytics.cash_flow import (
+    _determine_income_source,
     calculate_cash_flow,
     forecast_cash_flow,
-    _determine_income_source,
 )
 from fin_infra.analytics.models import CashFlowAnalysis
 
@@ -170,8 +171,9 @@ class TestHelperFunctions:
 
     def test_determine_income_source_paycheck(self):
         """Test income source detection for paycheck."""
-        from fin_infra.models import Transaction
         from datetime import date
+
+        from fin_infra.models import Transaction
 
         txn = Transaction(
             id="txn1",
@@ -186,8 +188,9 @@ class TestHelperFunctions:
 
     def test_determine_income_source_investment(self):
         """Test income source detection for investment income."""
-        from fin_infra.models import Transaction
         from datetime import date
+
+        from fin_infra.models import Transaction
 
         txn = Transaction(
             id="txn1",
@@ -202,8 +205,9 @@ class TestHelperFunctions:
 
     def test_determine_income_source_side_hustle(self):
         """Test income source detection for side hustle."""
-        from fin_infra.models import Transaction
         from datetime import date
+
+        from fin_infra.models import Transaction
 
         txn = Transaction(
             id="txn1",
@@ -218,8 +222,9 @@ class TestHelperFunctions:
 
     def test_determine_income_source_other(self):
         """Test income source detection for other income."""
-        from fin_infra.models import Transaction
         from datetime import date
+
+        from fin_infra.models import Transaction
 
         txn = Transaction(
             id="txn1",

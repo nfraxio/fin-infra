@@ -1,12 +1,13 @@
 """Unit tests for crypto data module - easy_crypto and add_crypto_data."""
 
-import pytest
-from unittest.mock import Mock, patch
+from datetime import UTC, datetime
 from decimal import Decimal
-from datetime import datetime, timezone
+from unittest.mock import Mock, patch
 
-from fin_infra.crypto import easy_crypto, add_crypto_data
-from fin_infra.models import Quote, Candle
+import pytest
+
+from fin_infra.crypto import add_crypto_data, easy_crypto
+from fin_infra.models import Candle, Quote
 
 
 class TestEasyCrypto:
@@ -48,6 +49,7 @@ class TestAddCryptoData:
     def app_with_crypto_mock(self):
         """Create FastAPI app with mocked crypto provider."""
         from fastapi import FastAPI
+
         from fin_infra.providers.base import CryptoDataProvider
 
         app = FastAPI()
@@ -66,14 +68,14 @@ class TestAddCryptoData:
         mock_provider.ticker.return_value = Quote(
             symbol="BTC/USDT",
             price=Decimal("45000.00"),
-            as_of=datetime(2025, 1, 15, 12, 30, 0, tzinfo=timezone.utc),
+            as_of=datetime(2025, 1, 15, 12, 30, 0, tzinfo=UTC),
             currency="USDT",
         )
 
         # Mock ohlcv response
         mock_provider.ohlcv.return_value = [
             Candle(
-                ts=int(datetime(2025, 1, 15, tzinfo=timezone.utc).timestamp() * 1000),
+                ts=int(datetime(2025, 1, 15, tzinfo=UTC).timestamp() * 1000),
                 open=Decimal("44000.00"),
                 high=Decimal("46000.00"),
                 low=Decimal("43500.00"),
@@ -81,7 +83,7 @@ class TestAddCryptoData:
                 volume=Decimal("1000000"),
             ),
             Candle(
-                ts=int(datetime(2025, 1, 14, tzinfo=timezone.utc).timestamp() * 1000),
+                ts=int(datetime(2025, 1, 14, tzinfo=UTC).timestamp() * 1000),
                 open=Decimal("43000.00"),
                 high=Decimal("44500.00"),
                 low=Decimal("42800.00"),
@@ -173,6 +175,7 @@ class TestAddCryptoData:
         """Should support custom prefix."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from fin_infra.providers.base import CryptoDataProvider
 
         # Create mock provider (subclass to pass isinstance checks)
@@ -188,7 +191,7 @@ class TestAddCryptoData:
         mock_provider.ticker.return_value = Quote(
             symbol="BTC/USDT",
             price=Decimal("45000.00"),
-            as_of=datetime(2025, 1, 15, 12, 30, 0, tzinfo=timezone.utc),
+            as_of=datetime(2025, 1, 15, 12, 30, 0, tzinfo=UTC),
             currency="USDT",
         )
 
@@ -239,6 +242,7 @@ class TestAddCryptoData:
     def test_add_crypto_data_with_provider_instance(self):
         """Should accept provider as instance."""
         from fastapi import FastAPI
+
         from fin_infra.providers.market.coingecko import CoinGeckoCryptoData
 
         app = FastAPI()

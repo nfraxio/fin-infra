@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from fin_infra.recurring.insights import (
+    INSIGHTS_GENERATION_SYSTEM_PROMPT,
     SubscriptionInsights,
     SubscriptionInsightsGenerator,
-    INSIGHTS_GENERATION_SYSTEM_PROMPT,
 )
 
 

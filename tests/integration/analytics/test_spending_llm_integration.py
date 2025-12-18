@@ -8,7 +8,6 @@ import pytest
 from fin_infra.analytics.models import PersonalizedSpendingAdvice
 from fin_infra.analytics.spending import analyze_spending, generate_spending_insights
 
-
 # ============================================================================
 # Mock Providers
 # ============================================================================

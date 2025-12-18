@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import date
+from datetime import UTC, date
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
@@ -32,7 +32,6 @@ from fin_infra.investments.models import (
     SecurityType,
     TransactionType,
 )
-
 
 # ============================================================================
 # Test Fixtures
@@ -189,8 +188,8 @@ class TestAPITimeoutRecovery:
     @pytest.mark.asyncio
     async def test_experian_client_retry_on_timeout(self):
         """Test Experian client retries on timeout (uses tenacity)."""
-        from fin_infra.credit.experian.client import ExperianClient
         from fin_infra.credit.experian.auth import ExperianAuthManager
+        from fin_infra.credit.experian.client import ExperianClient
 
         # Create mock auth manager
         mock_auth = AsyncMock(spec=ExperianAuthManager)
@@ -266,8 +265,8 @@ class TestTokenExpirationRace:
     @pytest.mark.asyncio
     async def test_experian_token_invalidation_on_401(self):
         """Test Experian client invalidates token on 401 and retries."""
-        from fin_infra.credit.experian.client import ExperianClient
         from fin_infra.credit.experian.auth import ExperianAuthManager
+        from fin_infra.credit.experian.client import ExperianClient
         from fin_infra.exceptions import ExperianAuthError
 
         mock_auth = AsyncMock(spec=ExperianAuthManager)
@@ -425,9 +424,9 @@ class TestTokenExpirationRace:
     def test_plaid_token_validation_patterns(self):
         """Test Plaid token format validation patterns."""
         from fin_infra.banking.utils import (
+            validate_mx_token,
             validate_plaid_token,
             validate_teller_token,
-            validate_mx_token,
         )
 
         # Valid Plaid token (starts with access-)
@@ -633,8 +632,8 @@ class TestHTTPErrorHandling:
     @pytest.mark.asyncio
     async def test_experian_rate_limit_error(self):
         """Test Experian client handles 429 rate limit."""
-        from fin_infra.credit.experian.client import ExperianClient
         from fin_infra.credit.experian.auth import ExperianAuthManager
+        from fin_infra.credit.experian.client import ExperianClient
         from fin_infra.exceptions import ExperianRateLimitError
 
         mock_auth = AsyncMock(spec=ExperianAuthManager)
@@ -665,8 +664,8 @@ class TestHTTPErrorHandling:
     @pytest.mark.asyncio
     async def test_experian_not_found_error(self):
         """Test Experian client handles 404 not found."""
-        from fin_infra.credit.experian.client import ExperianClient
         from fin_infra.credit.experian.auth import ExperianAuthManager
+        from fin_infra.credit.experian.client import ExperianClient
         from fin_infra.exceptions import ExperianNotFoundError
 
         mock_auth = AsyncMock(spec=ExperianAuthManager)
@@ -759,8 +758,8 @@ class TestProviderInitialization:
 
     def test_experian_client_initialization(self):
         """Test Experian client initializes correctly."""
-        from fin_infra.credit.experian.client import ExperianClient
         from fin_infra.credit.experian.auth import ExperianAuthManager
+        from fin_infra.credit.experian.client import ExperianClient
 
         mock_auth = MagicMock(spec=ExperianAuthManager)
 
@@ -910,11 +909,12 @@ class TestBankingConnectionStatusEdgeCases:
 
     def test_should_refresh_token_stale_sync(self):
         """Test token refresh check for stale last_synced_at."""
+        from datetime import datetime, timedelta
+
         from fin_infra.banking.utils import should_refresh_token
-        from datetime import datetime, timedelta, timezone
 
         # Last synced 31 days ago - should refresh (use timezone-aware datetime)
-        old_sync = (datetime.now(timezone.utc) - timedelta(days=31)).isoformat()
+        old_sync = (datetime.now(UTC) - timedelta(days=31)).isoformat()
         providers = {
             "plaid": {
                 "access_token": "access-sandbox-abc123",
@@ -926,11 +926,12 @@ class TestBankingConnectionStatusEdgeCases:
 
     def test_should_refresh_token_recent_sync(self):
         """Test token refresh check for recent sync."""
+        from datetime import datetime, timedelta
+
         from fin_infra.banking.utils import should_refresh_token
-        from datetime import datetime, timedelta, timezone
 
         # Last synced 1 day ago - should not refresh (use timezone-aware datetime)
-        recent_sync = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        recent_sync = (datetime.now(UTC) - timedelta(days=1)).isoformat()
         providers = {
             "plaid": {
                 "access_token": "access-sandbox-abc123",

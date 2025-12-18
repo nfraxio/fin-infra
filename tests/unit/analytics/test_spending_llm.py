@@ -3,8 +3,9 @@
 Tests ai-infra integration for personalized spending advice generation.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from fin_infra.analytics.models import (
     PersonalizedSpendingAdvice,
@@ -13,11 +14,10 @@ from fin_infra.analytics.models import (
     TrendDirection,
 )
 from fin_infra.analytics.spending import (
-    generate_spending_insights,
     _build_spending_insights_prompt,
     _generate_rule_based_insights,
+    generate_spending_insights,
 )
-
 
 # ============================================================================
 # Test generate_spending_insights()
@@ -595,7 +595,7 @@ def test_generate_rule_based_insights_limits_list_lengths():
     insight = SpendingInsight(
         top_merchants=[],
         category_breakdown=categories,
-        spending_trends={cat: TrendDirection.INCREASING for cat in categories},
+        spending_trends=dict.fromkeys(categories, TrendDirection.INCREASING),
         anomalies=[],
         period_days=30,
         total_spending=2000.0,

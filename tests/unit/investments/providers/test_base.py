@@ -2,7 +2,6 @@
 
 from datetime import date
 from decimal import Decimal
-from typing import List
 
 import pytest
 
@@ -22,8 +21,8 @@ class MockInvestmentProvider(InvestmentProvider):
     """Mock provider for testing base class functionality."""
 
     async def get_holdings(
-        self, access_token: str, account_ids: List[str] | None = None
-    ) -> List[Holding]:
+        self, access_token: str, account_ids: list[str] | None = None
+    ) -> list[Holding]:
         """Mock implementation."""
         return []
 
@@ -32,16 +31,16 @@ class MockInvestmentProvider(InvestmentProvider):
         access_token: str,
         start_date: date,
         end_date: date,
-        account_ids: List[str] | None = None,
-    ) -> List[InvestmentTransaction]:
+        account_ids: list[str] | None = None,
+    ) -> list[InvestmentTransaction]:
         """Mock implementation."""
         return []
 
-    async def get_securities(self, access_token: str, security_ids: List[str]) -> List[Security]:
+    async def get_securities(self, access_token: str, security_ids: list[str]) -> list[Security]:
         """Mock implementation."""
         return []
 
-    async def get_investment_accounts(self, access_token: str) -> List[InvestmentAccount]:
+    async def get_investment_accounts(self, access_token: str) -> list[InvestmentAccount]:
         """Mock implementation."""
         return []
 
@@ -53,7 +52,7 @@ def provider() -> MockInvestmentProvider:
 
 
 @pytest.fixture
-def sample_securities() -> List[Security]:
+def sample_securities() -> list[Security]:
     """Create sample securities for testing."""
     return [
         Security(
@@ -94,7 +93,7 @@ def sample_securities() -> List[Security]:
 
 
 @pytest.fixture
-def sample_holdings(sample_securities: List[Security]) -> List[Holding]:
+def sample_holdings(sample_securities: list[Security]) -> list[Holding]:
     """Create sample holdings for testing."""
     return [
         Holding(
@@ -143,7 +142,7 @@ class TestCalculateAllocation:
     """Tests for calculate_allocation() helper method."""
 
     def test_calculate_allocation_basic(
-        self, provider: MockInvestmentProvider, sample_holdings: List[Holding]
+        self, provider: MockInvestmentProvider, sample_holdings: list[Holding]
     ):
         """Test basic asset allocation calculation."""
         allocation = provider.calculate_allocation(sample_holdings)
@@ -155,7 +154,7 @@ class TestCalculateAllocation:
         assert allocation.cash_percent == 10.75  # 645 / 6000
 
     def test_calculate_allocation_by_sector(
-        self, provider: MockInvestmentProvider, sample_holdings: List[Holding]
+        self, provider: MockInvestmentProvider, sample_holdings: list[Holding]
     ):
         """Test sector-based allocation calculation."""
         allocation = provider.calculate_allocation(sample_holdings)
@@ -174,7 +173,7 @@ class TestCalculateAllocation:
         assert allocation.cash_percent == 0.0
 
     def test_calculate_allocation_only_cash(
-        self, provider: MockInvestmentProvider, sample_securities: List[Security]
+        self, provider: MockInvestmentProvider, sample_securities: list[Security]
     ):
         """Test allocation calculation with only cash holdings."""
         cash_holdings = [
@@ -196,7 +195,7 @@ class TestCalculateAllocation:
         assert allocation.cash_percent == 100.0
 
     def test_calculate_allocation_no_sector_data(
-        self, provider: MockInvestmentProvider, sample_securities: List[Security]
+        self, provider: MockInvestmentProvider, sample_securities: list[Security]
     ):
         """Test allocation calculation when securities have no sector information."""
         # Create security without sector
@@ -228,7 +227,7 @@ class TestCalculateAllocation:
         assert allocation.cash_percent == 0.0
 
     def test_calculate_allocation_zero_value_holdings(
-        self, provider: MockInvestmentProvider, sample_securities: List[Security]
+        self, provider: MockInvestmentProvider, sample_securities: list[Security]
     ):
         """Test allocation calculation when holdings have zero value."""
         zero_holdings = [
@@ -257,7 +256,7 @@ class TestCalculatePortfolioMetrics:
     """Tests for calculate_portfolio_metrics() helper method."""
 
     def test_calculate_portfolio_metrics_basic(
-        self, provider: MockInvestmentProvider, sample_holdings: List[Holding]
+        self, provider: MockInvestmentProvider, sample_holdings: list[Holding]
     ):
         """Test basic portfolio metrics calculation."""
         metrics = provider.calculate_portfolio_metrics(sample_holdings)
@@ -270,7 +269,7 @@ class TestCalculatePortfolioMetrics:
         )  # 305 / 5695 * 100
 
     def test_calculate_portfolio_metrics_loss(
-        self, provider: MockInvestmentProvider, sample_securities: List[Security]
+        self, provider: MockInvestmentProvider, sample_securities: list[Security]
     ):
         """Test portfolio metrics when holdings have unrealized losses."""
         losing_holdings = [
@@ -302,7 +301,7 @@ class TestCalculatePortfolioMetrics:
         assert metrics["total_unrealized_gain_loss_percent"] == 0.0
 
     def test_calculate_portfolio_metrics_no_cost_basis(
-        self, provider: MockInvestmentProvider, sample_securities: List[Security]
+        self, provider: MockInvestmentProvider, sample_securities: list[Security]
     ):
         """Test portfolio metrics when holdings have no cost basis."""
         no_cost_holdings = [
@@ -324,7 +323,7 @@ class TestCalculatePortfolioMetrics:
         assert metrics["total_unrealized_gain_loss_percent"] == 0.0  # Avoid division by zero
 
     def test_calculate_portfolio_metrics_precision(
-        self, provider: MockInvestmentProvider, sample_securities: List[Security]
+        self, provider: MockInvestmentProvider, sample_securities: list[Security]
     ):
         """Test that metrics are properly rounded to 2 decimal places."""
         holdings = [
@@ -411,7 +410,7 @@ class TestIntegration:
     """Integration tests using multiple helper methods together."""
 
     def test_full_portfolio_analysis(
-        self, provider: MockInvestmentProvider, sample_holdings: List[Holding]
+        self, provider: MockInvestmentProvider, sample_holdings: list[Holding]
     ):
         """Test complete portfolio analysis using all helper methods."""
         # Calculate allocation
@@ -429,7 +428,7 @@ class TestIntegration:
         assert allocation.cash_percent == (645 / 6000) * 100  # 10.75%
 
     def test_normalize_securities_in_holdings(
-        self, provider: MockInvestmentProvider, sample_securities: List[Security]
+        self, provider: MockInvestmentProvider, sample_securities: list[Security]
     ):
         """Test normalizing security types for holdings from different providers."""
         provider_types = ["equity", "EQUITY", "cs", "  equity  "]

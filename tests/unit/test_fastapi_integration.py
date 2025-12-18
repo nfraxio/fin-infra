@@ -1,6 +1,7 @@
 """Tests for FastAPI integration helpers (add_banking, add_market_data)."""
 
 from unittest.mock import Mock, patch
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -275,9 +276,10 @@ class TestAddMarketData:
 
     def test_add_market_data_with_provider_instance(self):
         """Test that add_market_data accepts a provider instance directly."""
-        from fin_infra.providers.base import MarketDataProvider
-        from fin_infra.models import Quote
         from datetime import datetime
+
+        from fin_infra.models import Quote
+        from fin_infra.providers.base import MarketDataProvider
 
         app = FastAPI()
 

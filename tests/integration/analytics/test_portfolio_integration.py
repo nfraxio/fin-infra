@@ -15,7 +15,6 @@ from fin_infra.analytics.portfolio import (
     compare_to_benchmark,
 )
 
-
 # ============================================================================
 # Test End-to-End Portfolio Metrics
 # ============================================================================

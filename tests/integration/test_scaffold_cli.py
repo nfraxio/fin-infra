@@ -4,10 +4,11 @@ CLI tests for scaffold command.
 Tests: fin-infra scaffold CLI interface and argument validation.
 """
 
-import pytest
 import subprocess
 import tempfile
 from pathlib import Path
+
+import pytest
 
 
 class TestScaffoldCLIHelp:

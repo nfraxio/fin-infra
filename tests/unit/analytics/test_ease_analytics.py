@@ -3,21 +3,21 @@
 Tests easy_analytics() builder and AnalyticsEngine class.
 """
 
-import pytest
 from datetime import datetime, timedelta
 
-from fin_infra.analytics.ease import easy_analytics, AnalyticsEngine
-from fin_infra.analytics.savings import SavingsDefinition
+import pytest
+
+from fin_infra.analytics.ease import AnalyticsEngine, easy_analytics
 from fin_infra.analytics.models import (
+    BenchmarkComparison,
     CashFlowAnalysis,
-    SavingsRateData,
-    SpendingInsight,
+    GrowthProjection,
     PersonalizedSpendingAdvice,
     PortfolioMetrics,
-    BenchmarkComparison,
-    GrowthProjection,
+    SavingsRateData,
+    SpendingInsight,
 )
-
+from fin_infra.analytics.savings import SavingsDefinition
 
 # ============================================================================
 # Test easy_analytics() builder

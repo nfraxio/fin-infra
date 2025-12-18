@@ -1,7 +1,6 @@
 """Unit tests for document analysis."""
 
 import pytest
-
 from svc_infra.storage.backends.memory import MemoryBackend
 
 from fin_infra.documents.analysis import analyze_document, clear_cache

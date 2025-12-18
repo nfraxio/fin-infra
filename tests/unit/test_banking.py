@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import Mock, patch
+
 import httpx
+import pytest
 
 from fin_infra.banking import easy_banking
 from fin_infra.providers.banking.teller_client import TellerClient
@@ -288,6 +289,7 @@ class TestAddBanking:
         """Create FastAPI app with banking routes."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from fin_infra.banking import add_banking
 
         app = FastAPI()
@@ -376,6 +378,7 @@ class TestAddBanking:
         """Should support custom prefix."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from fin_infra.banking import add_banking
 
         app = FastAPI()

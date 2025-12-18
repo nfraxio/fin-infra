@@ -15,7 +15,9 @@ Run with: pytest -m acceptance tests/acceptance/test_categorization_llm_acceptan
 """
 
 import os
+
 import pytest
+
 from fin_infra.categorization import Category, easy_categorization
 
 # Check for API keys

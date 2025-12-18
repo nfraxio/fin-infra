@@ -17,7 +17,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from fin_infra.credit import MockExperianProvider, easy_credit, add_credit
+from fin_infra.credit import MockExperianProvider, add_credit, easy_credit
 from fin_infra.models.credit import (
     CreditAccount,
     CreditInquiry,

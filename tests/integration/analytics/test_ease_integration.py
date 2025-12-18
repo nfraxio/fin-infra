@@ -7,13 +7,13 @@ import pytest
 
 from fin_infra.analytics.ease import easy_analytics
 from fin_infra.analytics.models import (
+    BenchmarkComparison,
     CashFlowAnalysis,
+    GrowthProjection,
+    PortfolioMetrics,
+    SavingsDefinition,
     SavingsRateData,
     SpendingInsight,
-    PortfolioMetrics,
-    BenchmarkComparison,
-    GrowthProjection,
-    SavingsDefinition,
 )
 
 

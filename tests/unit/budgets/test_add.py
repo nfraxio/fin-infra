@@ -167,7 +167,7 @@ def app_with_budgets(mock_tracker):
     app.dependency_overrides[get_session] = _mock_session
 
     # Override authentication to provide mock user
-    from svc_infra.api.fastapi.auth.security import _current_principal, Principal
+    from svc_infra.api.fastapi.auth.security import Principal, _current_principal
 
     async def mock_principal(request=None, session=None, jwt_or_cookie=None, ak=None):
         """Mock principal for testing."""
@@ -502,8 +502,8 @@ class TestIntegration:
         add_budgets(app, db_url="sqlite+aiosqlite:///test.db")
 
         # Override svc-infra dependencies for testing
+        from svc_infra.api.fastapi.auth.security import Principal, _current_principal
         from svc_infra.api.fastapi.db.sql.session import get_session
-        from svc_infra.api.fastapi.auth.security import _current_principal, Principal
 
         class _DummySession:
             async def execute(self, *_, **__):

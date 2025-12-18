@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from fin_infra.recurring.detectors_llm import (
+    VARIABLE_DETECTION_SYSTEM_PROMPT,
     VariableDetectorLLM,
     VariableRecurringPattern,
-    VARIABLE_DETECTION_SYSTEM_PROMPT,
 )
 
 

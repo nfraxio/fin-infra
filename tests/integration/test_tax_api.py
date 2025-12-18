@@ -6,7 +6,6 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -16,6 +15,7 @@ from fastapi.testclient import TestClient
 def app():
     """Create FastAPI app with tax routes (bypass auth for testing)."""
     from svc_infra.api.fastapi.dual.public import public_router
+
     from fin_infra.tax import easy_tax
     from fin_infra.tax.tlh import find_tlh_opportunities, simulate_tlh_scenario
 

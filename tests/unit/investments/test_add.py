@@ -3,20 +3,20 @@
 Tests all investment API endpoints with mocked InvestmentProvider.
 """
 
-import pytest
 from datetime import date
 from decimal import Decimal
 from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from fin_infra.investments.add import add_investments
 from fin_infra.investments.models import (
-    Holding,
-    InvestmentTransaction,
-    InvestmentAccount,
     AssetAllocation,
+    Holding,
+    InvestmentAccount,
+    InvestmentTransaction,
     Security,
     SecurityType,
     TransactionType,
@@ -140,8 +140,8 @@ def app_with_investments(mock_provider: InvestmentProvider, mock_principal) -> F
     Note: Patches user_router with public_router to bypass authentication in tests.
     Production code uses user_router (requires authentication).
     """
-    from svc_infra.api.fastapi.dual.public import public_router
     from svc_infra.api.fastapi.auth.security import _current_principal
+    from svc_infra.api.fastapi.dual.public import public_router
 
     app = FastAPI()
 

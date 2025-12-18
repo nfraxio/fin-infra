@@ -16,15 +16,14 @@ Fixtures are organized by category:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 
 # =============================================================================
 # PYTEST CONFIGURATION
@@ -108,7 +107,7 @@ class MockDatabaseSession:
     """
 
     def __init__(self):
-        self._data: Dict[str, Any] = {}
+        self._data: dict[str, Any] = {}
 
     async def execute(self, *_, **__):
         class _Res:
@@ -177,8 +176,8 @@ def setup_svc_infra_mocks(app: FastAPI, user: MockUser | None = None):
             setup_svc_infra_mocks(app)
             return app
     """
+    from svc_infra.api.fastapi.auth.security import Principal, _current_principal
     from svc_infra.api.fastapi.db.sql.session import get_session
-    from svc_infra.api.fastapi.auth.security import _current_principal, Principal
 
     if user is None:
         user = MockUser()
@@ -231,8 +230,8 @@ def clear_goals_stores():
 
     Use with autouse=True in test modules that need clean state.
     """
-    from fin_infra.goals.management import clear_goals_store
     from fin_infra.goals.funding import clear_funding_store
+    from fin_infra.goals.management import clear_goals_store
 
     clear_goals_store()
     clear_funding_store()
@@ -247,7 +246,7 @@ def clear_goals_stores():
 
 
 @pytest.fixture
-def sample_account_data() -> Dict[str, Any]:
+def sample_account_data() -> dict[str, Any]:
     """Provide sample bank account data for testing."""
     return {
         "account_id": "acc_123",
@@ -263,7 +262,7 @@ def sample_account_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_accounts() -> List[Dict[str, Any]]:
+def sample_accounts() -> list[dict[str, Any]]:
     """Provide multiple sample accounts for testing."""
     return [
         {
@@ -297,13 +296,13 @@ def sample_accounts() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def sample_transaction_data() -> Dict[str, Any]:
+def sample_transaction_data() -> dict[str, Any]:
     """Provide sample transaction data for testing."""
     return {
         "transaction_id": "txn_123",
         "account_id": "acc_123",
         "amount": Decimal("42.50"),
-        "date": datetime.now(timezone.utc),
+        "date": datetime.now(UTC),
         "name": "Coffee Shop",
         "merchant_name": "Starbucks",
         "category": ["Food and Drink", "Coffee"],
@@ -312,9 +311,9 @@ def sample_transaction_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_transactions() -> List[Dict[str, Any]]:
+def sample_transactions() -> list[dict[str, Any]]:
     """Provide multiple sample transactions for testing."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return [
         {
             "transaction_id": "txn_1",
@@ -347,7 +346,7 @@ def sample_transactions() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def sample_holding_data() -> Dict[str, Any]:
+def sample_holding_data() -> dict[str, Any]:
     """Provide sample investment holding data for testing."""
     return {
         "holding_id": "hold_123",
@@ -362,7 +361,7 @@ def sample_holding_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_holdings() -> List[Dict[str, Any]]:
+def sample_holdings() -> list[dict[str, Any]]:
     """Provide multiple sample holdings for testing."""
     return [
         {
@@ -393,7 +392,7 @@ def sample_holdings() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def sample_quote_data() -> Dict[str, Any]:
+def sample_quote_data() -> dict[str, Any]:
     """Provide sample market quote data for testing."""
     return {
         "symbol": "AAPL",
@@ -401,42 +400,42 @@ def sample_quote_data() -> Dict[str, Any]:
         "change": Decimal("2.30"),
         "change_percent": Decimal("1.33"),
         "volume": 45_000_000,
-        "timestamp": datetime.now(timezone.utc),
+        "timestamp": datetime.now(UTC),
     }
 
 
 @pytest.fixture
-def sample_goal_data() -> Dict[str, Any]:
+def sample_goal_data() -> dict[str, Any]:
     """Provide sample financial goal data for testing."""
     return {
         "name": "Emergency Fund",
         "target_amount": Decimal("10000.00"),
         "current_amount": Decimal("2500.00"),
-        "deadline": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat(),
+        "deadline": (datetime.now(UTC) + timedelta(days=365)).isoformat(),
         "category": "savings",
         "priority": "high",
     }
 
 
 @pytest.fixture
-def sample_budget_data() -> Dict[str, Any]:
+def sample_budget_data() -> dict[str, Any]:
     """Provide sample budget data for testing."""
     return {
         "name": "Monthly Food Budget",
         "category": "Food and Drink",
         "amount": Decimal("500.00"),
         "period": "monthly",
-        "start_date": datetime.now(timezone.utc).replace(day=1).isoformat(),
+        "start_date": datetime.now(UTC).replace(day=1).isoformat(),
     }
 
 
 @pytest.fixture
-def sample_credit_report_data() -> Dict[str, Any]:
+def sample_credit_report_data() -> dict[str, Any]:
     """Provide sample credit report data for testing."""
     return {
         "score": 750,
         "score_type": "FICO",
-        "report_date": datetime.now(timezone.utc).isoformat(),
+        "report_date": datetime.now(UTC).isoformat(),
         "accounts_count": 5,
         "credit_utilization": Decimal("0.25"),
         "payment_history": "good",
@@ -449,15 +448,15 @@ def sample_credit_report_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def sample_cashflows() -> List[float]:
+def sample_cashflows() -> list[float]:
     """Provide sample cashflows for NPV/IRR testing."""
     return [-1000.0, 200.0, 300.0, 400.0, 500.0]
 
 
 @pytest.fixture
-def sample_cashflows_with_dates() -> List[tuple]:
+def sample_cashflows_with_dates() -> list[tuple]:
     """Provide sample cashflows with dates for XNPV/XIRR testing."""
-    base_date = datetime.now(timezone.utc)
+    base_date = datetime.now(UTC)
     return [
         (base_date, -1000.0),
         (base_date + timedelta(days=365), 200.0),
@@ -512,10 +511,10 @@ def mock_brokerage_provider():
 @pytest.fixture
 def sample_deadline() -> str:
     """Sample deadline 2 years from now."""
-    return (datetime.now(timezone.utc) + timedelta(days=730)).isoformat()
+    return (datetime.now(UTC) + timedelta(days=730)).isoformat()
 
 
 @pytest.fixture
 def today() -> datetime:
     """Return today's date at midnight UTC."""
-    return datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    return datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)

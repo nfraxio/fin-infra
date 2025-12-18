@@ -11,7 +11,7 @@ Tests scaffold_goals_core() function with various flag combinations:
 - Combined flags (tenant + soft_delete, tenant + no-repo, etc.)
 """
 
-from fin_infra.scaffold.goals import scaffold_goals_core, _generate_substitutions
+from fin_infra.scaffold.goals import _generate_substitutions, scaffold_goals_core
 
 
 class TestGenerateSubstitutions:

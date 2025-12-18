@@ -8,9 +8,9 @@ from decimal import Decimal
 import pytest
 
 from fin_infra.analytics.portfolio import (
-    portfolio_metrics_with_holdings,
-    calculate_day_change_with_snapshot,
     _calculate_allocation_from_holdings,
+    calculate_day_change_with_snapshot,
+    portfolio_metrics_with_holdings,
 )
 from fin_infra.investments.models import Holding, Security, SecurityType
 

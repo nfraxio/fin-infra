@@ -3,19 +3,20 @@
 Tests for MockTaxProvider, easy_tax(), and add_tax_data().
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from fin_infra.tax import easy_tax, add_tax_data
-from fin_infra.providers.tax import MockTaxProvider
 from fin_infra.models.tax import (
-    TaxFormW2,
-    TaxForm1099INT,
     CryptoTaxReport,
+    TaxForm1099INT,
+    TaxFormW2,
     TaxLiability,
 )
+from fin_infra.providers.tax import MockTaxProvider
+from fin_infra.tax import add_tax_data, easy_tax
 
 
 class TestMockTaxProvider:
@@ -37,7 +38,7 @@ class TestMockTaxProvider:
         provider = MockTaxProvider()
         documents = await provider.get_tax_documents("user_123", 2024)
 
-        w2 = [d for d in documents if d.form_type == "W2"][0]
+        w2 = next(d for d in documents if d.form_type == "W2")
         assert isinstance(w2, TaxFormW2)
         assert w2.wages == Decimal("75000.00")
         assert w2.federal_tax_withheld == Decimal("12000.00")
@@ -51,7 +52,7 @@ class TestMockTaxProvider:
         provider = MockTaxProvider()
         documents = await provider.get_tax_documents("user_123", 2024)
 
-        f1099int = [d for d in documents if d.form_type == "1099-INT"][0]
+        f1099int = next(d for d in documents if d.form_type == "1099-INT")
         assert isinstance(f1099int, TaxForm1099INT)
         assert f1099int.interest_income == Decimal("250.00")
         assert f1099int.issuer == "Acme Bank"

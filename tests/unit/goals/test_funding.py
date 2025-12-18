@@ -3,14 +3,14 @@
 import pytest
 
 from fin_infra.goals.funding import (
-    link_account_to_goal,
-    get_goal_funding_sources,
-    get_account_allocations,
-    update_account_allocation,
-    remove_account_from_goal,
     clear_funding_store,
+    get_account_allocations,
+    get_goal_funding_sources,
+    link_account_to_goal,
+    remove_account_from_goal,
+    update_account_allocation,
 )
-from fin_infra.goals.management import create_goal, clear_goals_store
+from fin_infra.goals.management import clear_goals_store, create_goal
 
 
 @pytest.fixture(autouse=True)

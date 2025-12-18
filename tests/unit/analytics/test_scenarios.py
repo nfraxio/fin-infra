@@ -11,7 +11,6 @@ from fin_infra.analytics.scenarios import (
     model_scenario,
 )
 
-
 # ---- Test Models ----
 
 

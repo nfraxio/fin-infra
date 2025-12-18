@@ -10,14 +10,14 @@ Tests cover critical scenarios:
 from __future__ import annotations
 
 import zoneinfo
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 import pytest
 
+from fin_infra.models.accounts import Account, AccountType
 from fin_infra.models.brokerage import Order, Position
 from fin_infra.models.transactions import Transaction
-from fin_infra.models.accounts import Account, AccountType
 from fin_infra.net_worth.calculator import normalize_currency
 
 
@@ -114,7 +114,7 @@ class TestOrderPartialFills:
             filled_qty=Decimal("50"),
             filled_avg_price=Decimal("149.50"),
             status="partially_filled",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         assert order.status == "partially_filled"
@@ -134,7 +134,7 @@ class TestOrderPartialFills:
             limit_price=Decimal("250.00"),
             filled_qty=Decimal("0"),
             status="new",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         assert order.filled_qty == Decimal("0")
@@ -152,8 +152,8 @@ class TestOrderPartialFills:
             filled_qty=Decimal("50"),
             filled_avg_price=Decimal("140.25"),
             status="filled",
-            created_at=datetime.now(timezone.utc),
-            filled_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            filled_at=datetime.now(UTC),
         )
 
         assert order.filled_qty == order.qty
@@ -173,7 +173,7 @@ class TestOrderPartialFills:
             filled_qty=Decimal("11"),  # More than ordered
             filled_avg_price=Decimal("180.00"),
             status="filled",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         # Document: model allows this (no validation)
@@ -192,7 +192,7 @@ class TestOrderPartialFills:
             filled_qty=Decimal("60"),
             filled_avg_price=Decimal("495.50"),
             status="partially_filled",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         remaining_qty = order.qty - order.filled_qty
@@ -213,7 +213,7 @@ class TestOrderPartialFills:
             filled_qty=Decimal("0.25"),
             filled_avg_price=Decimal("650000.00"),
             status="partially_filled",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         assert order.filled_qty == Decimal("0.25")
@@ -233,8 +233,8 @@ class TestOrderPartialFills:
             filled_qty=Decimal("75"),
             filled_avg_price=Decimal("350.00"),
             status="canceled",
-            created_at=datetime.now(timezone.utc),
-            canceled_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            canceled_at=datetime.now(UTC),
         )
 
         assert order.status == "canceled"
@@ -253,8 +253,8 @@ class TestOrderPartialFills:
             filled_qty=Decimal("350"),
             filled_avg_price=Decimal("174.90"),
             status="expired",
-            created_at=datetime.now(timezone.utc),
-            expired_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            expired_at=datetime.now(UTC),
         )
 
         assert order.status == "expired"
@@ -280,7 +280,7 @@ class TestDateBoundaryIssues:
     def test_transaction_near_midnight_utc(self):
         """Test transaction created near midnight UTC."""
         # 11:59 PM UTC on Dec 16
-        utc_time = datetime(2025, 12, 16, 23, 59, 59, tzinfo=timezone.utc)
+        utc_time = datetime(2025, 12, 16, 23, 59, 59, tzinfo=UTC)
         # Transaction date should be Dec 16
         txn = Transaction(
             id="t2",
@@ -293,7 +293,7 @@ class TestDateBoundaryIssues:
 
     def test_transaction_after_midnight_utc(self):
         """Test transaction created just after midnight UTC."""
-        utc_time = datetime(2025, 12, 17, 0, 0, 1, tzinfo=timezone.utc)
+        utc_time = datetime(2025, 12, 17, 0, 0, 1, tzinfo=UTC)
         txn = Transaction(
             id="t3",
             account_id="acc1",
@@ -308,7 +308,7 @@ class TestDateBoundaryIssues:
         # 8 PM EST on Dec 16 = 1 AM UTC on Dec 17
         est = zoneinfo.ZoneInfo("America/New_York")
         local_time = datetime(2025, 12, 16, 20, 0, 0, tzinfo=est)
-        utc_time = local_time.astimezone(timezone.utc)
+        utc_time = local_time.astimezone(UTC)
 
         # Local date is Dec 16, UTC date is Dec 17
         assert local_time.date() == date(2025, 12, 16)
@@ -334,7 +334,7 @@ class TestDateBoundaryIssues:
 
     def test_order_timestamps_are_utc(self):
         """Test that Order timestamps should use UTC."""
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         order = Order(
             id="ord_date1",
             symbol="AAPL",
@@ -478,8 +478,8 @@ class TestLeapYearAndDST:
         assert dt1.date() == dt2.date() == date(2025, 11, 2)
 
         # Convert to UTC to see difference
-        utc1 = dt1.astimezone(timezone.utc)
-        utc2 = dt2.astimezone(timezone.utc)
+        utc1 = dt1.astimezone(UTC)
+        utc2 = dt2.astimezone(UTC)
 
         # Second occurrence is 1 hour later in UTC
         assert (utc2 - utc1).total_seconds() == 3600
@@ -586,7 +586,7 @@ class TestLeapYearAndDST:
     def test_account_balance_snapshot_timing(self):
         """Test account balance snapshot at midnight boundaries."""
         # Account created at 11:59 PM
-        datetime(2025, 12, 16, 23, 59, 0, tzinfo=timezone.utc)
+        datetime(2025, 12, 16, 23, 59, 0, tzinfo=UTC)
 
         account = Account(
             id="acc_timing",
@@ -694,7 +694,7 @@ class TestExtremeValues:
             time_in_force="day",
             limit_price=Decimal("700000.00"),
             status="new",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         assert order.limit_price == Decimal("700000.00")
@@ -710,7 +710,7 @@ class TestExtremeValues:
             time_in_force="day",
             limit_price=Decimal("0.0001"),
             status="new",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         assert order.limit_price == Decimal("0.0001")

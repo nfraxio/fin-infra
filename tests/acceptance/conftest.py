@@ -6,8 +6,9 @@ to make acceptance tests work seamlessly with local development setup.
 
 import asyncio
 import os
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 import httpx
 import pytest
@@ -118,9 +119,9 @@ def pytest_configure(config):
                     key = key.strip()
                     value = value.strip()
                     # Remove quotes if present
-                    if value.startswith('"') and value.endswith('"'):
-                        value = value[1:-1]
-                    elif value.startswith("'") and value.endswith("'"):
+                    if (value.startswith('"') and value.endswith('"')) or (
+                        value.startswith("'") and value.endswith("'")
+                    ):
                         value = value[1:-1]
                     # Only set if not already in environment
                     if key not in os.environ:

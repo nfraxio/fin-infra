@@ -31,7 +31,6 @@ from fin_infra.net_worth import (
     normalize_currency,
 )
 
-
 # ============================================================================
 # Test Data Fixtures
 # ============================================================================
@@ -169,7 +168,7 @@ def test_calculate_net_worth_empty():
 def test_calculate_net_worth_raises_on_non_usd(sample_assets_multiple_currencies):
     """Test that non-USD currencies raise ValueError (prevents silent data loss)."""
     # Non-USD accounts should raise ValueError, not be silently skipped
-    with pytest.raises(ValueError, match="Cannot calculate net worth.*non-USD currencies"):
+    with pytest.raises(ValueError, match=r"Cannot calculate net worth.*non-USD currencies"):
         calculate_net_worth(sample_assets_multiple_currencies, [])
 
 
@@ -195,7 +194,7 @@ def test_normalize_currency_with_rate():
 
 def test_normalize_currency_without_rate_raises_error():
     """Test that currency conversion without rate raises error (V1 limitation)."""
-    with pytest.raises(ValueError, match="Currency conversion.*requires exchange_rate"):
+    with pytest.raises(ValueError, match=r"Currency conversion.*requires exchange_rate"):
         normalize_currency(100.0, "EUR", "USD")
 
 

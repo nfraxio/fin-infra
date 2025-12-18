@@ -19,7 +19,6 @@ from fastapi.testclient import TestClient
 
 from fin_infra.investments import add_investments
 
-
 pytestmark = [pytest.mark.acceptance]
 
 
@@ -48,7 +47,7 @@ def app():
     add_investments(app, provider="plaid", prefix="/investments")
 
     # Override svc-infra auth for testing (investments uses user_router)
-    from svc_infra.api.fastapi.auth.security import _current_principal, Principal
+    from svc_infra.api.fastapi.auth.security import Principal, _current_principal
 
     class MockUser:
         id: str = "user_acceptance_123"
@@ -152,7 +151,7 @@ class TestInvestmentsAPIWithPlaidSandbox:
             pytest.skip("No holdings to test filtering")
 
         # Extract unique account IDs
-        account_ids = list(set(h["account_id"] for h in all_holdings))
+        account_ids = list({h["account_id"] for h in all_holdings})
         if len(account_ids) == 0:
             pytest.skip("No account IDs found")
 

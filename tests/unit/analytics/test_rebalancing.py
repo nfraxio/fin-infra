@@ -2,7 +2,6 @@
 
 from decimal import Decimal
 
-
 from fin_infra.analytics.rebalancing import (
     RebalancingPlan,
     Trade,

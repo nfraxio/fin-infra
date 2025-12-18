@@ -1,11 +1,11 @@
 """Unit tests for market data providers."""
 
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
 from unittest.mock import Mock, patch
 
-import pytest
 import httpx
+import pytest
 
 # Check if yahooquery is available
 try:
@@ -24,9 +24,9 @@ except ImportError:
     HAS_PANDAS = False
 
 from fin_infra.markets import easy_market
+from fin_infra.models import Candle, Quote
 from fin_infra.providers.market.alphavantage import AlphaVantageMarketData
 from fin_infra.providers.market.yahoo import YahooFinanceMarketData
-from fin_infra.models import Quote, Candle
 
 
 class TestEasyMarket:
@@ -342,6 +342,7 @@ class TestAddMarketData:
     def app_with_market(self):
         """Create FastAPI app with mocked market data provider."""
         from fastapi import FastAPI
+
         from fin_infra.markets import add_market_data
         from fin_infra.providers.base import MarketDataProvider
 
@@ -474,7 +475,7 @@ class TestAddMarketData:
         """Should require keywords parameter."""
         from fastapi.testclient import TestClient
 
-        app, mock_provider = app_with_market
+        app, _mock_provider = app_with_market
         client = TestClient(app)
 
         response = client.get("/market/search")
@@ -499,6 +500,7 @@ class TestAddMarketData:
         """Should support custom prefix."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from fin_infra.markets import add_market_data
         from fin_infra.providers.base import MarketDataProvider
 

@@ -1,16 +1,17 @@
 """Unit tests for recurring transaction summary."""
 
-import pytest
 from datetime import datetime
 
+import pytest
+
+from fin_infra.recurring.models import CadenceType, PatternType, RecurringPattern
 from fin_infra.recurring.summary import (
     RecurringItem,
     RecurringSummary,
-    get_recurring_summary,
     _calculate_monthly_cost,
     _identify_cancellation_opportunities,
+    get_recurring_summary,
 )
-from fin_infra.recurring.models import RecurringPattern, PatternType, CadenceType
 
 
 class TestCalculateMonthlyCost:

@@ -10,10 +10,10 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fin_infra.budgets.ease import (
+    _get_connect_args,
     easy_budgets,
     shutdown_budgets,
     validate_database_url,
-    _get_connect_args,
 )
 from fin_infra.budgets.tracker import BudgetTracker
 
@@ -167,19 +167,19 @@ class TestValidateDatabaseUrl:
 
     def test_validate_sqlite_aiosqlite(self):
         """Test valid SQLite with aiosqlite."""
-        is_valid, msg = validate_database_url("sqlite+aiosqlite:///budget.db")
+        is_valid, _msg = validate_database_url("sqlite+aiosqlite:///budget.db")
 
         assert is_valid is True
 
     def test_validate_mysql_aiomysql(self):
         """Test valid MySQL with aiomysql."""
-        is_valid, msg = validate_database_url("mysql+aiomysql://localhost/db")
+        is_valid, _msg = validate_database_url("mysql+aiomysql://localhost/db")
 
         assert is_valid is True
 
     def test_validate_asyncmy(self):
         """Test valid MySQL with asyncmy driver."""
-        is_valid, msg = validate_database_url("mysql+asyncmy://localhost/db")
+        is_valid, _msg = validate_database_url("mysql+asyncmy://localhost/db")
 
         assert is_valid is True
 
@@ -206,7 +206,7 @@ class TestValidateDatabaseUrl:
 
     def test_validate_none_url(self):
         """Test None URL is rejected."""
-        is_valid, msg = validate_database_url(None)
+        is_valid, _msg = validate_database_url(None)
 
         assert is_valid is False
 
@@ -264,7 +264,7 @@ class TestEasyBudgetsIntegration:
 
         # Step 1: Validate URL
         db_url = "postgresql+asyncpg://localhost/budget_db"
-        is_valid, msg = validate_database_url(db_url)
+        is_valid, _msg = validate_database_url(db_url)
         assert is_valid is True
 
         # Step 2: Create tracker with validated URL

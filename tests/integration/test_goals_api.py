@@ -10,14 +10,15 @@ Covers:
 - Full lifecycle scenarios
 """
 
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from fin_infra.goals.add import add_goals
-from fin_infra.goals.management import clear_goals_store
 from fin_infra.goals.funding import clear_funding_store
+from fin_infra.goals.management import clear_goals_store
 
 
 @pytest.fixture(autouse=True)
@@ -39,8 +40,8 @@ def app():
     add_goals(app, prefix="/goals")
 
     # Override svc-infra dependencies for testing
+    from svc_infra.api.fastapi.auth.security import Principal, _current_principal
     from svc_infra.api.fastapi.db.sql.session import get_session
-    from svc_infra.api.fastapi.auth.security import _current_principal, Principal
 
     class MockUser:
         id: str = "test_user"

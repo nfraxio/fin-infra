@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import types
+
 import httpx
 import pytest
 
@@ -19,20 +20,20 @@ class _FakeResponse:
 
 
 class _FakeAsyncClient:
-    instances: list["_FakeAsyncClient"] = []
+    instances: list[_FakeAsyncClient] = []
 
     def __init__(self, *, timeout: httpx.Timeout | None = None):
         self.timeout = timeout
         self._get_impl: types.FunctionType | None = None  # type: ignore[name-defined]
         _FakeAsyncClient.instances.append(self)
 
-    async def __aenter__(self) -> "_FakeAsyncClient":
+    async def __aenter__(self) -> _FakeAsyncClient:
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:  # noqa: ANN001
+    async def __aexit__(self, exc_type, exc, tb) -> None:
         return None
 
-    async def get(self, url: str, **kwargs):  # noqa: ANN201
+    async def get(self, url: str, **kwargs):
         if self._get_impl is None:
             raise RuntimeError("_get_impl not set")
         return await self._get_impl(url, **kwargs)  # type: ignore[misc]
@@ -48,7 +49,7 @@ async def test_aget_json_retries_then_succeeds(monkeypatch):
             raise httpx.HTTPError("boom")
         return _FakeResponse({"ok": True})
 
-    def fake_client_factory(*, timeout=None):  # noqa: ANN001
+    def fake_client_factory(*, timeout=None):
         c = _FakeAsyncClient(timeout=timeout)
         c._get_impl = flaky_get  # type: ignore[assignment]
         return c
@@ -65,7 +66,7 @@ async def test_aget_json_raises_after_attempts(monkeypatch):
     async def always_fail(_url: str, **_kw):
         raise httpx.HTTPError("fail")
 
-    def fake_client_factory(*, timeout=None):  # noqa: ANN001
+    def fake_client_factory(*, timeout=None):
         c = _FakeAsyncClient(timeout=timeout)
         c._get_impl = always_fail  # type: ignore[assignment]
         return c
@@ -83,7 +84,7 @@ async def test_aget_json_uses_default_timeout(monkeypatch):
     async def ok(_url: str, **_kw):
         return _FakeResponse({"ok": True})
 
-    def fake_client_factory(*, timeout=None):  # noqa: ANN001
+    def fake_client_factory(*, timeout=None):
         # capture the Timeout object
         if isinstance(timeout, httpx.Timeout):
             seen.append(timeout)

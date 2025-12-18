@@ -19,7 +19,6 @@ import pytest
 
 from fin_infra.providers.brokerage.alpaca import AlpacaBrokerage
 
-
 pytestmark = [pytest.mark.acceptance]
 
 

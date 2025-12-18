@@ -5,15 +5,14 @@ from decimal import Decimal
 
 import pytest
 
-from fin_infra.goals.models import Goal, GoalType, GoalStatus
+from fin_infra.goals.models import Goal, GoalStatus, GoalType
 from fin_infra.insights.aggregator import (
     aggregate_insights,
     get_user_insights,
 )
 from fin_infra.insights.models import InsightCategory, InsightPriority
 from fin_infra.net_worth.models import NetWorthSnapshot
-from fin_infra.recurring.models import RecurringPattern, PatternType, CadenceType
-
+from fin_infra.recurring.models import CadenceType, PatternType, RecurringPattern
 
 # ---- Fixtures ----
 

@@ -19,10 +19,9 @@ except ImportError:
     HAS_YAHOOQUERY = False
 
 from fin_infra.markets import easy_market
+from fin_infra.models import Candle, Quote
 from fin_infra.providers.market.alphavantage import AlphaVantageMarketData
 from fin_infra.providers.market.yahoo import YahooFinanceMarketData
-from fin_infra.models import Quote, Candle
-
 
 pytestmark = [pytest.mark.acceptance]
 

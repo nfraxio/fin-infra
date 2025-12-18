@@ -3,15 +3,15 @@
 Tests compound interest calculations, net worth projections, and scenario generation.
 """
 
-import pytest
 import math
+
+import pytest
 
 from fin_infra.analytics.models import GrowthProjection
 from fin_infra.analytics.projections import (
     calculate_compound_interest,
     project_net_worth,
 )
-
 
 # ============================================================================
 # Test calculate_compound_interest()

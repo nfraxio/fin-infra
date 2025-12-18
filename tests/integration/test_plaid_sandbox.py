@@ -65,8 +65,9 @@ class TestPlaidProviderMock:
 
     def test_account_model_structure(self):
         """Test Account model has expected fields."""
-        from fin_infra.models import Account, AccountType
         from decimal import Decimal
+
+        from fin_infra.models import Account, AccountType
 
         # Create sample account using actual model fields
         account = Account(
@@ -87,9 +88,10 @@ class TestPlaidProviderMock:
 
     def test_transaction_model_structure(self):
         """Test Transaction model has expected fields."""
-        from fin_infra.models import Transaction
-        from decimal import Decimal
         from datetime import date
+        from decimal import Decimal
+
+        from fin_infra.models import Transaction
 
         # Create sample transaction using actual model fields
         transaction = Transaction(
@@ -116,6 +118,7 @@ class TestBankingAPIEndpoints:
         """Create FastAPI app with mock banking provider."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from fin_infra.banking import add_banking
         from fin_infra.providers.base import BankingProvider
 

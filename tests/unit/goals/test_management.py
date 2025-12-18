@@ -24,7 +24,6 @@ from fin_infra.goals import (
 )
 from fin_infra.goals.management import _GOALS_STORE
 
-
 # ============================================================================
 # Test Fixtures
 # ============================================================================

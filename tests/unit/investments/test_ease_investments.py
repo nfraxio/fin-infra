@@ -18,7 +18,6 @@ from fin_infra.investments.providers.base import InvestmentProvider
 from fin_infra.investments.providers.plaid import PlaidInvestmentProvider
 from fin_infra.investments.providers.snaptrade import SnapTradeInvestmentProvider
 
-
 # Test auto-detection
 
 

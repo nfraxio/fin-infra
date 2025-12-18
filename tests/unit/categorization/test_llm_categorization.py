@@ -9,14 +9,15 @@ Tests LLMCategorizer with mocked ai-infra responses:
 - Hybrid flow (exact → regex → sklearn → LLM)
 """
 
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from fin_infra.categorization import Category, CategorizationEngine, CategorizationMethod
+import pytest
+
+from fin_infra.categorization import CategorizationEngine, CategorizationMethod, Category
 
 # LLM layer (skip tests if not available)
 try:
-    from fin_infra.categorization.llm_layer import LLMCategorizer, CategoryPrediction
+    from fin_infra.categorization.llm_layer import CategoryPrediction, LLMCategorizer
 
     HAS_LLM = True
 except ImportError:

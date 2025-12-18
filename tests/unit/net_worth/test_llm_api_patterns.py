@@ -7,8 +7,9 @@ Tests verify correct use of:
 - goals: with_structured_output() (single-shot validation)
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
 
 
 @pytest.mark.skip(
@@ -36,9 +37,10 @@ async def test_conversation_uses_achat_without_schema():
 @pytest.mark.asyncio
 async def test_insights_uses_structured_output():
     """Verify insights uses with_structured_output() for single-shot analysis."""
+    from datetime import datetime
+
     from fin_infra.net_worth.insights import NetWorthInsightsGenerator, WealthTrendAnalysis
     from fin_infra.net_worth.models import NetWorthSnapshot
-    from datetime import datetime
 
     # Create insights generator with mocked LLM
     mock_llm = MagicMock()
@@ -96,9 +98,10 @@ async def test_insights_uses_structured_output():
 @pytest.mark.asyncio
 async def test_goals_uses_structured_output():
     """Verify goals uses with_structured_output() for single-shot validation."""
+    from datetime import datetime
+
     from fin_infra.goals.management import FinancialGoalTracker, GoalValidation
     from fin_infra.net_worth.models import NetWorthSnapshot
-    from datetime import datetime
 
     # Create goal tracker with mocked LLM
     mock_llm = MagicMock()

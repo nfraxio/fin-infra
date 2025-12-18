@@ -1,7 +1,8 @@
 """Unit tests for brokerage module - easy_brokerage and add_brokerage."""
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 # Note: These tests use mocking and don't require actual alpaca-trade-api package
 
@@ -77,6 +78,7 @@ class TestAddBrokerage:
     def test_add_brokerage_mounts_routes(self, mock_easy_brokerage):
         """Should mount brokerage routes to FastAPI app."""
         from fastapi import FastAPI
+
         from fin_infra.brokerage import add_brokerage
 
         # Mock the provider
@@ -102,6 +104,7 @@ class TestAddBrokerage:
     def test_add_brokerage_paper_mode_default(self, mock_easy_brokerage):
         """Should default to paper mode for safety."""
         from fastapi import FastAPI
+
         from fin_infra.brokerage import add_brokerage
 
         mock_provider = Mock()
@@ -119,6 +122,7 @@ class TestAddBrokerage:
     def test_add_brokerage_live_mode_explicit(self, mock_easy_brokerage):
         """Should accept live mode when explicitly specified."""
         from fastapi import FastAPI
+
         from fin_infra.brokerage import add_brokerage
 
         mock_provider = Mock()
@@ -135,6 +139,7 @@ class TestAddBrokerage:
     def test_add_brokerage_custom_prefix(self, mock_easy_brokerage):
         """Should mount routes with custom prefix."""
         from fastapi import FastAPI
+
         from fin_infra.brokerage import add_brokerage
 
         mock_provider = Mock()
@@ -258,10 +263,12 @@ class TestWatchlistRoutes:
     @pytest.fixture
     def app_with_brokerage(self):
         """Create FastAPI app with mocked brokerage provider."""
+        from unittest.mock import Mock
+
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from fin_infra.brokerage import add_brokerage
-        from unittest.mock import Mock
 
         app = FastAPI()
 

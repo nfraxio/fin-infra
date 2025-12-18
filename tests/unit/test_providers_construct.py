@@ -18,8 +18,8 @@ try:
 except ImportError:
     HAS_CCXT = False
 
-from fin_infra.providers.market.yahoo import YahooFinanceMarketData
 from fin_infra.providers.market.ccxt_crypto import CCXTCryptoData
+from fin_infra.providers.market.yahoo import YahooFinanceMarketData
 
 
 @pytest.mark.skipif(not HAS_YAHOOQUERY, reason="yahooquery not installed")

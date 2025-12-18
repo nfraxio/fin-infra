@@ -12,7 +12,6 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-
 from fin_infra.models.accounts import Account, AccountType
 from fin_infra.models.transactions import Transaction
 

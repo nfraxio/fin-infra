@@ -3,8 +3,9 @@
 Tests add_analytics() helper and all mounted endpoints.
 """
 
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 

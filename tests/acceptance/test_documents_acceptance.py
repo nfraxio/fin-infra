@@ -226,7 +226,7 @@ def test_a_fin_doc_04_ocr_w2_field_extraction(client, sample_w2_content):
     ocr_result = response.json()
 
     # Check if fields were extracted
-    if "fields" in ocr_result and ocr_result["fields"]:
+    if ocr_result.get("fields"):
         fields = ocr_result["fields"]
         # W-2 should have extracted employer, wages, federal_tax
         assert "employer" in fields or "wages" in fields, "Should extract W-2 fields"

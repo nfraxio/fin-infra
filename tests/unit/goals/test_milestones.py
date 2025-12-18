@@ -18,6 +18,7 @@ import pytest
 from fin_infra.goals import (
     create_goal,
 )
+from fin_infra.goals.management import _GOALS_STORE
 from fin_infra.goals.milestones import (
     add_milestone,
     check_milestones,
@@ -26,8 +27,6 @@ from fin_infra.goals.milestones import (
     get_next_milestone,
     trigger_milestone_notification,
 )
-from fin_infra.goals.management import _GOALS_STORE
-
 
 # ============================================================================
 # Test Fixtures

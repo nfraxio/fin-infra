@@ -14,7 +14,6 @@ All tests use mock Experian API responses.
 from datetime import date
 from decimal import Decimal
 
-
 from fin_infra.credit.experian.parser import (
     _parse_date,
     _parse_decimal,

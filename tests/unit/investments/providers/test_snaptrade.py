@@ -10,7 +10,6 @@ import pytest
 from fin_infra.investments.models import SecurityType, TransactionType
 from fin_infra.investments.providers.snaptrade import SnapTradeInvestmentProvider
 
-
 # Fixtures
 
 

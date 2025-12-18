@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
+from svc_infra.storage.backends.memory import MemoryBackend
 
 from fin_infra.documents import DocumentType, easy_documents
-from svc_infra.storage.backends.memory import MemoryBackend
 
 
 def make_app() -> FastAPI:
@@ -58,8 +57,8 @@ def make_app() -> FastAPI:
     @app.get("/documents/list")
     async def list_documents(
         user_id: str,
-        type: str = None,
-        year: int = None,
+        type: str | None = None,
+        year: int | None = None,
     ):
         """List documents for acceptance testing."""
         doc_type = DocumentType(type) if type else None
@@ -91,7 +90,7 @@ def make_app() -> FastAPI:
     @app.post("/documents/{document_id}/ocr")
     async def extract_text_ocr(
         document_id: str,
-        provider: str = None,
+        provider: str | None = None,
         force_refresh: bool = False,
     ):
         """OCR text extraction for acceptance testing."""

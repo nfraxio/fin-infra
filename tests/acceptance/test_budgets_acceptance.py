@@ -14,9 +14,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from fin_infra.budgets.ease import easy_budgets
 from fin_infra.budgets.add import add_budgets
-
+from fin_infra.budgets.ease import easy_budgets
 
 pytestmark = [pytest.mark.acceptance]
 
@@ -32,8 +31,8 @@ def app():
     add_budgets(app, tracker=tracker)
 
     # Override svc-infra dependencies for testing (same pattern as unit tests)
+    from svc_infra.api.fastapi.auth.security import Principal, _current_principal
     from svc_infra.api.fastapi.db.sql.session import get_session
-    from svc_infra.api.fastapi.auth.security import _current_principal, Principal
 
     class MockUser:
         """Mock authenticated user for acceptance tests."""

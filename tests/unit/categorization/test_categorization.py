@@ -10,10 +10,10 @@ Tests the 3-layer hybrid approach:
 import pytest
 
 from fin_infra.categorization import (
-    Category,
-    CategoryGroup,
     CategorizationEngine,
     CategorizationMethod,
+    Category,
+    CategoryGroup,
     categorize,
     easy_categorization,
     get_all_categories,
