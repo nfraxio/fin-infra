@@ -2,9 +2,14 @@
 
 # fin-infra
 
-### Financial data infrastructure for fintech apps
+[![CI](https://github.com/nfraxlab/fin-infra/actions/workflows/ci.yml/badge.svg)](https://github.com/nfraxlab/fin-infra/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/fin-infra.svg)](https://pypi.org/project/fin-infra/)
+[![Python](https://img.shields.io/pypi/pyversions/fin-infra.svg)](https://pypi.org/project/fin-infra/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Downloads](https://img.shields.io/pypi/dm/fin-infra.svg)](https://pypi.org/project/fin-infra/)
+[![codecov](https://codecov.io/gh/nfraxlab/fin-infra/branch/main/graph/badge.svg)](https://codecov.io/gh/nfraxlab/fin-infra)
 
-[![PyPI](https://img.shields.io/pypi/v/fin-infra.svg)](https://pypi.org/project/fin-infra/) [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT) [![Downloads](https://static.pepy.tech/badge/fin-infra/month)](https://pepy.tech/project/fin-infra)
+### Financial data infrastructure for fintech apps
 
 **Banking, investments, market data, credit scores, and financial calculations in one toolkit.**
 

@@ -78,6 +78,7 @@ black = ">=24.0.0"
 isort = ">=5.13.0"
 flake8 = ">=7.0.0"
 pre-commit = ">=3.0.0"
+bandit = ">=1.7.0"
 types-requests = ">=2.31.0"
 pytest-cov = ">=4.0.0"
 aiosqlite = ">=0.20.0"
@@ -149,6 +150,20 @@ known-first-party = ["fin_infra"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv"]
+skips = ["B101", "B311"]  # B101: assert used, B311: random for non-crypto
+
+[tool.coverage.run]
+source = ["src/fin_infra"]
+branch = true
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise NotImplementedError"]
+fail_under = 70
+show_missing = true
 
 [tool.mypy]
 python_version = "3.13"

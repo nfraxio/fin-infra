@@ -10,8 +10,22 @@ and should be imported from there:
 
 For async retry with exponential backoff:
     from fin_infra.utils.retry import retry_async, RetryError
+
+For deprecation utilities:
+    from fin_infra.utils.deprecation import deprecated, deprecated_parameter
 """
 
+from fin_infra.utils.deprecation import (
+    DeprecatedWarning,
+    deprecated,
+    deprecated_parameter,
+)
 from fin_infra.utils.retry import RetryError, retry_async
 
-__all__ = ["RetryError", "retry_async"]
+__all__ = [
+    "RetryError",
+    "retry_async",
+    "deprecated",
+    "deprecated_parameter",
+    "DeprecatedWarning",
+]
