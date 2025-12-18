@@ -1,0 +1,111 @@
+site_name: fin-infra Documentation
+site_description: Generic, reusable financial infrastructure package for fintech applications
+site_url: https://nfrax.com/fin-infra
+repo_url: https://github.com/nfraxlab/fin-infra
+repo_name: nfraxlab/fin-infra
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: green
+      accent: green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: green
+      accent: green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
+            signature_crossrefs: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quick Start: getting-started.md
+      - API Integration: api.md
+  - Banking:
+      - Overview: banking/index.md
+      - Providers: providers.md
+  - Brokerage:
+      - Trading: brokerage.md
+      - Investments: investments.md
+  - Market Data:
+      - Stocks & ETFs: market-data.md
+      - Crypto: crypto-data.md
+  - Personal Finance:
+      - Net Worth: net-worth.md
+      - Budgets: budgets.md
+      - Goals: goals.md
+      - Cashflows: cashflows.md
+      - Analytics: analytics.md
+  - Transactions:
+      - Categorization: categorization.md
+      - Recurring Detection: recurring-detection.md
+      - Normalization: normalization.md
+  - Tax & Credit:
+      - Tax Data: tax-data.md
+      - Tax Integration: tax.md
+      - Credit: credit.md
+  - Advanced:
+      - Caching & Rate Limits: caching-rate-limits-retries.md
+      - Security: security.md
+      - Compliance: compliance.md
+      - Observability: observability.md
+      - Persistence: persistence.md
+  - Reference:
+      - API Reference: reference/api.md
+      - Core vs Scaffold: core-vs-scaffold.md
+      - Insights: insights.md
+      - Documents: documents.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nfraxlab/fin-infra

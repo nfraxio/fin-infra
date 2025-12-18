@@ -178,7 +178,6 @@ def add_market_data(
     See Also:
         - easy_market(): For standalone provider usage without FastAPI
         - docs/market-data.md: API documentation and examples
-        - docs/adr/0004-market-data-integration.md: Architecture decisions
     """
     from fastapi import HTTPException, Query
 

@@ -174,7 +174,6 @@ def easy_banking(provider: str = "teller", **config) -> BankingProvider:
     See Also:
         - add_banking(): For FastAPI integration with routes
         - docs/banking.md: Comprehensive banking integration guide
-        - docs/adr/0003-banking-integration.md: Architecture decisions
     """
     # Auto-detect provider config from environment if not explicitly provided
     # Only auto-detect if no config params were passed
