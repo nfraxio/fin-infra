@@ -86,14 +86,14 @@ def deprecated(
 
         if isinstance(func, type):
             # Handle class deprecation
-            original_init = func.__init__
+            original_init = func.__init__  # type: ignore[misc]
 
             @functools.wraps(original_init)
             def new_init(self: Any, *args: Any, **kwargs: Any) -> None:
                 warnings.warn(message, DeprecatedWarning, stacklevel=stacklevel)
                 original_init(self, *args, **kwargs)
 
-            func.__init__ = new_init  # type: ignore[method-assign]
+            func.__init__ = new_init  # type: ignore[misc]
 
             # Add deprecation info to docstring
             if func.__doc__:
