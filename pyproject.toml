@@ -153,7 +153,11 @@ convention = "google"
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv", "venv"]
-skips = ["B101", "B311"]  # B101: assert used, B311: random for non-crypto
+skips = [
+    "B101",  # assert used (intentional in tests and contracts)
+    "B311",  # random for non-crypto (intentional)
+    "B324",  # MD5 hash - used for cache keys only, not security
+]
 
 [tool.coverage.run]
 source = ["src/fin_infra"]
