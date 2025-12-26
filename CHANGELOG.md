@@ -4,11 +4,12 @@ All notable changes to this project will be documented in this file.
 
 This file is auto-generated from conventional commits using [git-cliff](https://git-cliff.org/).
 
-## [0.1.87] - 2025-12-19
+## [0.1.88] - 2025-12-26
 
 
 ### Bug Fixes
 
+- Prevent docs-changelog race condition with publish workflow
 - Update bandit config to skip B324 (MD5 for cache keys)
 - Add type ignore comment for __init__ access
 
