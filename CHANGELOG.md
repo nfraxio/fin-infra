@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## v0.2.1 (2025-12-31)
+
+### Bug Fixes
+
+- Sync formatting and docs updates ([#30](https://github.com/nfraxlab/fin-infra/pull/30),
+  [`5d7ad62`](https://github.com/nfraxlab/fin-infra/commit/5d7ad629a2c01c3439363dd253a2dc4794b7b621))
+
+Co-authored-by: nfrax <alixkhatami@gmail.com>
+
+
 ## v0.2.0 (2025-12-30)
 
 ### Bug Fixes
