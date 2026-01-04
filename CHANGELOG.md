@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.3.0 (2026-01-04)
+
+### Features
+
+- Add integration CI workflow for Plaid, Alpha Vantage, Yahoo Finance
+  ([#34](https://github.com/nfraxlab/fin-infra/pull/34),
+  [`3bddabe`](https://github.com/nfraxlab/fin-infra/commit/3bddabeacc075ac4cc4f338b9b786d7fe7e1b471))
+
+
 ## v0.2.3 (2026-01-03)
 
 ### Bug Fixes
